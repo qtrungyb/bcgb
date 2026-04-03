@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Báo Cáo Giao Ban - Flat Design</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            background: #f0f4f8;
+            padding: 30px 20px;
+        }
+
+        .report-card {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            padding: 24px 28px 40px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 600;
+            color: #1f3b4c;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+        .date-row {
+            text-align: center;
+            margin-bottom: 28px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #e2e8f0;
+            color: #2c5a74;
+            font-weight: 500;
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .date-select {
+            padding: 6px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 20px;
+            background: #fefefe;
+            font-size: 15px;
+            font-weight: 600;
+            color: #1f3b4c;
+            cursor: pointer;
+            outline: none;
+            text-align: center;
+        }
+        .date-select:focus {
+            border-color: #5b9cbb;
+        }
+        h2 {
+            font-size: 20px;
+            font-weight: 600;
+            background: #eef2f7;
+            display: inline-block;
+            padding: 6px 20px;
+            border-radius: 40px;
+            color: #1f5e7e;
+            margin: 20px 0 20px 0;
+        }
+        h3 {
+            font-size: 17px;
+            font-weight: 600;
+            color: #2c5a74;
+            margin: 24px 0 12px 0;
+            border-left: 4px solid #5b9cbb;
+            padding-left: 14px;
+        }
+        .section {
+            background: #ffffff;
+            border: 1px solid #e9edf2;
+            border-radius: 20px;
+            padding: 20px 24px;
+            margin-bottom: 28px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+        .staff-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        .staff-item {
+            flex: 1 1 220px;
+            min-width: 190px;
+        }
+        .staff-item label {
+            display: block;
+            font-weight: 600;
+            color: #1f4662;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        .staff-item select {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 14px;
+            border: 1px solid #cbdbe2;
+            background: #ffffff;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        
+        .flex-row-2 {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }
+        .flex-col {
+            flex: 1 1 350px;
+            display: flex;
+            flex-direction: column;
+        }
+        .module-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1a5d7a;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            padding-left: 4px;
+        }
+        .subgroup {
+            background: #fafcff;
+            border-radius: 16px;
+            padding: 16px 20px;
+            border: 1px solid #e2e8f0;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .sub-row {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px dashed #e2e8f0;
+        }
+        .sub-row:last-of-type {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .sub-row span {
+            font-weight: 500;
+            color: #2c5e7e;
+        }
+        .sub-row input {
+            width: 90px;
+            padding: 6px 10px;
+            border: 1px solid #cbdbe2;
+            border-radius: 8px;
+            text-align: center;
+            background: white;
+            font-weight: 600;
+            color: #1f3b4c;
+        }
+        .total-wrapper {
+            margin-top: auto;
+            padding-top: 16px;
+            text-align: right;
+        }
+        .total-badge {
+            background: #e9f0f5;
+            border-radius: 8px;
+            padding: 8px 20px;
+            font-weight: 700;
+            display: inline-block;
+            font-size: 0.95rem;
+            color: #1a5d7a;
+            border: 1px solid #cbdbe2;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            margin: 20px 0 10px;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+        }
+        table {
+            border-collapse: collapse;
+            font-size: 13px;
+            background: white;
+        }
+        th, td {
+            padding: 10px 6px;
+            border-bottom: 1px solid #ecf1f5;
+            text-align: center;
+            vertical-align: middle;
+            word-break: break-word;
+        }
+        th {
+            background: #f1f6fa;
+            border-bottom: 1px solid #dce5ec;
+            color: #1f4662;
+            font-weight: 600;
+        }
+        
+        input.table-input, select.table-select {
+            width: 100%;
+            min-width: 0;
+            padding: 6px 8px;
+            border: 1px solid #d0dbe8;
+            border-radius: 12px;
+            font-size: 12px;
+            background: #fff;
+            text-align: left;
+            box-sizing: border-box;
+        }
+
+        /* ===== BẢNG BỆNH NHÂN ===== */
+        #bangBenhNhan {
+            table-layout: fixed;
+            width: 100%;
+            min-width: 1400px;
+        }
+        #bangBenhNhan th, #bangBenhNhan td {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding: 8px 4px;
+        }
+        #bangBenhNhan th:nth-child(1) { width: 7.5%; } 
+        #bangBenhNhan th:nth-child(2) { width: 9%; }    
+        #bangBenhNhan th:nth-child(n+3) { width: 4.6%; } 
+        
+        #bangBenhNhan input.table-input {
+            width: 100%;
+            text-align: center;
+            padding: 6px 2px;
+        }
+        #bangBenhNhan select.table-select {
+            width: 100%;
+            min-width: 0;
+        }
+
+        /* ===== BẢNG CHUYÊN MÔN ===== */
+        #tablePTCC, #tableVaoVien, #tableChuyenVien, #tableRaVien {
+            table-layout: fixed;
+            width: 100%;
+            min-width: 1200px;
+        }
+        #tablePTCC th, #tablePTCC td,
+        #tableVaoVien th, #tableVaoVien td,
+        #tableChuyenVien th, #tableChuyenVien td,
+        #tableRaVien th, #tableRaVien td {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        #tablePTCC th:nth-child(1) { width: 45px; }
+        #tablePTCC th:nth-child(4), #tablePTCC th:nth-child(7) { width: 200px; } 
+        
+        #tableVaoVien th:nth-child(1) { width: 45px; }
+        #tableVaoVien th:nth-child(4) { width: 200px; } 
+        
+        #tableChuyenVien th:nth-child(1) { width: 45px; }
+        #tableChuyenVien th:nth-child(4), #tableChuyenVien th:nth-child(7) { width: 200px; } 
+        
+        #tableRaVien th:nth-child(1) { width: 45px; }
+        #tableRaVien th:nth-child(4), #tableRaVien th:nth-child(7) { width: 200px; } 
+
+        .remove-row-btn {
+            background: #fee2e2;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 30px;
+            font-size: 11px;
+            cursor: pointer;
+            color: #b13e3e;
+        }
+        .add-row-btn {
+            background: #eef2fa;
+            border: none;
+            margin-top: 12px;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-weight: 500;
+            color: #1f5e7e;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        textarea {
+            width: 100%;
+            border: 1px solid #cbdbe2;
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-family: inherit;
+            margin-top: 8px;
+            background: #fefefe;
+        }
+        .btn-group {
+            display: flex;
+            justify-content: flex-end;
+            gap: 16px;
+            margin-top: 30px;
+        }
+        .btn-excel {
+            background: #2f7d5c;
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        footer {
+            margin-top: 24px;
+            font-size: 12px;
+            text-align: right;
+            color: #7c8b9c;
+        }
+    </style>
+</head>
+<body>
+<div class="report-card">
+    <h1>BÁO CÁO GIAO BAN</h1>
+    <div class="date-row">
+        <span>Kíp trực ngày</span>
+        <select id="ngayTruc" class="date-select"></select>
+        <span>tháng</span>
+        <select id="thangTruc" class="date-select"></select>
+        <span>năm</span>
+        <select id="namTruc" class="date-select"></select>
+    </div>
+
+    <div class="section">
+        <h2>I. THÀNH PHẦN TRỰC</h2>
+        <div class="staff-grid">
+            <div class="staff-item"><label>Trực Lãnh Đạo</label><select id="trucLanhDao"></select></div>
+            <div class="staff-item"><label>Trực Chuyên môn</label><select id="trucChuyenMon"></select></div>
+            <div class="staff-item"><label>Trực Phòng khám</label><select id="trucPhongKham"></select></div>
+            <div class="staff-item"><label>Trực An ninh, bảo vệ</label><select id="trucAnNinh"></select></div>
+        </div>
+        
+        <div class="flex-row-2">
+            <div class="flex-col">
+                <div class="module-title">Trực Xét Nghiệm</div>
+                <div class="subgroup">
+                    <div class="sub-row"><span>Xét nghiệm Huyết học:</span> <input type="number" id="xnHuyetHoc" min="0"></div>
+                    <div class="sub-row"><span>Xét nghiệm Hóa sinh:</span> <input type="number" id="xnHoaSinh" min="0"></div>
+                    <div class="sub-row"><span>Xét nghiệm Vi sinh:</span> <input type="number" id="xnViSinh" min="0"></div>
+                    <div class="sub-row"><span>Xét nghiệm Nước tiểu:</span> <input type="number" id="xnNuocTieu" min="0"></div>
+                    <div class="sub-row"><span>Xét nghiệm đông máu:</span> <input type="number" id="xnDongMau" min="0"></div>
+                    <div class="total-wrapper">
+                        <div class="total-badge" id="tongXetNghiem">TỔNG: 0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="flex-col">
+                <div class="module-title">Trực Chẩn Đoán Hình Ảnh</div>
+                <div class="subgroup">
+                    <div class="sub-row"><span>Xquang:</span> <input type="number" id="cdhaXquang" min="0"></div>
+                    <div class="sub-row"><span>Siêu âm:</span> <input type="number" id="cdhaSieuAm" min="0"></div>
+                    <div class="sub-row"><span>Chụp CT-Scanner:</span> <input type="number" id="cdhaCT" min="0"></div>
+                    <div class="total-wrapper">
+                        <div class="total-badge" id="tongCDHA">TỔNG: 0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top: 24px;">
+            <div class="module-title">Tình hình trang thiết bị, dược, vật tư, điện nước:</div>
+            <textarea rows="2" id="tinhTrangThietBi" placeholder="Nhập ghi chú..."></textarea>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>II. TÌNH HÌNH BỆNH NHÂN</h2>
+        <div class="table-wrapper">
+            <table id="bangBenhNhan">
+                <thead>
+                    <tr>
+                        <th>Khoa</th><th>BS</th><th>Cũ</th><th>Vào HC</th><th>Vào Trực</th><th>Ra</th>
+                        <th>Chuyển khoa (Đi)</th><th>Chuyển khoa (Đến)</th><th>Chuyển viện</th><th>Xin về</th>
+                        <th>Trốn viện</th><th>Tử vong NT</th><th>Tử vong NTrú</th><th>PT Cấp cứu</th><th>Vào sáng</th><th>Ra sáng</th>
+                        <th>Hiện có</th><th>Dự kiến ra</th><th>Giường KH</th><th>Tỷ lệ %</th>
+                    </tr>
+                </thead>
+                <tbody id="tbodyBenhNhan"></tbody>
+                <tfoot id="footBenhNhan" style="background:#f7fafd; font-weight:bold;"></tfoot>
+            </table>
+        </div>
+        <div style="font-size:12px; color:#5f7f9a; margin-top: 8px;">* Tỷ lệ = (Hiện có / Giường KH) × 100%</div>
+    </div>
+
+    <div class="section">
+        <h2>III. TÌNH HÌNH CHUYÊN MÔN</h2>
+        <h3>A. Bệnh nhân phẫu thuật cấp cứu (PTCC)</h3>
+        <div class="table-wrapper">
+            <table id="tablePTCC">
+                <thead><tr><th>STT</th><th>Họ và tên</th><th>Địa chỉ</th><th>Giờ vào</th><th>Chẩn đoán trước mổ</th><th>Chẩn đoán sau mổ & kết quả</th><th>Giờ PTCC</th><th>Khoa</th><th></th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <button type="button" class="add-row-btn" data-table="ptcc">+ Thêm bệnh nhân PTCC</button>
+
+        <h3>B. Bệnh nhân vào viện</h3>
+        <div class="table-wrapper">
+            <table id="tableVaoVien">
+                <thead><tr><th>STT</th><th>Họ và tên</th><th>Địa chỉ</th><th>Giờ vào</th><th>Chẩn đoán lúc vào</th><th>Khoa</th><th></th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <button type="button" class="add-row-btn" data-table="vaovien">+ Thêm bệnh nhân vào viện</button>
+
+        <h3>C. Bệnh nhân chuyển viện</h3>
+        <div class="table-wrapper">
+            <table id="tableChuyenVien">
+                <thead><tr><th>STT</th><th>Họ và tên</th><th>Địa chỉ</th><th>Giờ vào</th><th>Khoa</th><th>Chẩn đoán lúc vào</th><th>Giờ chuyển</th><th>Chẩn đoán lúc chuyển</th><th></th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <button type="button" class="add-row-btn" data-table="chuyenvien">+ Thêm chuyển viện</button>
+
+        <h3>D. Bệnh nhân ra viện, xin về</h3>
+        <div class="table-wrapper">
+            <table id="tableRaVien">
+                <thead><tr><th>STT</th><th>Họ và tên</th><th>Địa chỉ</th><th>Giờ vào</th><th>Khoa</th><th>Chẩn đoán lúc vào</th><th>Giờ ra</th><th>Chẩn đoán lúc ra</th><th></th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <button type="button" class="add-row-btn" data-table="ravien">+ Thêm bệnh nhân ra viện</button>
+    </div>
+
+    <div class="btn-group">
+        <button id="xuatExcelBtn" class="btn-excel">Lưu & Xuất Excel</button>
+    </div>
+    <footer>Dữ liệu nhập tự động, xuất file .xlsx đầy đủ các phần</footer>
+</div>
+
+<script>
+    // ==================== KHỞI TẠO NGÀY THÁNG ====================
+    function populateNumberSelect(id, min, max, defaultVal) {
+        const sel = document.getElementById(id);
+        for(let i=min; i<=max; i++) {
+            let opt = document.createElement("option");
+            opt.value = i; opt.textContent = i;
+            if(i === defaultVal) opt.selected = true;
+            sel.appendChild(opt);
+        }
+    }
+    const today = new Date();
+    populateNumberSelect("ngayTruc", 1, 31, today.getDate());
+    populateNumberSelect("thangTruc", 1, 12, today.getMonth() + 1);
+    populateNumberSelect("namTruc", 2020, 2030, today.getFullYear());
+
+    // ==================== DANH SÁCH ====================
+    const lanhDaoOptions = ["-- Chọn --", "BS Tuyên", "BS Quyền", "BS Tình", "BS Ánh", "BS Giang", "BS Hạnh", "BS Dung"];
+    const chuyenMonOptions = ["-- Chọn --", "Tuyên", "Quyền", "Tình", "Ánh", "Giang", "P. Trang", "Hà", "Oanh", "Seng", "Trỉa", "Hạnh", "Dung", "Yến", "Tr. Trang"];
+    const anNinhOptions = ["-- Chọn --", "Huy - Thọ", "Thọ - Minh", "Minh - Viện", "Viện - Huy", "Tổ bảo vệ 1", "Tổ bảo vệ 2"];
+    const bacSiOptions = ["-- Chọn --", "BS Tuyên", "BS Quyền", "BS Tình", "BS Ánh", "BS Giang", "BS Hà", "BS Oanh", "BS Dung", "BS Yến", "BS Trang"];
+    const khoaOptions = ["-- Chọn --", "Ngoại", "Sản", "PT-GM", "Mắt-TMH", "Nhi", "Nội", "YHCT"];
+
+    function populateSelect(selectId, options) {
+        const select = document.getElementById(selectId);
+        if (!select) return;
+        select.innerHTML = "";
+        options.forEach(opt => {
+            const option = document.createElement("option");
+            option.value = opt === "-- Chọn --" ? "" : opt;
+            option.textContent = opt;
+            select.appendChild(option);
+        });
+    }
+    populateSelect("trucLanhDao", lanhDaoOptions);
+    populateSelect("trucChuyenMon", chuyenMonOptions);
+    populateSelect("trucPhongKham", chuyenMonOptions);
+    populateSelect("trucAnNinh", anNinhOptions);
+
+    function enforceNonNegative(inputEl) {
+        if (!inputEl) return;
+        inputEl.addEventListener("change", function() {
+            if (this.value === "") return; 
+            let v = parseFloat(this.value);
+            if (isNaN(v)) v = 0;
+            if (v < 0) v = 0;
+            this.value = v;
+        });
+        inputEl.addEventListener("input", function() {
+            if (this.value !== "" && parseFloat(this.value) < 0) this.value = 0;
+        });
+    }
+    const xnInputs = ["xnHuyetHoc","xnHoaSinh","xnViSinh","xnNuocTieu","xnDongMau","cdhaXquang","cdhaSieuAm","cdhaCT"];
+    xnInputs.forEach(id => enforceNonNegative(document.getElementById(id)));
+
+    function tinhTongXetNghiem() {
+        let hh = parseFloat(document.getElementById("xnHuyetHoc").value) || 0;
+        let hs = parseFloat(document.getElementById("xnHoaSinh").value) || 0;
+        let vs = parseFloat(document.getElementById("xnViSinh").value) || 0;
+        let nt = parseFloat(document.getElementById("xnNuocTieu").value) || 0;
+        let dm = parseFloat(document.getElementById("xnDongMau").value) || 0;
+        let tong = hh + hs + vs + nt + dm;
+        document.getElementById("tongXetNghiem").innerText = `TỔNG: ${tong}`;
+    }
+    function tinhTongCDHA() {
+        let xq = parseFloat(document.getElementById("cdhaXquang").value) || 0;
+        let sa = parseFloat(document.getElementById("cdhaSieuAm").value) || 0;
+        let ct = parseFloat(document.getElementById("cdhaCT").value) || 0;
+        let tong = xq + sa + ct;
+        document.getElementById("tongCDHA").innerText = `TỔNG: ${tong}`;
+    }
+    xnInputs.forEach(id => document.getElementById(id).addEventListener("input", () => { tinhTongXetNghiem(); tinhTongCDHA(); }));
+    tinhTongXetNghiem(); tinhTongCDHA();
+
+    // ==================== BẢNG BỆNH NHÂN ====================
+    const khoaArr = ["Ngoại", "Sản", "PT-GM", "Mắt-TMH", "Nhi", "Nội", "YHCT"];
+    const giuongKHMau = [37, 13, 0, 15, 15, 55, 15];
+    let benhNhanData = khoaArr.map((khoa, idx) => ({
+        stt: idx+1, khoa, bs: "", cu:0, vaoHC:0, vaoTruc:0, ra:0, chuyenDi:0, chuyenDen:0,
+        chuyenVien:0, xinVe:0, tronVien:0, tuVongNgoaiTru:0, tuVongNoiTru:0, ptCapCuu:0,
+        vaoSang:0, raSang:0, duKienRa:0, giuongKH: giuongKHMau[idx]
+    }));
+
+    function tinhHienCoVaTyLe(row) {
+        const hienCo = row.cu + row.vaoHC + row.vaoTruc + row.vaoSang + row.chuyenDen
+                     - row.ra - row.chuyenDi - row.chuyenVien - row.xinVe - row.tronVien - row.raSang;
+        const tyLe = (row.giuongKH > 0) ? (hienCo / row.giuongKH) * 100 : 0;
+        return { hienCo, tyLe };
+    }
+
+    function renderBangBenhNhan() {
+        const tbody = document.getElementById("tbodyBenhNhan");
+        tbody.innerHTML = "";
+        benhNhanData.forEach((row, idx) => {
+            const { hienCo, tyLe } = tinhHienCoVaTyLe(row);
+            const tr = document.createElement("tr");
+            const selectBs = document.createElement("select"); selectBs.className = "table-select";
+            bacSiOptions.forEach(opt => {
+                const option = document.createElement("option");
+                option.value = opt === "-- Chọn --" ? "" : opt;
+                option.textContent = opt;
+                if (row.bs === option.value) option.selected = true;
+                selectBs.appendChild(option);
+            });
+            selectBs.addEventListener("change", (e) => { row.bs = e.target.value; renderBangBenhNhan(); });
+
+            const createNumberInput = (field, value) => {
+                const input = document.createElement("input");
+                input.type = "number"; input.className = "table-input";
+                input.value = (value === 0) ? "" : value;
+                input.addEventListener("change", function() {
+                    let newVal = this.value === "" ? 0 : parseFloat(this.value);
+                    if (isNaN(newVal)) newVal = 0;
+                    if (newVal < 0) newVal = 0;
+                    row[field] = newVal;
+                    if (newVal === 0) this.value = "";
+                    else this.value = newVal;
+                    renderBangBenhNhan();
+                });
+                return input;
+            };
+            const tdKhoa = document.createElement("td"); tdKhoa.textContent = row.khoa;
+            const tdBs = document.createElement("td"); tdBs.appendChild(selectBs);
+            const tdCu = document.createElement("td"); tdCu.appendChild(createNumberInput("cu", row.cu));
+            const tdVaoHC = document.createElement("td"); tdVaoHC.appendChild(createNumberInput("vaoHC", row.vaoHC));
+            const tdVaoTruc = document.createElement("td"); tdVaoTruc.appendChild(createNumberInput("vaoTruc", row.vaoTruc));
+            const tdRa = document.createElement("td"); tdRa.appendChild(createNumberInput("ra", row.ra));
+            const tdChuyenDi = document.createElement("td"); tdChuyenDi.appendChild(createNumberInput("chuyenDi", row.chuyenDi));
+            const tdChuyenDen = document.createElement("td"); tdChuyenDen.appendChild(createNumberInput("chuyenDen", row.chuyenDen));
+            const tdChuyenVien = document.createElement("td"); tdChuyenVien.appendChild(createNumberInput("chuyenVien", row.chuyenVien));
+            const tdXinVe = document.createElement("td"); tdXinVe.appendChild(createNumberInput("xinVe", row.xinVe));
+            const tdTronVien = document.createElement("td"); tdTronVien.appendChild(createNumberInput("tronVien", row.tronVien));
+            const tdTuVongNT = document.createElement("td"); tdTuVongNT.appendChild(createNumberInput("tuVongNgoaiTru", row.tuVongNgoaiTru));
+            const tdTuVongNTr = document.createElement("td"); tdTuVongNTr.appendChild(createNumberInput("tuVongNoiTru", row.tuVongNoiTru));
+            const tdPtCapCuu = document.createElement("td"); tdPtCapCuu.appendChild(createNumberInput("ptCapCuu", row.ptCapCuu));
+            const tdVaoSang = document.createElement("td"); tdVaoSang.appendChild(createNumberInput("vaoSang", row.vaoSang));
+            const tdRaSang = document.createElement("td"); tdRaSang.appendChild(createNumberInput("raSang", row.raSang));
+            const tdHienCo = document.createElement("td"); tdHienCo.textContent = hienCo;
+            const tdDuKienRa = document.createElement("td"); tdDuKienRa.appendChild(createNumberInput("duKienRa", row.duKienRa));
+            const tdGiuongKH = document.createElement("td"); tdGiuongKH.textContent = row.giuongKH;
+            const tdTyLe = document.createElement("td"); tdTyLe.textContent = tyLe.toFixed(1) + "%";
+            tr.append(tdKhoa, tdBs, tdCu, tdVaoHC, tdVaoTruc, tdRa, tdChuyenDi, tdChuyenDen, tdChuyenVien, tdXinVe, tdTronVien, tdTuVongNT, tdTuVongNTr, tdPtCapCuu, tdVaoSang, tdRaSang, tdHienCo, tdDuKienRa, tdGiuongKH, tdTyLe);
+            tbody.appendChild(tr);
+        });
+        tinhTongBenhNhan();
+    }
+
+    function tinhTongBenhNhan() {
+        let tong = {cu:0, vaoHC:0, vaoTruc:0, ra:0, chuyenDi:0, chuyenDen:0, chuyenVien:0, xinVe:0, tronVien:0, tuVongNgoaiTru:0, tuVongNoiTru:0, ptCapCuu:0, vaoSang:0, raSang:0, hienCo:0, duKienRa:0, giuongKH:0};
+        benhNhanData.forEach(r => {
+            const { hienCo } = tinhHienCoVaTyLe(r);
+            tong.cu += r.cu; tong.vaoHC += r.vaoHC; tong.vaoTruc += r.vaoTruc; tong.ra += r.ra;
+            tong.chuyenDi += r.chuyenDi; tong.chuyenDen += r.chuyenDen; tong.chuyenVien += r.chuyenVien;
+            tong.xinVe += r.xinVe; tong.tronVien += r.tronVien; tong.tuVongNgoaiTru += r.tuVongNgoaiTru;
+            tong.tuVongNoiTru += r.tuVongNoiTru; tong.ptCapCuu += r.ptCapCuu; tong.vaoSang += r.vaoSang;
+            tong.raSang += r.raSang; tong.hienCo += hienCo; tong.duKienRa += r.duKienRa; tong.giuongKH += r.giuongKH;
+        });
+        const tyLeTong = tong.giuongKH > 0 ? (tong.hienCo / tong.giuongKH)*100 : 0;
+        document.getElementById("footBenhNhan").innerHTML = `<tr style="background:#eef2f7;"><td><strong>TỔNG SỐ</strong></td><td></td><td>${tong.cu}</td><td>${tong.vaoHC}</td><td>${tong.vaoTruc}</td><td>${tong.ra}</td><td>${tong.chuyenDi}</td><td>${tong.chuyenDen}</td><td>${tong.chuyenVien}</td><td>${tong.xinVe}</td><td>${tong.tronVien}</td><td>${tong.tuVongNgoaiTru}</td><td>${tong.tuVongNoiTru}</td><td>${tong.ptCapCuu}</td><td>${tong.vaoSang}</td><td>${tong.raSang}</td><td>${tong.hienCo}</td><td>${tong.duKienRa}</td><td>${tong.giuongKH}</td><td>${tyLeTong.toFixed(1)}%</td></tr>`;
+    }
+    renderBangBenhNhan();
+
+    // ==================== BẢNG ĐỘNG CHUYÊN MÔN ====================
+    function initDynamicTable(tableId, defaultRows, columnsConfig, datetimeColumns = [], selectColumns = []) {
+        const tbody = document.querySelector(`#${tableId} tbody`);
+        function renderRows() {
+            tbody.innerHTML = "";
+            defaultRows.forEach((row, idx) => {
+                let tr = document.createElement("tr");
+                let sttTd = document.createElement("td"); sttTd.textContent = idx+1; tr.appendChild(sttTd);
+                columnsConfig.forEach(col => {
+                    if (col === "actions") {
+                        let td = document.createElement("td");
+                        let btn = document.createElement("button");
+                        btn.textContent = "Xóa"; btn.className = "remove-row-btn";
+                        btn.addEventListener("click", () => { defaultRows.splice(idx, 1); renderRows(); });
+                        td.appendChild(btn); tr.appendChild(td);
+                    } else {
+                        let td = document.createElement("td");
+                        
+                        if (selectColumns.includes(col)) {
+                            let input = document.createElement("select"); input.className = "table-select";
+                            const options = col === "khoa" ? khoaOptions : [];
+                            options.forEach(opt => {
+                                const option = document.createElement("option");
+                                option.value = opt === "-- Chọn --" ? "" : opt;
+                                option.textContent = opt;
+                                if (row[col] === option.value) option.selected = true;
+                                input.appendChild(option);
+                            });
+                            input.addEventListener("change", (e) => { row[col] = e.target.value; });
+                            td.appendChild(input);
+                        } else if (datetimeColumns.includes(col)) {
+                            let container = document.createElement("div");
+                            container.style.display = "flex";
+                            container.style.gap = "4px";
+
+                            let timeInput = document.createElement("input");
+                            timeInput.type = "time"; timeInput.className = "table-input";
+                            timeInput.style.padding = "4px";
+
+                            let dateInput = document.createElement("input");
+                            dateInput.type = "date"; dateInput.className = "table-input";
+                            dateInput.style.padding = "4px";
+
+                            if (row[col]) {
+                                let parts = row[col].split(" ");
+                                if (parts.length === 2) {
+                                    timeInput.value = parts[0];
+                                    dateInput.value = parts[1];
+                                }
+                            }
+
+                            const updateDateTime = () => {
+                                row[col] = `${timeInput.value} ${dateInput.value}`.trim();
+                            };
+
+                            timeInput.addEventListener("change", updateDateTime);
+                            dateInput.addEventListener("change", updateDateTime);
+
+                            container.appendChild(timeInput);
+                            container.appendChild(dateInput);
+                            td.appendChild(container);
+                        } else {
+                            let input = document.createElement("input");
+                            input.type = "text"; input.className = "table-input";
+                            input.value = row[col] || "";
+                            input.addEventListener("change", (e) => { row[col] = e.target.value; });
+                            td.appendChild(input);
+                        }
+                        tr.appendChild(td);
+                    }
+                });
+                tbody.appendChild(tr);
+            });
+        }
+        window[`addRow_${tableId}`] = function() { defaultRows.push(Object.fromEntries(columnsConfig.filter(c=>c!="actions").map(c=>[c,""]))); renderRows(); };
+        renderRows();
+    }
+
+    let ptccRows = [{hoTen:"", diaChi:"", gioVao:"", chuanDoanTruocMo:"", chuanDoanSauKetQua:"", gioPTCC:"", khoa:""}];
+    let vaoVienRows = [{hoTen:"", diaChi:"", gioVao:"", chuanDoanVao:"", khoa:""}];
+    let chuyenVienRows = [{hoTen:"", diaChi:"", gioVao:"", khoa:"", chuanDoanVao:"", gioChuyen:"", chuanDoanChuyen:""}];
+    let raVienRows = [{hoTen:"", diaChi:"", gioVao:"", khoa:"", chuanDoanVao:"", gioRa:"", chuanDoanRa:""}];
+    
+    initDynamicTable("tablePTCC", ptccRows, ["hoTen","diaChi","gioVao","chuanDoanTruocMo","chuanDoanSauKetQua","gioPTCC","khoa","actions"], ["gioVao","gioPTCC"], ["khoa"]);
+    initDynamicTable("tableVaoVien", vaoVienRows, ["hoTen","diaChi","gioVao","chuanDoanVao","khoa","actions"], ["gioVao"], ["khoa"]);
+    initDynamicTable("tableChuyenVien", chuyenVienRows, ["hoTen","diaChi","gioVao","khoa","chuanDoanVao","gioChuyen","chuanDoanChuyen","actions"], ["gioVao","gioChuyen"], ["khoa"]);
+    initDynamicTable("tableRaVien", raVienRows, ["hoTen","diaChi","gioVao","khoa","chuanDoanVao","gioRa","chuanDoanRa","actions"], ["gioVao","gioRa"], ["khoa"]);
+
+    document.querySelectorAll(".add-row-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const target = btn.getAttribute("data-table");
+            if (target === "ptcc") window.addRow_tablePTCC?.();
+            else if (target === "vaovien") window.addRow_tableVaoVien?.();
+            else if (target === "chuyenvien") window.addRow_tableChuyenVien?.();
+            else if (target === "ravien") window.addRow_tableRaVien?.();
+        });
+    });
+
+    // ==================== XUẤT EXCEL ====================
+    function formatDT(val) {
+        if (!val) return "";
+        let parts = val.split(" ");
+        if (parts.length === 2 && parts[1].includes("-")) {
+            let d = parts[1].split("-");
+            return `${parts[0]} ${d[2]}/${d[1]}/${d[0]}`;
+        }
+        return val;
+    }
+
+    document.getElementById("xuatExcelBtn").addEventListener("click", () => {
+        const ngay = document.getElementById("ngayTruc").value, thang = document.getElementById("thangTruc").value, nam = document.getElementById("namTruc").value;
+        const rows = [];
+        const merges = []; 
+        const customRowHeights = {}; // Biến lưu trữ chiều cao tính toán riêng cho từng dòng
+
+        function addMergeRowAcross(r) {
+            merges.push({ s: { r: r, c: 0 }, e: { r: r, c: 19 } });
+        }
+
+        // HÀM MỚI: Vừa merge cell, vừa tính toán ép chiều cao cho các dòng dữ liệu phần III
+        function addMergedRow(rowData, colSpans, isDataRow = false) {
+            let newRow = [];
+            let currentCol = 0;
+            let r = rows.length;
+            let maxLines = 1;
+
+            for(let i = 0; i < rowData.length; i++) {
+                let val = rowData[i];
+                newRow.push(val);
+                let span = colSpans[i] || 1;
+                
+                if (span > 1) {
+                    merges.push({ s: { r: r, c: currentCol }, e: { r: r, c: currentCol + span - 1 } });
+                }
+                
+                // THUẬT TOÁN ÉP CHIỀU CAO: Tính độ rộng ước tính của các ô đã gộp để đếm số dòng bị wrap
+                if (isDataRow && val) {
+                    let str = val.toString();
+                    let widthCh = 0;
+                    for(let k = 0; k < span; k++) {
+                        let actualCol = currentCol + k;
+                        // Cột A, B rộng 15 (trừ lề ~ 14 ký tự), C-T rộng 10 (trừ lề ~ 9 ký tự)
+                        widthCh += (actualCol === 0 || actualCol === 1) ? 14 : 9; 
+                    }
+                    
+                    let wrapLines = Math.ceil(str.length / widthCh);
+                    let enterLines = (str.match(/\n/g) || []).length + 1; // Trường hợp người dùng có gõ Enter
+                    let lines = Math.max(wrapLines, enterLines);
+                    
+                    if (lines > maxLines) {
+                        maxLines = lines;
+                    }
+                }
+
+                for(let s = 1; s < span; s++) {
+                    newRow.push("");
+                }
+                currentCol += span;
+            }
+            rows.push(newRow);
+            
+            // Ghi nhận chiều cao (mỗi dòng text ~ 16pt, cộng thêm chút đệm 4pt)
+            if (isDataRow) {
+                customRowHeights[r] = (maxLines * 16) + 4; 
+            }
+        }
+
+        // ================= XUẤT DỮ LIỆU =================
+        addMergeRowAcross(rows.length); rows.push(["BÁO CÁO GIAO BAN"]);
+        addMergeRowAcross(rows.length); rows.push([`(Kíp trực ngày ${ngay} tháng ${thang} năm ${nam})`]);
+        rows.push([]);
+
+        // I. THÀNH PHẦN TRỰC
+        addMergeRowAcross(rows.length); rows.push(["I. THÀNH PHẦN TRỰC"]);
+        addMergeRowAcross(rows.length); rows.push(["Trực Lãnh Đạo: " + document.getElementById("trucLanhDao").value]);
+        addMergeRowAcross(rows.length); rows.push(["Trực Chuyên môn: " + document.getElementById("trucChuyenMon").value]);
+        addMergeRowAcross(rows.length); rows.push(["Trực Phòng khám: " + document.getElementById("trucPhongKham").value]);
+        addMergeRowAcross(rows.length); rows.push(["Trực An ninh, bảo vệ: " + document.getElementById("trucAnNinh").value]);
+        rows.push([]);
+
+        const xnCdhaRowIndex = rows.length; 
+        
+        merges.push({ s: { r: xnCdhaRowIndex, c: 0 }, e: { r: xnCdhaRowIndex, c: 1 } }); 
+        merges.push({ s: { r: xnCdhaRowIndex, c: 3 }, e: { r: xnCdhaRowIndex, c: 5 } }); 
+        
+        rows.push(["Trực xét nghiệm", "", "", "Trực chẩn đoán hình ảnh", "", ""]);
+
+        const getVal = id => parseFloat(document.getElementById(id).value) || 0;
+        let tongXN = parseInt(document.getElementById("tongXetNghiem").innerText.replace("TỔNG: ","").trim()) || 0;
+        let tongCDHA = parseInt(document.getElementById("tongCDHA").innerText.replace("TỔNG: ","").trim()) || 0;
+
+        rows.push(["Huyết học", getVal("xnHuyetHoc") || "", "", "Xquang", "", getVal("cdhaXquang") || ""]);
+        merges.push({ s: { r: xnCdhaRowIndex + 1, c: 3 }, e: { r: xnCdhaRowIndex + 1, c: 4 } });
+
+        rows.push(["Hóa sinh", getVal("xnHoaSinh") || "", "", "Siêu âm", "", getVal("cdhaSieuAm") || ""]);
+        merges.push({ s: { r: xnCdhaRowIndex + 2, c: 3 }, e: { r: xnCdhaRowIndex + 2, c: 4 } });
+
+        rows.push(["Vi sinh", getVal("xnViSinh") || "", "", "CT-Scanner", "", getVal("cdhaCT") || ""]);
+        merges.push({ s: { r: xnCdhaRowIndex + 3, c: 3 }, e: { r: xnCdhaRowIndex + 3, c: 4 } });
+
+        rows.push(["Nước tiểu", getVal("xnNuocTieu") || "", "", "TỔNG CĐHA", "", tongCDHA]);
+        merges.push({ s: { r: xnCdhaRowIndex + 4, c: 3 }, e: { r: xnCdhaRowIndex + 4, c: 4 } });
+
+        rows.push(["Đông máu", getVal("xnDongMau") || "", "", "", "", ""]);
+        rows.push(["TỔNG XN", tongXN, "", "", "", ""]);
+        
+        rows.push([]);
+        
+        addMergeRowAcross(rows.length);
+        let thietBiStr = "Tình hình trang thiết bị, vật tư: " + document.getElementById("tinhTrangThietBi").value;
+        customRowHeights[rows.length] = Math.max(Math.ceil(thietBiStr.length / 180), (thietBiStr.match(/\n/g) || []).length + 1) * 16 + 4;
+        rows.push([thietBiStr]);
+        rows.push([]);
+
+        // II. TÌNH HÌNH BỆNH NHÂN
+        addMergeRowAcross(rows.length);
+        rows.push(["II. TÌNH HÌNH BỆNH NHÂN"]);
+        
+        const headerBN = ["Khoa","BS","Cũ","Vào HC","Vào Trực","Ra","Chuyển khoa (Đi)","Chuyển khoa (Đến)","Chuyển viện","Xin về","Trốn viện","Tử vong NT","Tử vong NTrú","PT Cấp cứu","Vào sáng","Ra sáng","Hiện có","Dự kiến ra","Giường KH","Tỷ lệ %"];
+        const headerBNRowIndex = rows.length;
+        rows.push(headerBN);
+
+        benhNhanData.forEach(r => {
+            const { hienCo, tyLe } = tinhHienCoVaTyLe(r);
+            rows.push([r.khoa, r.bs, r.cu, r.vaoHC, r.vaoTruc, r.ra, r.chuyenDi, r.chuyenDen, r.chuyenVien, r.xinVe, r.tronVien, r.tuVongNgoaiTru, r.tuVongNoiTru, r.ptCapCuu, r.vaoSang, r.raSang, hienCo, r.duKienRa, r.giuongKH, tyLe.toFixed(1)+"%"]);
+        });
+
+        let tong = {cu:0, vaoHC:0, vaoTruc:0, ra:0, chuyenDi:0, chuyenDen:0, chuyenVien:0, xinVe:0, tronVien:0, tuVongNgoaiTru:0, tuVongNoiTru:0, ptCapCuu:0, vaoSang:0, raSang:0, hienCo:0, duKienRa:0, giuongKH:0};
+        benhNhanData.forEach(r => {
+            const { hienCo } = tinhHienCoVaTyLe(r);
+            tong.cu += r.cu; tong.vaoHC += r.vaoHC; tong.vaoTruc += r.vaoTruc; tong.ra += r.ra;
+            tong.chuyenDi += r.chuyenDi; tong.chuyenDen += r.chuyenDen; tong.chuyenVien += r.chuyenVien;
+            tong.xinVe += r.xinVe; tong.tronVien += r.tronVien; tong.tuVongNgoaiTru += r.tuVongNgoaiTru;
+            tong.tuVongNoiTru += r.tuVongNoiTru; tong.ptCapCuu += r.ptCapCuu; tong.vaoSang += r.vaoSang;
+            tong.raSang += r.raSang; tong.hienCo += hienCo; tong.duKienRa += r.duKienRa; tong.giuongKH += r.giuongKH;
+        });
+        const tyTong = tong.giuongKH > 0 ? (tong.hienCo / tong.giuongKH)*100 : 0;
+        
+        const totalBNRowIndex = rows.length; 
+        rows.push(["TỔNG SỐ","",tong.cu,tong.vaoHC,tong.vaoTruc,tong.ra,tong.chuyenDi,tong.chuyenDen,tong.chuyenVien,tong.xinVe,tong.tronVien,tong.tuVongNgoaiTru,tong.tuVongNoiTru,tong.ptCapCuu,tong.vaoSang,tong.raSang,tong.hienCo,tong.duKienRa,tong.giuongKH,tyTong.toFixed(1)+"%"]);
+        
+        merges.push({ s: { r: totalBNRowIndex, c: 0 }, e: { r: totalBNRowIndex, c: 1 } });
+
+        // III. TÌNH HÌNH CHUYÊN MÔN
+        rows.push([]);
+        addMergeRowAcross(rows.length);
+        rows.push(["III. TÌNH HÌNH CHUYÊN MÔN"]);
+
+        // Gọi addMergedRow có kèm tham số `true` để nó tính toán chiều cao
+        // A. PTCC
+        addMergeRowAcross(rows.length);
+        rows.push(["A. Bệnh nhân PTCC"]);
+        const ptccSpans = [1, 3, 3, 2, 3, 4, 2, 2];
+        const ptccHeaderRow = rows.length;
+        addMergedRow(["STT","Họ tên","Địa chỉ","Giờ vào","Chẩn đoán trước mổ","Chẩn đoán sau mổ & kết quả","Giờ PTCC","Khoa"], ptccSpans, true);
+        ptccRows.forEach((r,i)=> addMergedRow([i+1, r.hoTen, r.diaChi, formatDT(r.gioVao), r.chuanDoanTruocMo, r.chuanDoanSauKetQua, formatDT(r.gioPTCC), r.khoa], ptccSpans, true));
+
+        // B. Vào viện
+        rows.push([]);
+        addMergeRowAcross(rows.length);
+        rows.push(["B. Bệnh nhân vào viện"]);
+        const vaoVienSpans = [1, 4, 4, 2, 6, 3];
+        const vvHeaderRow = rows.length;
+        addMergedRow(["STT","Họ tên","Địa chỉ","Giờ vào","Chẩn đoán lúc vào","Khoa"], vaoVienSpans, true);
+        vaoVienRows.forEach((r,i)=> addMergedRow([i+1, r.hoTen, r.diaChi, formatDT(r.gioVao), r.chuanDoanVao, r.khoa], vaoVienSpans, true));
+
+        // C. Chuyển viện
+        rows.push([]);
+        addMergeRowAcross(rows.length);
+        rows.push(["C. Bệnh nhân chuyển viện"]);
+        const chuyenVienSpans = [1, 3, 3, 2, 2, 4, 2, 3];
+        const cvHeaderRow = rows.length; 
+        addMergedRow(["STT","Họ tên","Địa chỉ","Giờ vào","Khoa","Chẩn đoán lúc vào","Giờ chuyển","Chẩn đoán lúc chuyển"], chuyenVienSpans, true);
+        chuyenVienRows.forEach((r,i)=> addMergedRow([i+1, r.hoTen, r.diaChi, formatDT(r.gioVao), r.khoa, r.chuanDoanVao, formatDT(r.gioChuyen), r.chuanDoanChuyen], chuyenVienSpans, true));
+
+        // D. Ra viện
+        rows.push([]);
+        addMergeRowAcross(rows.length);
+        rows.push(["D. Bệnh nhân ra viện, xin về"]);
+        const rvHeaderRow = rows.length;
+        addMergedRow(["STT","Họ tên","Địa chỉ","Giờ vào","Khoa","Chẩn đoán lúc vào","Giờ ra","Chẩn đoán lúc ra"], chuyenVienSpans, true);
+        raVienRows.forEach((r,i)=> addMergedRow([i+1, r.hoTen, r.diaChi, formatDT(r.gioVao), r.khoa, r.chuanDoanVao, formatDT(r.gioRa), r.chuanDoanRa], chuyenVienSpans, true));
+
+        const ws = XLSX.utils.aoa_to_sheet(rows);
+
+        // === THIẾT LẬP TRANG IN (PAGE SETUP, MARGINS & VIEWS) ===
+        ws['!pageSetup'] = { 
+            paperSize: "9", 
+            orientation: "landscape", 
+            scale: "100" 
+        }; 
+
+        const marginInch = 0.5 / 2.54; 
+        ws['!margins'] = { 
+            left: marginInch, 
+            right: marginInch, 
+            top: marginInch, 
+            bottom: marginInch, 
+            header: 0.3, 
+            footer: 0.3 
+        };
+
+        ws['!views'] = [{ zoom: 82 }];
+
+        // === 1. ĐỊNH DẠNG ĐỘ RỘNG CỘT ===
+        const colWidths = [
+            { wch: 15 }, // A
+            { wch: 15 }, // B
+        ];
+        for (let i = 2; i < 20; i++) colWidths.push({ wch: 10 }); // C-T
+        ws['!cols'] = colWidths;
+
+        // === 2. CÀI ĐẶT ĐỘ CAO CỦA HÀNG (SỬ DỤNG KẾT QUẢ TÍNH TOÁN) ===
+        const rowHeights = [];
+        for (let i = 0; i < rows.length; i++) {
+            if (rows[i].length === 0) {
+                rowHeights.push({ hpt: 8 }); // Hàng trống
+            } else if (customRowHeights[i]) {
+                // Áp dụng chiều cao đã được thuật toán tính toán sẵn cho các ô bị gộp
+                rowHeights.push({ hpt: customRowHeights[i] }); 
+            } else {
+                rowHeights.push({}); // Auto-fit mặc định cho các ô không bị gộp
+            }
+        }
+        ws['!rows'] = rowHeights;
+
+        // === 3. GÁN THÔNG SỐ GỘP Ô VÀO SHEET ===
+        ws['!merges'] = merges;
+
+        // === 4. STYLES VÀ BORDERS ===
+        const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+        if (range.e.c < 19) range.e.c = 19; 
+        if (range.e.r < rows.length - 1) range.e.r = rows.length - 1; 
+        
+        for (let R = 0; R <= range.e.r; ++R) {
+            for (let C = 0; C <= range.e.c; ++C) {
+                const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+                if (!ws[cellAddress]) ws[cellAddress] = { t: 's', v: "" }; 
+
+                const val = ws[cellAddress].v;
+                let isBold = false;
+                let sz = 12; 
+                let hAlign = "left";
+                let fillConfig = null;
+                
+                let isTableArea = false;
+                if (R >= headerBNRowIndex && R <= headerBNRowIndex + benhNhanData.length + 1) isTableArea = true;
+                if (R >= ptccHeaderRow && R <= ptccHeaderRow + ptccRows.length) isTableArea = true;
+                if (R >= vvHeaderRow && R <= vvHeaderRow + vaoVienRows.length) isTableArea = true;
+                if (R >= cvHeaderRow && R <= cvHeaderRow + chuyenVienRows.length) isTableArea = true;
+                if (R >= rvHeaderRow && R <= rvHeaderRow + raVienRows.length) isTableArea = true;
+
+                let isXNTable = (R >= xnCdhaRowIndex && R <= xnCdhaRowIndex + 6 && (C === 0 || C === 1));
+                let isCDHATable = (R >= xnCdhaRowIndex && R <= xnCdhaRowIndex + 4 && (C >= 3 && C <= 5));
+                
+                let isSection3Header = (R === ptccHeaderRow || R === vvHeaderRow || R === cvHeaderRow || R === rvHeaderRow);
+
+                if (R === 0) {
+                    isBold = true; sz = 16; hAlign = "center"; 
+                }
+                else if (R === 1) {
+                    hAlign = "center";
+                }
+                else if (val === "I. THÀNH PHẦN TRỰC" || val === "II. TÌNH HÌNH BỆNH NHÂN" || val === "III. TÌNH HÌNH CHUYÊN MÔN") {
+                    isBold = true;
+                }
+                else if (val === "A. Bệnh nhân PTCC" || val === "B. Bệnh nhân vào viện" || val === "C. Bệnh nhân chuyển viện" || val === "D. Bệnh nhân ra viện, xin về") {
+                    isBold = true;
+                }
+                else if (val === "Trực xét nghiệm" || val === "Trực chẩn đoán hình ảnh") {
+                    isBold = true;
+                    hAlign = "center";
+                    fillConfig = { fgColor: { rgb: "DCE6F1" } };
+                }
+                else if (R === xnCdhaRowIndex + 6 && C <= 1) { 
+                    isBold = true;
+                    hAlign = "center"; 
+                }
+                else if (R === xnCdhaRowIndex + 4 && C >= 3 && C <= 5) { 
+                    isBold = true;
+                    hAlign = "center";
+                }
+                else if (R === headerBNRowIndex || isSection3Header) {
+                    hAlign = "center"; 
+                    isBold = true; 
+                    fillConfig = { fgColor: { rgb: "DCE6F1" } };
+                }
+                else if (R === totalBNRowIndex) {
+                    isBold = true;
+                    fillConfig = { fgColor: { rgb: "F2F2F2" } }; 
+                    hAlign = "center"; 
+                }
+                else if (typeof val === 'number' || (!isNaN(parseFloat(val)) && isFinite(val) && val !== "")) {
+                    hAlign = "center";
+                }
+
+                if (isTableArea && R > headerBNRowIndex + benhNhanData.length + 1 && !isSection3Header) {
+                    if (C === 0 || C === 3 || C === 6) hAlign = "center"; 
+                    if (C === 1 || C === 2 || C === 4 || C === 5 || C === 7) hAlign = "left"; 
+                }
+
+                if (isTableArea && R > headerBNRowIndex && R < totalBNRowIndex) {
+                    if (C === 0 || C === 1) hAlign = "left"; 
+                }
+
+                let cellStyle = {
+                    font: { name: "Times New Roman", sz: sz, bold: isBold },
+                    alignment: { vertical: "center", horizontal: hAlign, wrapText: true }
+                };
+
+                if (fillConfig) {
+                    cellStyle.fill = fillConfig;
+                }
+
+                if (isTableArea || isXNTable || isCDHATable) {
+                    cellStyle.border = {
+                        top: { style: "thin", color: { rgb: "000000" } },
+                        bottom: { style: "thin", color: { rgb: "000000" } },
+                        left: { style: "thin", color: { rgb: "000000" } },
+                        right: { style: "thin", color: { rgb: "000000" } }
+                    };
+                }
+
+                ws[cellAddress].s = cellStyle;
+            }
+        }
+
+        ws['!ref'] = XLSX.utils.encode_range(range);
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "BaoCao_GiaoBan");
+        XLSX.writeFile(wb, `BaoCao_GiaoBan_${ngay}_${thang}_${nam}.xlsx`);
+    });
+</script>
+</body>
+</html>
