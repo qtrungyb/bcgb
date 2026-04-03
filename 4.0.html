@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Báo Cáo Giao Ban - Modern UI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+    <style>
+        /* ================= BẢN MÀU & RESET ================= */
+        :root {
+            --primary: #0284c7;
+            --primary-hover: #0369a1;
+            --success: #16a34a;
+            --success-hover: #15803d;
+            --danger: #ef4444;
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #334155;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --row-hover: #f1f5f9;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: var(--bg-body);
+            color: var(--text-main);
+            padding: 30px 20px;
+            line-height: 1.5;
+        }
+
+        /* ================= CARD & HEADER ================= */
+        .report-card {
+            max-width: 1440px;
+            margin: 0 auto;
+            background: var(--bg-card);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            padding: 32px 40px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 800;
+            color: #0f172a;
+            text-align: center;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+        }
+
+        .date-row {
+            text-align: center;
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-weight: 500;
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .date-select {
+            padding: 8px 16px;
+            border: 1px dashed #cbd5e1; /* Đổi sang Flat Design nét đứt */
+            border-radius: 8px;
+            background: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary);
+            cursor: pointer;
+            outline: none;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        .date-select:hover { background: #f8fafc; border-color: #94a3b8; }
+        .date-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1);
+        }
+
+        h2 {
+            font-size: 18px;
+            font-weight: 700;
+            background: #f0f9ff;
+            display: inline-block;
+            padding: 8px 24px;
+            border-radius: 8px;
+            color: var(--primary);
+            margin: 32px 0 20px 0;
+            border: 1px solid #e0f2fe;
+        }
+
+        h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #334155;
+            margin: 28px 0 12px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        h3::before {
+            content: "";
+            display: block;
+            width: 6px;
+            height: 18px;
+            background: var(--primary);
+            border-radius: 4px;
+        }
+
+        .section {
+            background: #fff;
+            margin-bottom: 32px;
+        }
+
+        /* ================= MỤC I. THÀNH PHẦN TRỰC (FLAT DESIGN) ================= */
+        .grid-3-cols {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+            align-items: stretch;
+        }
+
+        .flex-col { display: flex; flex-direction: column; }
+        .staff-vertical { display: flex; flex-direction: column; gap: 16px; }
+
+        .staff-item label {
+            display: block;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 6px;
+            font-size: 0.9rem;
+        }
+
+        /* Select nhân sự Flat Design */
+        .staff-item select {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px dashed #cbd5e1; /* Viền nét đứt */
+            background: #ffffff;
+            font-size: 0.95rem;
+            color: var(--primary);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+        .staff-item select:hover { background: #f8fafc; border-color: #94a3b8; }
+        .staff-item select:focus {
+            outline: none;
+            background: #fff;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1);
+        }
+
+        .subgroup {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid var(--border-color); /* Nền container vẫn giữ khối */
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .module-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #475569;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .sub-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px dashed #e2e8f0;
+        }
+        .sub-row:last-of-type { border-bottom: none; }
+        .sub-row span {
+            font-weight: 500;
+            color: #334155;
+            font-size: 0.95rem;
+        }
+        
+        /* Input số lượng Xét Nghiệm / CĐHA Flat Design */
+        .sub-row input[type="number"] {
+            width: 80px;
+            padding: 8px 12px;
+            border: 1px dashed #cbd5e1; /* Nét đứt phẳng */
+            border-radius: 6px;
+            text-align: center;
+            font-size: 15px;
+            font-weight: 700;
+            color: #0369a1;
+            background: #ffffff;
+            transition: all 0.2s ease-in-out;
+        }
+        .sub-row input[type="number"]:hover {
+            border-color: #94a3b8;
+            background: #f8fafc;
+        }
+        .sub-row input[type="number"]:focus {
+            outline: none;
+            background: #fff;
+            border: 1px dashed var(--primary);
+            box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1);
+            transform: scale(1.05); /* Vẫn giữ hiệu ứng bật nhẹ thu hút mắt */
+        }
+
+        .total-wrapper { margin-top: auto; padding-top: 20px; text-align: right; }
+        .total-badge {
+            background: #e0f2fe;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--primary-hover);
+            display: inline-block;
+        }
+
+        /* Textarea Trang Thiết Bị Flat Design */
+        textarea#tinhTrangThietBi {
+            width: 100%;
+            border: 1px dashed #cbd5e1; /* Nét đứt phẳng */
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-family: inherit;
+            margin-top: 8px;
+            resize: vertical;
+            background: #ffffff;
+            color: #0f172a;
+            transition: all 0.2s ease-in-out;
+        }
+        textarea#tinhTrangThietBi:hover { background: #f8fafc; border-color: #94a3b8; }
+        textarea#tinhTrangThietBi:focus { 
+            outline: none; 
+            background: #fff;
+            border-color: var(--primary); 
+            box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1); 
+        }
+
+        /* ================= BẢNG BIỂU CHUNG ================= */
+        .table-wrapper {
+            overflow-x: auto;
+            margin: 8px 0 12px 0;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        
+        .table-wrapper::-webkit-scrollbar { width: 8px; height: 8px; }
+        .table-wrapper::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
+        .table-wrapper::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+
+        table {
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+            font-size: 13px;
+        }
+
+        th {
+            position: sticky;
+            top: 0;
+            background: #f8fafc;
+            color: #334155;
+            font-weight: 600;
+            padding: 10px 4px;
+            text-align: center;
+            vertical-align: middle;
+            border-bottom: 1px solid var(--border-color);
+            border-right: 1px solid var(--border-color);
+            z-index: 10;
+        }
+        
+        td {
+            padding: 6px 2px;
+            border-bottom: 1px solid var(--border-color);
+            border-right: 1px solid var(--border-color);
+            text-align: center;
+            vertical-align: middle;
+            transition: background 0.15s;
+        }
+
+        th:last-child, td:last-child { border-right: none; }
+        tbody tr:hover td { background-color: #f1f5f9; }
+
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+
+        /* ================= MỤC II. TÌNH HÌNH BỆNH NHÂN ================= */
+        #bangBenhNhan {
+            table-layout: fixed; 
+            width: 100%;
+        }
+        
+        .bg-chung { background: #f8fafc !important; color: #334155 !important; }
+        .bg-vao { background: #dcfce7 !important; color: #166534 !important; }
+        .bg-ra { background: #fee2e2 !important; color: #991b1b !important; }
+        .bg-ck { background: #fef9c3 !important; color: #854d0e !important; }
+        .bg-tv { background: #f1f5f9 !important; color: #475569 !important; }
+        .bg-pt { background: #e0e7ff !important; color: #3730a3 !important; }
+        .bg-tong { background: #dbeafe !important; color: #1e3a8a !important; }
+
+        .group-divider { border-right: 2px solid #94a3b8 !important; }
+
+        #bangBenhNhan th { 
+            font-size: 11px; 
+            padding: 6px 2px; 
+            white-space: nowrap; 
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        #bangBenhNhan th:nth-child(1) { width: 120px; min-width: 120px; }
+        #bangBenhNhan th:nth-child(2) { width: 120px; min-width: 120px; }
+
+        #bangBenhNhan td:nth-child(1) { 
+            text-align: left; 
+            padding-left: 8px; 
+            font-weight: 700; 
+            color: #334155;
+            white-space: nowrap; 
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        #footBenhNhan td {
+            position: sticky;
+            bottom: 0;
+            font-weight: 700;
+            border-top: 2px solid var(--border-color);
+            z-index: 9;
+            padding: 10px 2px;
+        }
+
+        .table-input-compact {
+            width: 100%;
+            min-width: 0; 
+            padding: 6px 0;
+            border: 1px dashed transparent; 
+            border-radius: 4px;
+            font-size: 13px; 
+            font-weight: 600;
+            text-align: center;
+            color: var(--primary);
+            background: transparent;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+        
+        .table-input-compact:hover {
+            background: #ffffff;
+            border-color: #cbd5e1;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .table-input-compact:focus {
+            outline: none;
+            background: #fff;
+            border: 1px dashed var(--primary);
+            box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+            transform: scale(1.15); 
+            z-index: 50;
+            position: relative;
+            color: #0369a1;
+        }
+
+        .table-select-compact {
+            width: 100%;
+            min-width: 0; 
+            padding: 6px 2px;
+            border: 1px dashed transparent;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600; 
+            color: var(--primary); 
+            background: transparent;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            box-sizing: border-box;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .table-select-compact:hover, .table-select-compact:focus {
+            background: #fff;
+            border-color: var(--primary);
+        }
+        .table-select-compact option { font-weight: normal; color: #0f172a; }
+        .table-select-compact option.sp-opt { font-weight: 700; color: var(--primary); }
+
+        /* ================= MỤC III. TÌNH HÌNH CHUYÊN MÔN (Flat Design - Nét đứt) ================= */
+        #tablePTCC, #tableVaoVien, #tableChuyenVien, #tableRaVien { min-width: 1000px; }
+        
+        #tablePTCC td, #tableVaoVien td, #tableChuyenVien td, #tableRaVien td { padding: 8px 6px; }
+
+        #tablePTCC th:nth-child(1), #tableVaoVien th:nth-child(1), #tableChuyenVien th:nth-child(1), #tableRaVien th:nth-child(1) { width: 50px; } 
+        #tablePTCC th:nth-child(2), #tableVaoVien th:nth-child(2), #tableChuyenVien th:nth-child(2), #tableRaVien th:nth-child(2) { width: 180px; } 
+        #tablePTCC th:nth-child(4), #tablePTCC th:nth-child(7) { width: 130px; } 
+        #tablePTCC th:nth-child(5), #tablePTCC th:nth-child(6) { width: 250px; } 
+        
+        .clean-input {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px dashed #cbd5e1;
+            border-radius: 6px;
+            font-size: 13px;
+            background: #ffffff;
+            color: #0f172a;
+            transition: all 0.2s ease-in-out;
+            font-family: inherit;
+            resize: none; 
+            overflow: hidden;
+            box-sizing: border-box;
+            line-height: 1.5;
+        }
+        
+        .clean-input:hover {
+            border-color: #94a3b8;
+            background: #f8fafc;
+        }
+
+        .clean-input:focus {
+            outline: none;
+            background: #fff;
+            border: 1px dashed var(--primary); 
+            box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1); 
+            position: relative;
+            z-index: 10;
+        }
+        
+        select.table-select {
+            width: 100%;
+            padding: 8px;
+            border: 1px dashed #cbd5e1;
+            border-radius: 6px;
+            font-size: 13px;
+            background: #ffffff;
+            text-align: center; 
+            color: #0f172a;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+        select.table-select:hover { background: #f8fafc; border-color: #94a3b8; }
+        select.table-select:focus { background: #fff; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1); outline: none; }
+
+        .datetime-container {
+            display: flex;
+            flex-direction: column; 
+            gap: 6px;
+            align-items: center; 
+            justify-content: center;
+        }
+        .datetime-container input {
+            text-align: center; 
+            padding: 6px 8px;
+            cursor: pointer;
+            border: 1px dashed #cbd5e1; 
+            border-radius: 4px;
+            background: #ffffff;
+            width: 100%;
+            max-width: 115px; 
+            font-weight: 500;
+            color: #334155;
+            transition: all 0.2s ease-in-out;
+            box-sizing: border-box;
+        }
+        .datetime-container input:hover { background: #f8fafc; border-color: #94a3b8; }
+        .datetime-container input:focus { border-color: var(--primary); background: #fff; outline: none; box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1); }
+
+        /* ================= POPUP MODAL (THÊM NHÂN SỰ) ================= */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.5);
+            display: none; 
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .modal-overlay.show { opacity: 1; }
+        .modal-box {
+            background: #fff;
+            padding: 24px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            transform: translateY(20px);
+            transition: transform 0.2s;
+        }
+        .modal-overlay.show .modal-box { transform: translateY(0); }
+        .modal-box h3 { margin: 0 0 16px 0; font-size: 18px; color: #0f172a; font-weight: 700;}
+        .modal-input {
+            width: 100%; padding: 12px 16px; border: 2px dashed #bae6fd; border-radius: 8px;
+            font-size: 15px; outline: none; margin-bottom: 24px; transition: all 0.2s;
+            color: var(--primary); font-weight: 600;
+        }
+        .modal-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);}
+        .modal-actions { display: flex; justify-content: flex-end; gap: 12px; }
+        .modal-btn {
+            padding: 10px 20px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-size: 14px;
+        }
+        .modal-cancel { background: #f1f5f9; color: #475569; }
+        .modal-cancel:hover { background: #e2e8f0; }
+        .modal-ok { background: var(--primary); color: #fff; }
+        .modal-ok:hover { background: var(--primary-hover); transform: translateY(-1px); }
+
+        /* ================= BUTTONS ================= */
+        .add-btn-wrapper {
+            display: flex;
+            justify-content: flex-end; 
+            margin-bottom: 24px;
+            margin-top: 4px;
+        }
+
+        .add-row-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #f0f9ff;
+            border: 1px dashed #bae6fd; /* Đổi nút thêm nét đứt cho Flat Design */
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            color: var(--primary-hover);
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        
+        .add-row-btn:hover {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+            border-style: solid;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(2, 132, 199, 0.15);
+        }
+
+        .remove-row-btn {
+            background: #fef2f2;
+            border: 1px dashed #fca5a5; 
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--danger);
+            transition: all 0.2s;
+        }
+        .remove-row-btn:hover {
+            background: var(--danger);
+            color: white;
+            border-color: var(--danger);
+            border-style: solid;
+        }
+
+        .btn-group {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 40px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .btn-excel {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--success);
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(22, 163, 74, 0.2);
+            transition: all 0.2s;
+        }
+        .btn-excel:hover {
+            background: var(--success-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(22, 163, 74, 0.3);
+        }
+        .btn-excel:active { transform: translateY(0); }
+
+        footer {
+            margin-top: 24px;
+            font-size: 13px;
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        @media (max-width: 768px) {
+            .report-card { padding: 20px 16px; }
+            .grid-3-cols { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="report-card">
+    <h1>BÁO CÁO GIAO BAN</h1>
+    <div class="date-row">
+        <span>Kíp trực ngày: </span>
+        <input type="date" id="ngayTrucPicker" class="date-select">
+    </div>
+
+    <div class="section">
+        <h2>I. THÀNH PHẦN TRỰC</h2>
+        
+        <div class="grid-3-cols">
+            <div class="flex-col">
+                <div class="module-title">Nhân sự trực</div>
+                <div class="subgroup staff-vertical">
+                    <div class="staff-item"><label>Trực Lãnh Đạo</label><select id="trucLanhDao"></select></div>
+                    <div class="staff-item"><label>Trực Chuyên môn</label><select id="trucChuyenMon"></select></div>
+                    <div class="staff-item"><label>Trực Phòng khám</label><select id="trucPhongKham"></select></div>
+                    <div class="staff-item"><label>Trực An ninh, bảo vệ</label><select id="trucAnNinh"></select></div>
+                </div>
+            </div>
+
+            <div class="flex-col">
+                <div class="module-title">Trực Xét Nghiệm</div>
+                <div class="subgroup">
+                    <div class="sub-row"><span>Huyết học:</span> <input type="number" id="xnHuyetHoc" min="0"></div>
+                    <div class="sub-row"><span>Hóa sinh:</span> <input type="number" id="xnHoaSinh" min="0"></div>
+                    <div class="sub-row"><span>Vi sinh:</span> <input type="number" id="xnViSinh" min="0"></div>
+                    <div class="sub-row"><span>Nước tiểu:</span> <input type="number" id="xnNuocTieu" min="0"></div>
+                    <div class="sub-row"><span>Đông máu:</span> <input type="number" id="xnDongMau" min="0"></div>
+                    <div class="total-wrapper"><div class="total-badge" id="tongXetNghiem">TỔNG: 0</div></div>
+                </div>
+            </div>
+            
+            <div class="flex-col">
+                <div class="module-title">Trực Chẩn Đoán Hình Ảnh</div>
+                <div class="subgroup">
+                    <div class="sub-row"><span>Xquang:</span> <input type="number" id="cdhaXquang" min="0"></div>
+                    <div class="sub-row"><span>Siêu âm:</span> <input type="number" id="cdhaSieuAm" min="0"></div>
+                    <div class="sub-row"><span>CT-Scanner:</span> <input type="number" id="cdhaCT" min="0"></div>
+                    <div class="total-wrapper"><div class="total-badge" id="tongCDHA">TỔNG: 0</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top: 28px;">
+            <div class="module-title">Tình hình trang thiết bị, dược, vật tư, điện nước:</div>
+            <textarea rows="3" id="tinhTrangThietBi" placeholder="Nhập ghi chú..."></textarea>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>II. TÌNH HÌNH BỆNH NHÂN</h2>
+        <div class="table-wrapper">
+            <table id="bangBenhNhan">
+                <colgroup>
+                    <col style="width: 9%;"> 
+                    <col style="width: 11%;"> 
+                    <col style="width: 4.44%;" span="18"> 
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th rowspan="2" class="bg-chung">Khoa</th>
+                        <th rowspan="2" class="bg-chung group-divider">Bác sĩ trực</th>
+                        <th rowspan="2" class="bg-chung group-divider">Cũ</th>
+                        <th colspan="3" class="bg-vao group-divider">Nhập viện (Vào)</th>
+                        <th colspan="5" class="bg-ra group-divider">Xuất viện (Ra)</th>
+                        <th colspan="2" class="bg-ck group-divider">Chuyển khoa</th>
+                        <th colspan="2" class="bg-tv group-divider">Tử vong</th>
+                        <th rowspan="2" class="bg-pt group-divider">PTCC</th>
+                        <th colspan="4" class="bg-tong">Tổng kết</th>
+                    </tr>
+                    <tr>
+                        <th class="bg-vao">HC</th><th class="bg-vao">Trực</th><th class="bg-vao group-divider">Sáng</th>
+                        <th class="bg-ra">Ra HC</th><th class="bg-ra">Sáng</th><th class="bg-ra">Xin về</th><th class="bg-ra">Trốn</th><th class="bg-ra group-divider">C.Viện</th>
+                        <th class="bg-ck">Đến</th><th class="bg-ck group-divider">Đi</th>
+                        <th class="bg-tv">Ng.Trú</th><th class="bg-tv group-divider">Nội.T</th>
+                        <th class="bg-tong">Hiện</th><th class="bg-tong">DK.Ra</th><th class="bg-tong">Giường</th><th class="bg-tong">Tỷ lệ</th>
+                    </tr>
+                </thead>
+                <tbody id="tbodyBenhNhan"></tbody>
+                <tfoot id="footBenhNhan"></tfoot>
+            </table>
+        </div>
+        <div style="font-size:12px; color:var(--text-muted); text-align: right;">* Tỷ lệ = (Hiện có / Giường KH) × 100%</div>
+    </div>
+
+    <div class="section">
+        <h2>III. TÌNH HÌNH CHUYÊN MÔN</h2>
+        
+        <h3>A. Bệnh nhân phẫu thuật cấp cứu (PTCC)</h3>
+        <div class="table-wrapper">
+            <table id="tablePTCC">
+                <thead><tr><th>STT</th><th>Họ và tên</th><th>Địa chỉ</th><th>Giờ vào</th><th>Chẩn đoán trước mổ</th><th>Chẩn đoán sau mổ & kết quả</th><th>Giờ PTCC</th><th>Khoa</th><th>Hành động</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <div class="add-btn-wrapper"><button type="button" class="add-row-btn" data-table="ptcc">+ Thêm bệnh nhân PTCC</button></div>
+
+        <h3>B. Bệnh nhân vào viện</h3>
+        <div class="table-wrapper">
+            <table id="tableVaoVien">
+                <thead><tr><th>STT</th><th>Họ và tên</th><th>Địa chỉ</th><th>Giờ vào</th><th>Chẩn đoán lúc vào</th><th>Khoa</th><th>Hành động</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <div class="add-btn-wrapper"><button type="button" class="add-row-btn" data-table="vaovien">+ Thêm bệnh nhân vào viện</button></div>
+
+        <h3>C. Bệnh nhân chuyển viện</h3>
+        <div class="table-wrapper">
+            <table id="tableChuyenVien">
+                <thead><tr><th>STT</th><th>Họ và tên</th><th>Địa chỉ</th><th>Giờ vào</th><th>Khoa</th><th>Chẩn đoán lúc vào</th><th>Giờ chuyển</th><th>Chẩn đoán lúc chuyển</th><th>Hành động</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <div class="add-btn-wrapper"><button type="button" class="add-row-btn" data-table="chuyenvien">+ Thêm chuyển viện</button></div>
+
+        <h3>D. Bệnh nhân ra viện, xin về</h3>
+        <div class="table-wrapper">
+            <table id="tableRaVien">
+                <thead><tr><th>STT</th><th>Họ và tên</th><th>Địa chỉ</th><th>Giờ vào</th><th>Khoa</th><th>Chẩn đoán lúc vào</th><th>Giờ ra</th><th>Chẩn đoán lúc ra</th><th>Hành động</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <div class="add-btn-wrapper"><button type="button" class="add-row-btn" data-table="ravien">+ Thêm bệnh nhân ra viện</button></div>
+    </div>
+
+    <div class="btn-group">
+        <button id="xuatExcelBtn" class="btn-excel">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M14 2V8H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M8 13L16 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M8 17L16 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Lưu & Xuất Excel
+        </button>
+    </div>
+</div>
+
+<div id="customInputModal" class="modal-overlay">
+    <div class="modal-box">
+        <h3 id="modalTitle">Nhập thông tin nhân sự:</h3>
+        <input type="text" id="modalInput" class="modal-input" placeholder="Gõ tên vào đây..." autocomplete="off" />
+        <div class="modal-actions">
+            <button class="modal-btn modal-cancel" onclick="closeModal(false)">Hủy</button>
+            <button class="modal-btn modal-ok" onclick="closeModal(true)">Xác nhận</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==================== KHỞI TẠO NGÀY THÁNG ====================
+    const ngayTrucPicker = document.getElementById("ngayTrucPicker");
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    ngayTrucPicker.value = `${yyyy}-${mm}-${dd}`;
+
+    // ==================== POPUP MODAL LOGIC ====================
+    let modalCallback = null;
+    function openModal(title, callback) {
+        document.getElementById('modalTitle').textContent = title;
+        document.getElementById('modalInput').value = "";
+        const modal = document.getElementById('customInputModal');
+        modal.style.display = "flex";
+        setTimeout(() => {
+            modal.classList.add("show");
+            document.getElementById('modalInput').focus();
+        }, 10);
+        modalCallback = callback;
+    }
+
+    function closeModal(isOk) {
+        const val = document.getElementById('modalInput').value.trim();
+        const modal = document.getElementById('customInputModal');
+        modal.classList.remove("show");
+        setTimeout(() => {
+            modal.style.display = "none";
+            if (modalCallback) {
+                modalCallback(isOk && val !== "" ? val : null);
+                modalCallback = null;
+            }
+        }, 200);
+    }
+
+    document.getElementById('modalInput').addEventListener("keypress", function(e) {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            closeModal(true);
+        }
+    });
+
+    // ==================== DATA NHÂN SỰ ====================
+    const lanhDaoOptions = ["-- Chọn --", "BS Tuyên", "BS Quyền", "BS Tình", "BS Ánh", "BS Giang", "BS Hạnh", "BS Dung"];
+    const chuyenMonOptions = ["-- Chọn --", "Tuyên", "Quyền", "Tình", "Ánh", "Giang", "P. Trang", "Hà", "Oanh", "Seng", "Trỉa", "Hạnh", "Dung", "Yến", "Tr. Trang"];
+    const anNinhOptions = ["-- Chọn --", "Huy - Thọ", "Thọ - Minh", "Minh - Viện", "Viện - Huy", "Tổ bảo vệ 1", "Tổ bảo vệ 2"];
+    const bacSiOptions = ["-- Chọn --", "BS Tuyên", "BS Quyền", "BS Tình", "BS Ánh", "BS Giang", "BS Hà", "BS Oanh", "BS Dung", "BS Yến", "BS Trang"];
+    const khoaOptions = ["-- Chọn --", "Ngoại", "Sản", "PT-GM", "Mắt-TMH", "Nhi", "Nội", "YHCT"];
+
+    // ==================== HÀM MULTI-SELECT THÔNG MINH (BỎ CỘNG DỒN TỰ ĐỘNG) ====================
+    function initMultiSelect(selectId, optionsArray) {
+        const selectEl = document.getElementById(selectId);
+        if (!selectEl) return;
+        
+        const fullOptions = [...optionsArray, "➕ Thêm người (Khác...)", "🔄 Làm mới (Xóa)"];
+        
+        function render() {
+            let currentVal = selectEl.getAttribute('data-value') || "";
+            selectEl.innerHTML = "";
+            let hasMatched = false;
+            
+            fullOptions.forEach(opt => {
+                const option = document.createElement("option");
+                option.value = opt.startsWith("➕") || opt.startsWith("🔄") ? opt : (opt === "-- Chọn --" ? "" : opt);
+                option.textContent = opt;
+                if (opt.startsWith("➕") || opt.startsWith("🔄")) {
+                    option.className = "sp-opt"; 
+                }
+                
+                if (currentVal === option.value && currentVal !== "") {
+                    option.selected = true;
+                    hasMatched = true;
+                }
+                selectEl.appendChild(option);
+            });
+
+            // Gắn option động vào đầu nếu giá trị là tự nhập / cộng dồn
+            if (currentVal && !hasMatched) {
+                const dynOpt = document.createElement("option");
+                dynOpt.value = currentVal;
+                dynOpt.textContent = currentVal;
+                dynOpt.selected = true;
+                dynOpt.hidden = true; 
+                selectEl.insertBefore(dynOpt, selectEl.firstChild);
+                selectEl.value = currentVal; 
+            } else if (!currentVal) {
+                selectEl.value = "";
+            }
+        }
+
+        selectEl.addEventListener("change", (e) => {
+            let val = e.target.value;
+            let currentVal = selectEl.getAttribute('data-value') || "";
+
+            if (val === "🔄 Làm mới (Xóa)") {
+                selectEl.setAttribute('data-value', "");
+                render();
+            } else if (val === "➕ Thêm người (Khác...)") {
+                openModal("Nhập tên nhân sự khác:", (customVal) => {
+                    if (customVal) {
+                        // Nút thêm người MỚI ĐƯỢC PHÉP cộng dồn
+                        let newVal = currentVal ? (currentVal + " - " + customVal) : customVal;
+                        selectEl.setAttribute('data-value', newVal);
+                    }
+                    render();
+                });
+            } else if (val !== "") {
+                // SỬA: Bỏ tự động cộng dồn. Chọn danh sách có sẵn sẽ GHI ĐÈ
+                selectEl.setAttribute('data-value', val);
+                render();
+            } else {
+                selectEl.setAttribute('data-value', "");
+                render(); 
+            }
+        });
+
+        render();
+    }
+
+    initMultiSelect("trucLanhDao", lanhDaoOptions);
+    initMultiSelect("trucChuyenMon", chuyenMonOptions);
+    initMultiSelect("trucPhongKham", chuyenMonOptions);
+    initMultiSelect("trucAnNinh", anNinhOptions);
+
+    function enforceNonNegative(inputEl) {
+        if (!inputEl) return;
+        inputEl.addEventListener("change", function() {
+            let v = parseFloat(this.value);
+            if (isNaN(v) || v < 0) this.value = 0;
+        });
+    }
+    const xnInputs = ["xnHuyetHoc","xnHoaSinh","xnViSinh","xnNuocTieu","xnDongMau","cdhaXquang","cdhaSieuAm","cdhaCT"];
+    xnInputs.forEach(id => enforceNonNegative(document.getElementById(id)));
+
+    function tinhTongXetNghiem() {
+        let tong = ["xnHuyetHoc","xnHoaSinh","xnViSinh","xnNuocTieu","xnDongMau"].reduce((sum, id) => sum + (parseFloat(document.getElementById(id).value) || 0), 0);
+        document.getElementById("tongXetNghiem").innerText = `TỔNG: ${tong}`;
+    }
+    function tinhTongCDHA() {
+        let tong = ["cdhaXquang","cdhaSieuAm","cdhaCT"].reduce((sum, id) => sum + (parseFloat(document.getElementById(id).value) || 0), 0);
+        document.getElementById("tongCDHA").innerText = `TỔNG: ${tong}`;
+    }
+    xnInputs.forEach(id => document.getElementById(id).addEventListener("input", () => { tinhTongXetNghiem(); tinhTongCDHA(); }));
+
+    const khoaArr = ["Ngoại", "Sản", "PT-GM", "Mắt-TMH", "Nhi", "Nội", "YHCT"];
+    const giuongKHMau = [37, 13, 0, 15, 15, 55, 15];
+    let benhNhanData = khoaArr.map((khoa, idx) => ({
+        stt: idx+1, khoa, bs: "", cu:0, vaoHC:0, vaoTruc:0, ra:0, chuyenDi:0, chuyenDen:0,
+        chuyenVien:0, xinVe:0, tronVien:0, tuVongNgoaiTru:0, tuVongNoiTru:0, ptCapCuu:0,
+        vaoSang:0, raSang:0, duKienRa:0, giuongKH: giuongKHMau[idx]
+    }));
+
+    function tinhHienCoVaTyLe(row) {
+        const hienCo = row.cu + row.vaoHC + row.vaoTruc + row.vaoSang + row.chuyenDen
+                     - row.ra - row.chuyenDi - row.chuyenVien - row.xinVe - row.tronVien - row.raSang;
+        const tyLe = (row.giuongKH > 0) ? (hienCo / row.giuongKH) * 100 : 0;
+        return { hienCo, tyLe };
+    }
+
+    function renderBangBenhNhan() {
+        const tbody = document.getElementById("tbodyBenhNhan");
+        tbody.innerHTML = "";
+        
+        const fullBsOptions = [...bacSiOptions, "➕ Thêm người (Khác...)", "🔄 Làm mới (Xóa)"];
+
+        benhNhanData.forEach((row, idx) => {
+            const { hienCo, tyLe } = tinhHienCoVaTyLe(row);
+            const tr = document.createElement("tr");
+            
+            const selectBs = document.createElement("select"); 
+            selectBs.className = "table-select-compact";
+            
+            let hasMatched = false;
+            fullBsOptions.forEach(opt => {
+                const option = document.createElement("option");
+                option.value = opt.startsWith("➕") || opt.startsWith("🔄") ? opt : (opt === "-- Chọn --" ? "" : opt);
+                option.textContent = opt;
+                if (opt.startsWith("➕") || opt.startsWith("🔄")) option.className = "sp-opt"; 
+                
+                if (row.bs === option.value && row.bs !== "") {
+                    option.selected = true;
+                    hasMatched = true;
+                }
+                selectBs.appendChild(option);
+            });
+
+            if (row.bs && !hasMatched) {
+                const dynOpt = document.createElement("option");
+                dynOpt.value = row.bs;
+                dynOpt.textContent = row.bs;
+                dynOpt.selected = true;
+                dynOpt.hidden = true;
+                selectBs.insertBefore(dynOpt, selectBs.firstChild);
+            } else if (!row.bs) {
+                selectBs.value = "";
+            }
+
+            selectBs.addEventListener("change", (e) => { 
+                let val = e.target.value;
+                if (val === "🔄 Làm mới (Xóa)") {
+                    row.bs = "";
+                    renderBangBenhNhan();
+                } else if (val === "➕ Thêm người (Khác...)") {
+                    openModal("Nhập tên Bác sĩ khác:", (customVal) => {
+                        if (customVal) {
+                            row.bs = row.bs ? (row.bs + " - " + customVal) : customVal;
+                        }
+                        renderBangBenhNhan();
+                    });
+                } else if (val !== "") {
+                    // SỬA: Bỏ tự động cộng dồn
+                    row.bs = val;
+                    renderBangBenhNhan();
+                } else {
+                    row.bs = "";
+                    renderBangBenhNhan();
+                }
+            });
+
+            const createNumInput = (field, value) => {
+                const input = document.createElement("input");
+                input.type = "number"; input.className = "table-input-compact";
+                input.value = (value === 0) ? "" : value;
+                input.addEventListener("change", function() {
+                    let newVal = this.value === "" ? 0 : parseFloat(this.value);
+                    if (isNaN(newVal) || newVal < 0) newVal = 0;
+                    row[field] = newVal;
+                    this.value = newVal === 0 ? "" : newVal;
+                    renderBangBenhNhan();
+                });
+                return input;
+            };
+
+            const tdKhoa = document.createElement("td"); tdKhoa.textContent = row.khoa;
+            const tdBs = document.createElement("td"); tdBs.appendChild(selectBs); tdBs.className = "group-divider";
+            const tdCu = document.createElement("td"); tdCu.appendChild(createNumInput("cu", row.cu)); tdCu.className = "group-divider";
+            
+            const tdVaoHC = document.createElement("td"); tdVaoHC.appendChild(createNumInput("vaoHC", row.vaoHC));
+            const tdVaoTruc = document.createElement("td"); tdVaoTruc.appendChild(createNumInput("vaoTruc", row.vaoTruc));
+            const tdVaoSang = document.createElement("td"); tdVaoSang.appendChild(createNumInput("vaoSang", row.vaoSang)); tdVaoSang.className = "group-divider";
+            
+            const tdRa = document.createElement("td"); tdRa.appendChild(createNumInput("ra", row.ra));
+            const tdRaSang = document.createElement("td"); tdRaSang.appendChild(createNumInput("raSang", row.raSang));
+            const tdXinVe = document.createElement("td"); tdXinVe.appendChild(createNumInput("xinVe", row.xinVe));
+            const tdTronVien = document.createElement("td"); tdTronVien.appendChild(createNumInput("tronVien", row.tronVien));
+            const tdChuyenVien = document.createElement("td"); tdChuyenVien.appendChild(createNumInput("chuyenVien", row.chuyenVien)); tdChuyenVien.className = "group-divider";
+            
+            const tdChuyenDen = document.createElement("td"); tdChuyenDen.appendChild(createNumInput("chuyenDen", row.chuyenDen));
+            const tdChuyenDi = document.createElement("td"); tdChuyenDi.appendChild(createNumInput("chuyenDi", row.chuyenDi)); tdChuyenDi.className = "group-divider";
+            
+            const tdTuVongNT = document.createElement("td"); tdTuVongNT.appendChild(createNumInput("tuVongNgoaiTru", row.tuVongNgoaiTru));
+            const tdTuVongNTr = document.createElement("td"); tdTuVongNTr.appendChild(createNumInput("tuVongNoiTru", row.tuVongNoiTru)); tdTuVongNTr.className = "group-divider";
+            
+            const tdPtCapCuu = document.createElement("td"); tdPtCapCuu.appendChild(createNumInput("ptCapCuu", row.ptCapCuu)); tdPtCapCuu.className = "group-divider";
+            
+            const tdHienCo = document.createElement("td"); tdHienCo.textContent = hienCo; tdHienCo.style.fontWeight = "bold"; tdHienCo.style.color = "#0369a1";
+            const tdDuKienRa = document.createElement("td"); tdDuKienRa.appendChild(createNumInput("duKienRa", row.duKienRa));
+            const tdGiuongKH = document.createElement("td"); tdGiuongKH.textContent = row.giuongKH;
+            const tdTyLe = document.createElement("td"); tdTyLe.textContent = tyLe.toFixed(1) + "%";
+
+            tr.append(tdKhoa, tdBs, tdCu, tdVaoHC, tdVaoTruc, tdVaoSang, tdRa, tdRaSang, tdXinVe, tdTronVien, tdChuyenVien, tdChuyenDen, tdChuyenDi, tdTuVongNT, tdTuVongNTr, tdPtCapCuu, tdHienCo, tdDuKienRa, tdGiuongKH, tdTyLe);
+            tbody.appendChild(tr);
+        });
+        tinhTongBenhNhan();
+    }
+
+    function tinhTongBenhNhan() {
+        let tong = {cu:0, vaoHC:0, vaoTruc:0, ra:0, chuyenDi:0, chuyenDen:0, chuyenVien:0, xinVe:0, tronVien:0, tuVongNgoaiTru:0, tuVongNoiTru:0, ptCapCuu:0, vaoSang:0, raSang:0, hienCo:0, duKienRa:0, giuongKH:0};
+        benhNhanData.forEach(r => {
+            const { hienCo } = tinhHienCoVaTyLe(r);
+            tong.cu += r.cu; tong.vaoHC += r.vaoHC; tong.vaoTruc += r.vaoTruc; tong.ra += r.ra;
+            tong.chuyenDi += r.chuyenDi; tong.chuyenDen += r.chuyenDen; tong.chuyenVien += r.chuyenVien;
+            tong.xinVe += r.xinVe; tong.tronVien += r.tronVien; tong.tuVongNgoaiTru += r.tuVongNgoaiTru;
+            tong.tuVongNoiTru += r.tuVongNoiTru; tong.ptCapCuu += r.ptCapCuu; tong.vaoSang += r.vaoSang;
+            tong.raSang += r.raSang; tong.hienCo += hienCo; tong.duKienRa += r.duKienRa; tong.giuongKH += r.giuongKH;
+        });
+        const tyLeTong = tong.giuongKH > 0 ? (tong.hienCo / tong.giuongKH)*100 : 0;
+        
+        // Đã sửa: Gộp (colspan="2") TỔNG SỐ và ô trống Bác sĩ trực cho cực kỳ cân đối
+        document.getElementById("footBenhNhan").innerHTML = `<tr>
+            <td colspan="2" class="bg-chung group-divider" style="text-align: center; letter-spacing: 1px;">TỔNG SỐ</td>
+            <td class="bg-chung group-divider">${tong.cu}</td>
+            <td class="bg-vao">${tong.vaoHC}</td><td class="bg-vao">${tong.vaoTruc}</td><td class="bg-vao group-divider">${tong.vaoSang}</td>
+            <td class="bg-ra">${tong.ra}</td><td class="bg-ra">${tong.raSang}</td><td class="bg-ra">${tong.xinVe}</td><td class="bg-ra">${tong.tronVien}</td><td class="bg-ra group-divider">${tong.chuyenVien}</td>
+            <td class="bg-ck">${tong.chuyenDen}</td><td class="bg-ck group-divider">${tong.chuyenDi}</td>
+            <td class="bg-tv">${tong.tuVongNgoaiTru}</td><td class="bg-tv group-divider">${tong.tuVongNoiTru}</td>
+            <td class="bg-pt group-divider">${tong.ptCapCuu}</td>
+            <td class="bg-tong">${tong.hienCo}</td><td class="bg-tong">${tong.duKienRa}</td><td class="bg-tong">${tong.giuongKH}</td><td class="bg-tong">${tyLeTong.toFixed(1)}%</td>
+        </tr>`;
+    }
+    renderBangBenhNhan();
+
+    const leftAlignCols = ["hoTen", "diaChi", "chuanDoanTruocMo", "chuanDoanSauKetQua", "chuanDoanVao", "chuanDoanChuyen", "chuanDoanRa"];
+
+    function initDynamicTable(tableId, defaultRows, columnsConfig, datetimeColumns = [], selectColumns = []) {
+        const tbody = document.querySelector(`#${tableId} tbody`);
+        function renderRows() {
+            tbody.innerHTML = "";
+            defaultRows.forEach((row, idx) => {
+                let tr = document.createElement("tr");
+                let sttTd = document.createElement("td"); 
+                sttTd.textContent = idx+1; 
+                sttTd.style.textAlign = "center";
+                tr.appendChild(sttTd);
+                
+                columnsConfig.forEach(col => {
+                    if (col === "actions") {
+                        let td = document.createElement("td");
+                        let btn = document.createElement("button");
+                        btn.textContent = "Xóa"; btn.className = "remove-row-btn";
+                        btn.addEventListener("click", () => { defaultRows.splice(idx, 1); renderRows(); });
+                        td.appendChild(btn); 
+                        tr.appendChild(td);
+                    } else {
+                        let td = document.createElement("td");
+                        
+                        if (selectColumns.includes(col)) {
+                            let input = document.createElement("select"); input.className = "table-select";
+                            const options = col === "khoa" ? khoaOptions : [];
+                            options.forEach(opt => {
+                                const option = document.createElement("option");
+                                option.value = opt === "-- Chọn --" ? "" : opt;
+                                option.textContent = opt;
+                                if (row[col] === option.value) option.selected = true;
+                                input.appendChild(option);
+                            });
+                            input.addEventListener("change", (e) => { row[col] = e.target.value; });
+                            td.appendChild(input);
+                        } else if (datetimeColumns.includes(col)) {
+                            let container = document.createElement("div");
+                            container.className = "datetime-container";
+
+                            let timeInput = document.createElement("input");
+                            timeInput.type = "time"; 
+
+                            let dateInput = document.createElement("input");
+                            dateInput.type = "date"; 
+
+                            if (!row[col]) {
+                                const now = new Date();
+                                timeInput.value = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                                dateInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                                row[col] = `${timeInput.value} ${dateInput.value}`; 
+                            } else {
+                                let parts = row[col].split(" ");
+                                if (parts.length === 2) { timeInput.value = parts[0]; dateInput.value = parts[1]; }
+                            }
+
+                            const updateDateTime = () => { row[col] = `${timeInput.value} ${dateInput.value}`.trim(); };
+                            timeInput.addEventListener("change", updateDateTime);
+                            dateInput.addEventListener("change", updateDateTime);
+
+                            container.appendChild(timeInput);
+                            container.appendChild(dateInput);
+                            td.appendChild(container);
+                        } else {
+                            let input = document.createElement("textarea");
+                            input.className = "clean-input";
+                            input.rows = 1;
+                            input.value = row[col] || "";
+                            
+                            if (leftAlignCols.includes(col)) {
+                                input.style.textAlign = "left";
+                            } else {
+                                input.style.textAlign = "center";
+                            }
+
+                            const autoResize = () => {
+                                input.style.height = 'auto';
+                                input.style.height = (input.scrollHeight) + 'px';
+                            };
+                            
+                            input.addEventListener("input", (e) => { 
+                                row[col] = e.target.value; 
+                                autoResize();
+                            });
+                            
+                            setTimeout(autoResize, 0); 
+                            td.appendChild(input);
+                        }
+                        tr.appendChild(td);
+                    }
+                });
+                tbody.appendChild(tr);
+            });
+        }
+        window[`addRow_${tableId}`] = function() { defaultRows.push(Object.fromEntries(columnsConfig.filter(c=>c!="actions").map(c=>[c,""]))); renderRows(); };
+        renderRows();
+    }
+
+    let ptccRows = [{hoTen:"", diaChi:"", gioVao:"", chuanDoanTruocMo:"", chuanDoanSauKetQua:"", gioPTCC:"", khoa:""}];
+    let vaoVienRows = [{hoTen:"", diaChi:"", gioVao:"", chuanDoanVao:"", khoa:""}];
+    let chuyenVienRows = [{hoTen:"", diaChi:"", gioVao:"", khoa:"", chuanDoanVao:"", gioChuyen:"", chuanDoanChuyen:""}];
+    let raVienRows = [{hoTen:"", diaChi:"", gioVao:"", khoa:"", chuanDoanVao:"", gioRa:"", chuanDoanRa:""}];
+    
+    initDynamicTable("tablePTCC", ptccRows, ["hoTen","diaChi","gioVao","chuanDoanTruocMo","chuanDoanSauKetQua","gioPTCC","khoa","actions"], ["gioVao","gioPTCC"], ["khoa"]);
+    initDynamicTable("tableVaoVien", vaoVienRows, ["hoTen","diaChi","gioVao","chuanDoanVao","khoa","actions"], ["gioVao"], ["khoa"]);
+    initDynamicTable("tableChuyenVien", chuyenVienRows, ["hoTen","diaChi","gioVao","khoa","chuanDoanVao","gioChuyen","chuanDoanChuyen","actions"], ["gioVao","gioChuyen"], ["khoa"]);
+    initDynamicTable("tableRaVien", raVienRows, ["hoTen","diaChi","gioVao","khoa","chuanDoanVao","gioRa","chuanDoanRa","actions"], ["gioVao","gioRa"], ["khoa"]);
+
+    document.querySelectorAll(".add-row-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const target = btn.getAttribute("data-table");
+            if (target === "ptcc") window.addRow_tablePTCC?.();
+            else if (target === "vaovien") window.addRow_tableVaoVien?.();
+            else if (target === "chuyenvien") window.addRow_tableChuyenVien?.();
+            else if (target === "ravien") window.addRow_tableRaVien?.();
+        });
+    });
+
+    // ==================== XUẤT EXCEL NÂNG CẤP ====================
+    function formatDT(val) {
+        if (!val) return "";
+        let parts = val.split(" ");
+        if (parts.length === 2 && parts[1].includes("-")) {
+            let d = parts[1].split("-");
+            return `${parts[0]} ${d[2]}/${d[1]}/${d[0]}`;
+        }
+        return val;
+    }
+
+    document.getElementById("xuatExcelBtn").addEventListener("click", () => {
+        const dateVal = document.getElementById("ngayTrucPicker").value;
+        const [nam, thang, ngay] = dateVal.split("-");
+
+        const rows = [];
+        const merges = []; 
+        const customRowHeights = {}; 
+
+        function addMergeRowAcross(r) { merges.push({ s: { r: r, c: 0 }, e: { r: r, c: 19 } }); }
+
+        function addMergedRow(rowData, colSpans, isDataRow = false) {
+            let newRow = [];
+            let currentCol = 0;
+            let r = rows.length;
+            let maxLines = 1;
+
+            for(let i = 0; i < rowData.length; i++) {
+                let val = rowData[i];
+                newRow.push(val);
+                let span = colSpans[i] || 1;
+                
+                if (span > 1) merges.push({ s: { r: r, c: currentCol }, e: { r: r, c: currentCol + span - 1 } });
+                
+                if (isDataRow && val) {
+                    let str = val.toString();
+                    let widthCh = 0;
+                    for(let k = 0; k < span; k++) {
+                        let actualCol = currentCol + k;
+                        widthCh += (actualCol === 0 || actualCol === 1) ? 14 : 9; 
+                    }
+                    let wrapLines = Math.ceil(str.length / widthCh);
+                    let enterLines = (str.match(/\n/g) || []).length + 1; 
+                    let lines = Math.max(wrapLines, enterLines);
+                    if (lines > maxLines) maxLines = lines;
+                }
+
+                for(let s = 1; s < span; s++) newRow.push("");
+                currentCol += span;
+            }
+            rows.push(newRow);
+            if (isDataRow) customRowHeights[r] = (maxLines * 16) + 4; 
+        }
+
+        // ================= I. THÀNH PHẦN TRỰC =================
+        addMergeRowAcross(rows.length); rows.push(["BÁO CÁO GIAO BAN"]);
+        addMergeRowAcross(rows.length); rows.push([`(Kíp trực ngày ${ngay} tháng ${thang} năm ${nam})`]);
+        rows.push([]);
+
+        addMergeRowAcross(rows.length); rows.push(["I. THÀNH PHẦN TRỰC"]);
+        
+        addMergeRowAcross(rows.length); rows.push(["Trực Lãnh Đạo: " + document.getElementById("trucLanhDao").value]);
+        addMergeRowAcross(rows.length); rows.push(["Trực Chuyên môn: " + document.getElementById("trucChuyenMon").value]);
+        addMergeRowAcross(rows.length); rows.push(["Trực Phòng khám: " + document.getElementById("trucPhongKham").value]);
+        addMergeRowAcross(rows.length); rows.push(["Trực An ninh, bảo vệ: " + document.getElementById("trucAnNinh").value]);
+        rows.push([]);
+
+        const xnCdhaRowIndex = rows.length; 
+        merges.push({ s: { r: xnCdhaRowIndex, c: 0 }, e: { r: xnCdhaRowIndex, c: 1 } }); 
+        merges.push({ s: { r: xnCdhaRowIndex, c: 3 }, e: { r: xnCdhaRowIndex, c: 5 } }); 
+        
+        rows.push(["Trực xét nghiệm", "", "", "Trực chẩn đoán hình ảnh", "", ""]);
+
+        const getVal = id => parseFloat(document.getElementById(id).value) || 0;
+        let tongXN = parseInt(document.getElementById("tongXetNghiem").innerText.replace("TỔNG: ","").trim()) || 0;
+        let tongCDHA = parseInt(document.getElementById("tongCDHA").innerText.replace("TỔNG: ","").trim()) || 0;
+
+        rows.push(["Huyết học", getVal("xnHuyetHoc") || "", "", "Xquang", "", getVal("cdhaXquang") || ""]); merges.push({ s: { r: xnCdhaRowIndex + 1, c: 3 }, e: { r: xnCdhaRowIndex + 1, c: 4 } });
+        rows.push(["Hóa sinh", getVal("xnHoaSinh") || "", "", "Siêu âm", "", getVal("cdhaSieuAm") || ""]); merges.push({ s: { r: xnCdhaRowIndex + 2, c: 3 }, e: { r: xnCdhaRowIndex + 2, c: 4 } });
+        rows.push(["Vi sinh", getVal("xnViSinh") || "", "", "CT-Scanner", "", getVal("cdhaCT") || ""]); merges.push({ s: { r: xnCdhaRowIndex + 3, c: 3 }, e: { r: xnCdhaRowIndex + 3, c: 4 } });
+        rows.push(["Nước tiểu", getVal("xnNuocTieu") || "", "", "TỔNG CĐHA", "", tongCDHA]); merges.push({ s: { r: xnCdhaRowIndex + 4, c: 3 }, e: { r: xnCdhaRowIndex + 4, c: 4 } });
+        rows.push(["Đông máu", getVal("xnDongMau") || "", "", "", "", ""]);
+        rows.push(["TỔNG XN", tongXN, "", "", "", ""]);
+        rows.push([]);
+        
+        addMergeRowAcross(rows.length);
+        let thietBiStr = "Tình hình trang thiết bị, dược, vật tư, điện nước: " + document.getElementById("tinhTrangThietBi").value;
+        customRowHeights[rows.length] = Math.max(Math.ceil(thietBiStr.length / 180), (thietBiStr.match(/\n/g) || []).length + 1) * 16 + 4;
+        rows.push([thietBiStr]);
+        rows.push([]);
+
+        // ================= II. TÌNH HÌNH BỆNH NHÂN =================
+        addMergeRowAcross(rows.length); rows.push(["II. TÌNH HÌNH BỆNH NHÂN"]);
+        
+        const headerBNRowIndex = rows.length; 
+        
+        rows.push([
+            "Khoa", "Bác sĩ trực", "Cũ", 
+            "Nhập viện (Vào)", "", "", 
+            "Xuất viện (Ra)", "", "", "", "", 
+            "Chuyển khoa", "", 
+            "Tử vong", "", 
+            "PTCC", 
+            "Tổng kết", "", "", ""
+        ]);
+        
+        rows.push([
+            "", "", "", 
+            "HC", "Trực", "Sáng", 
+            "Ra HC", "Sáng", "Xin về", "Trốn", "C.Viện", 
+            "Đến", "Đi", 
+            "Ng.Trú", "Nội.T", 
+            "", 
+            "Hiện có", "DK.Ra", "Giường", "Tỷ lệ %"
+        ]);
+
+        merges.push({ s: { r: headerBNRowIndex, c: 0 }, e: { r: headerBNRowIndex + 1, c: 0 } }); 
+        merges.push({ s: { r: headerBNRowIndex, c: 1 }, e: { r: headerBNRowIndex + 1, c: 1 } }); 
+        merges.push({ s: { r: headerBNRowIndex, c: 2 }, e: { r: headerBNRowIndex + 1, c: 2 } }); 
+        merges.push({ s: { r: headerBNRowIndex, c: 3 }, e: { r: headerBNRowIndex, c: 5 } }); 
+        merges.push({ s: { r: headerBNRowIndex, c: 6 }, e: { r: headerBNRowIndex, c: 10 } }); 
+        merges.push({ s: { r: headerBNRowIndex, c: 11 }, e: { r: headerBNRowIndex, c: 12 } }); 
+        merges.push({ s: { r: headerBNRowIndex, c: 13 }, e: { r: headerBNRowIndex, c: 14 } }); 
+        merges.push({ s: { r: headerBNRowIndex, c: 15 }, e: { r: headerBNRowIndex + 1, c: 15 } }); 
+        merges.push({ s: { r: headerBNRowIndex, c: 16 }, e: { r: headerBNRowIndex, c: 19 } }); 
+
+        benhNhanData.forEach(r => {
+            const { hienCo, tyLe } = tinhHienCoVaTyLe(r);
+            rows.push([
+                r.khoa, r.bs, r.cu, 
+                r.vaoHC, r.vaoTruc, r.vaoSang, 
+                r.ra, r.raSang, r.xinVe, r.tronVien, r.chuyenVien, 
+                r.chuyenDen, r.chuyenDi, 
+                r.tuVongNgoaiTru, r.tuVongNoiTru, 
+                r.ptCapCuu, 
+                hienCo, r.duKienRa, r.giuongKH, tyLe.toFixed(1)+"%"
+            ]);
+        });
+
+        let tong = {cu:0, vaoHC:0, vaoTruc:0, ra:0, chuyenDi:0, chuyenDen:0, chuyenVien:0, xinVe:0, tronVien:0, tuVongNgoaiTru:0, tuVongNoiTru:0, ptCapCuu:0, vaoSang:0, raSang:0, hienCo:0, duKienRa:0, giuongKH:0};
+        benhNhanData.forEach(r => {
+            const { hienCo } = tinhHienCoVaTyLe(r);
+            tong.cu += r.cu; tong.vaoHC += r.vaoHC; tong.vaoTruc += r.vaoTruc; tong.ra += r.ra;
+            tong.chuyenDi += r.chuyenDi; tong.chuyenDen += r.chuyenDen; tong.chuyenVien += r.chuyenVien;
+            tong.xinVe += r.xinVe; tong.tronVien += r.tronVien; tong.tuVongNgoaiTru += r.tuVongNgoaiTru;
+            tong.tuVongNoiTru += r.tuVongNoiTru; tong.ptCapCuu += r.ptCapCuu; tong.vaoSang += r.vaoSang;
+            tong.raSang += r.raSang; tong.hienCo += hienCo; tong.duKienRa += r.duKienRa; tong.giuongKH += r.giuongKH;
+        });
+        const tyTong = tong.giuongKH > 0 ? (tong.hienCo / tong.giuongKH)*100 : 0;
+        
+        const totalBNRowIndex = rows.length; 
+        rows.push([
+            "TỔNG SỐ","",tong.cu,
+            tong.vaoHC,tong.vaoTruc,tong.vaoSang,
+            tong.ra,tong.raSang,tong.xinVe,tong.tronVien,tong.chuyenVien,
+            tong.chuyenDen,tong.chuyenDi,
+            tong.tuVongNgoaiTru,tong.tuVongNoiTru,
+            tong.ptCapCuu,
+            tong.hienCo,tong.duKienRa,tong.giuongKH,tyTong.toFixed(1)+"%"
+        ]);
+        merges.push({ s: { r: totalBNRowIndex, c: 0 }, e: { r: totalBNRowIndex, c: 1 } });
+
+        // ================= III. TÌNH HÌNH CHUYÊN MÔN =================
+        rows.push([]);
+        addMergeRowAcross(rows.length);
+        rows.push(["III. TÌNH HÌNH CHUYÊN MÔN"]);
+
+        const validPTCC = ptccRows.filter(r => r.hoTen && r.hoTen.trim() !== "");
+        const validVaoVien = vaoVienRows.filter(r => r.hoTen && r.hoTen.trim() !== "");
+        const validChuyenVien = chuyenVienRows.filter(r => r.hoTen && r.hoTen.trim() !== "");
+        const validRaVien = raVienRows.filter(r => r.hoTen && r.hoTen.trim() !== "");
+
+        const section3Headers = [];
+        const section3TableAreas = [];
+
+        const exportSection = (title, dataList, colSpans, headerNames, rowDataMapper, tableType) => {
+            addMergeRowAcross(rows.length);
+            rows.push([title]);
+            
+            if (dataList.length === 0) {
+                addMergeRowAcross(rows.length);
+                rows.push(["Không có bệnh nhân phát sinh trong ca trực."]);
+                rows.push([]); 
+                return;
+            }
+            
+            const startRow = rows.length;
+            section3Headers.push(startRow); 
+            
+            addMergedRow(headerNames, colSpans, true);
+            dataList.forEach((r, i) => addMergedRow(rowDataMapper(r, i), colSpans, true));
+            
+            section3TableAreas.push({ start: startRow, end: rows.length - 1, type: tableType });
+            rows.push([]); 
+        };
+
+        exportSection("A. Bệnh nhân PTCC", validPTCC, [1, 3, 3, 2, 3, 4, 2, 2], ["STT","Họ tên","Địa chỉ","Giờ vào","Chẩn đoán trước mổ","Chẩn đoán sau mổ & kết quả","Giờ PTCC","Khoa"], (r, i) => [i+1, r.hoTen, r.diaChi, formatDT(r.gioVao), r.chuanDoanTruocMo, r.chuanDoanSauKetQua, formatDT(r.gioPTCC), r.khoa], "PTCC");
+        exportSection("B. Bệnh nhân vào viện", validVaoVien, [1, 4, 4, 2, 6, 3], ["STT","Họ tên","Địa chỉ","Giờ vào","Chẩn đoán lúc vào","Khoa"], (r, i) => [i+1, r.hoTen, r.diaChi, formatDT(r.gioVao), r.chuanDoanVao, r.khoa], "VV");
+        exportSection("C. Bệnh nhân chuyển viện", validChuyenVien, [1, 3, 3, 2, 2, 4, 2, 3], ["STT","Họ tên","Địa chỉ","Giờ vào","Khoa","Chẩn đoán lúc vào","Giờ chuyển","Chẩn đoán lúc chuyển"], (r, i) => [i+1, r.hoTen, r.diaChi, formatDT(r.gioVao), r.khoa, r.chuanDoanVao, formatDT(r.gioChuyen), r.chuanDoanChuyen], "CV");
+        exportSection("D. Bệnh nhân ra viện, xin về", validRaVien, [1, 3, 3, 2, 2, 4, 2, 3], ["STT","Họ tên","Địa chỉ","Giờ vào","Khoa","Chẩn đoán lúc vào","Giờ ra","Chẩn đoán lúc ra"], (r, i) => [i+1, r.hoTen, r.diaChi, formatDT(r.gioVao), r.khoa, r.chuanDoanVao, formatDT(r.gioRa), r.chuanDoanRa], "RV");
+
+        // ================= XUẤT FILE & STYLE =================
+        const ws = XLSX.utils.aoa_to_sheet(rows);
+        ws['!pageSetup'] = { paperSize: "9", orientation: "landscape", scale: "100" }; 
+        const marginInch = 0.5 / 2.54; 
+        ws['!margins'] = { left: marginInch, right: marginInch, top: marginInch, bottom: marginInch, header: 0.3, footer: 0.3 };
+        ws['!views'] = [{ zoom: 82 }];
+
+        const colWidths = [{ wch: 15 }, { wch: 15 }];
+        for (let i = 2; i < 20; i++) colWidths.push({ wch: 10 }); 
+        ws['!cols'] = colWidths;
+
+        const rowHeights = [];
+        for (let i = 0; i < rows.length; i++) {
+            if (rows[i].length === 0) rowHeights.push({ hpt: 8 }); 
+            else if (customRowHeights[i]) rowHeights.push({ hpt: customRowHeights[i] }); 
+            else rowHeights.push({}); 
+        }
+        ws['!rows'] = rowHeights;
+        ws['!merges'] = merges;
+
+        const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+        if (range.e.c < 19) range.e.c = 19; 
+        if (range.e.r < rows.length - 1) range.e.r = rows.length - 1; 
+        
+        for (let R = 0; R <= range.e.r; ++R) {
+            for (let C = 0; C <= range.e.c; ++C) {
+                const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+                if (!ws[cellAddress]) ws[cellAddress] = { t: 's', v: "" }; 
+
+                const val = ws[cellAddress].v;
+                let isBold = false, sz = 12, hAlign = "center", fillConfig = null, isItalic = false;
+                
+                let isTableArea = false;
+                if (R >= headerBNRowIndex && R <= totalBNRowIndex) isTableArea = true; 
+                
+                let sect3Type = null;
+                for (let area of section3TableAreas) {
+                    if (R >= area.start && R <= area.end) {
+                        isTableArea = true;
+                        if (R > area.start) sect3Type = area.type; 
+                    }
+                }
+
+                let isSection3Header = section3Headers.includes(R);
+                let isXNTable = (R >= xnCdhaRowIndex && R <= xnCdhaRowIndex + 6 && (C === 0 || C === 1));
+                let isCDHATable = (R >= xnCdhaRowIndex && R <= xnCdhaRowIndex + 4 && (C >= 3 && C <= 5));
+
+                if (R === 0) { isBold = true; sz = 16; hAlign = "center"; }
+                else if (R === 1) { hAlign = "center"; }
+                else if (val === "I. THÀNH PHẦN TRỰC" || val === "II. TÌNH HÌNH BỆNH NHÂN" || val === "III. TÌNH HÌNH CHUYÊN MÔN") { isBold = true; hAlign = "left"; }
+                else if (val === "A. Bệnh nhân PTCC" || val === "B. Bệnh nhân vào viện" || val === "C. Bệnh nhân chuyển viện" || val === "D. Bệnh nhân ra viện, xin về") { isBold = true; hAlign = "left"; }
+                else if (val === "Trực xét nghiệm" || val === "Trực chẩn đoán hình ảnh") { isBold = true; hAlign = "center"; fillConfig = { fgColor: { rgb: "DCE6F1" } }; }
+                else if (R === xnCdhaRowIndex + 6 && C <= 1) { isBold = true; hAlign = "center"; }
+                else if (R === xnCdhaRowIndex + 4 && C >= 3 && C <= 5) { isBold = true; hAlign = "center"; }
+                else if (R === headerBNRowIndex || R === headerBNRowIndex + 1 || isSection3Header) { 
+                    hAlign = "center"; isBold = true; fillConfig = { fgColor: { rgb: "DCE6F1" } }; 
+                }
+                else if (R === totalBNRowIndex) { 
+                    isBold = true; fillConfig = { fgColor: { rgb: "F2F2F2" } }; hAlign = "center"; 
+                }
+                else if (val === "Không có bệnh nhân phát sinh trong ca trực.") { hAlign = "center"; isItalic = true; } 
+                else if (typeof val === 'number' || (!isNaN(parseFloat(val)) && isFinite(val) && val !== "")) { hAlign = "center"; }
+
+                let strVal = val.toString();
+                if (strVal.startsWith("Trực Lãnh Đạo:") || strVal.startsWith("Trực Chuyên môn:") || strVal.startsWith("Trực Phòng khám:") || strVal.startsWith("Trực An ninh, bảo vệ:") || strVal.startsWith("Tình hình trang thiết bị")) {
+                    hAlign = "left";
+                }
+                if (R > headerBNRowIndex + 1 && R < totalBNRowIndex && (C === 0 || C === 1)) {
+                    hAlign = "left"; 
+                } 
+
+                if (sect3Type) {
+                    if (sect3Type === "PTCC" && (C === 1 || C === 4 || C === 9 || C === 12)) hAlign = "left";
+                    else if (sect3Type === "VV" && (C === 1 || C === 5 || C === 11)) hAlign = "left";
+                    else if (sect3Type === "CV" && (C === 1 || C === 4 || C === 11 || C === 17)) hAlign = "left";
+                    else if (sect3Type === "RV" && (C === 1 || C === 4 || C === 11 || C === 17)) hAlign = "left";
+                }
+
+                let cellStyle = { 
+                    font: { name: "Times New Roman", sz: sz, bold: isBold, italic: isItalic }, 
+                    alignment: { vertical: "center", horizontal: hAlign, wrapText: true } 
+                };
+                if (fillConfig) cellStyle.fill = fillConfig;
+                
+                if (isTableArea || isXNTable || isCDHATable) {
+                    cellStyle.border = { top: { style: "thin", color: { rgb: "000000" } }, bottom: { style: "thin", color: { rgb: "000000" } }, left: { style: "thin", color: { rgb: "000000" } }, right: { style: "thin", color: { rgb: "000000" } } };
+                }
+                ws[cellAddress].s = cellStyle;
+            }
+        }
+
+        ws['!ref'] = XLSX.utils.encode_range(range);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "BaoCao_GiaoBan");
+        XLSX.writeFile(wb, `BaoCao_GiaoBan_${ngay}_${thang}_${nam}.xlsx`);
+    });
+</script>
+</body>
+</html>
