@@ -1,0 +1,301 @@
+function doGet(e) {
+  try {
+    var action = (e && e.parameter) ? e.parameter.action : null;
+
+    // =======================================================
+    // 1. NẾU YÊU CẦU LÀ LẤY DANH SÁCH NHÂN SỰ / ĐỊA CHỈ / MẪU
+    // =======================================================
+    if (action === 'getStaff') {
+      var sheetNS = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("DanhSachNhanSu");
+      if (!sheetNS) {
+        return ContentService.createTextOutput(JSON.stringify({error: "Lỗi: Không tìm thấy Sheet DanhSachNhanSu"})).setMimeType(ContentService.MimeType.JSON);
+      }
+      
+      var dataNS = sheetNS.getDataRange().getValues();
+      var lanhDao = [], chuyenMon = [], bacSi = [], anNinh = [], diaChi = [], chanDoan = [], nguoiLamBaoCao = [];
+      var xetNghiem = [], cdha = []; 
+      
+      for (var i = 1; i < dataNS.length; i++) { 
+        if (dataNS[i][0]) lanhDao.push(dataNS[i][0].toString().trim());
+        if (dataNS[i][1]) chuyenMon.push(dataNS[i][1].toString().trim());
+        if (dataNS[i][2]) bacSi.push(dataNS[i][2].toString().trim());
+        if (dataNS[i][3]) anNinh.push(dataNS[i][3].toString().trim());
+        if (dataNS[i][4]) diaChi.push(dataNS[i][4].toString().trim());
+        if (dataNS[i][5]) chanDoan.push(dataNS[i][5].toString().trim()); 
+        if (dataNS[i][6]) nguoiLamBaoCao.push(dataNS[i][6].toString().trim());
+        if (dataNS[i][7]) xetNghiem.push(dataNS[i][7].toString().trim());
+        if (dataNS[i][8]) cdha.push(dataNS[i][8].toString().trim());
+      }
+      
+      // --- LẤY MẪU NHÂN SỰ ---
+      var sheetMau = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("MauNhanSu");
+      var mauNhanSu = [];
+      if (sheetMau) {
+        var dataMau = sheetMau.getDataRange().getValues();
+        for (var m = 1; m < dataMau.length; m++) {
+          if (dataMau[m][0]) {
+            mauNhanSu.push({
+              tenMau: dataMau[m][0].toString().trim(),
+              lanhDao: (dataMau[m][1] || "").toString().trim(),
+              chuyenMon: (dataMau[m][2] || "").toString().trim(),
+              phongKham: (dataMau[m][3] || "").toString().trim(),
+              anNinh: (dataMau[m][4] || "").toString().trim(),
+              xetNghiem: (dataMau[m][5] || "").toString().trim(),
+              cdha: (dataMau[m][6] || "").toString().trim()
+            });
+          }
+        }
+      }
+
+      // --- LẤY MẪU BÁC SĨ TRỰC KHOA ---
+      var sheetMauBS = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("MauBacSi");
+      var mauBacSi = [];
+      if (sheetMauBS) {
+        var dataMauBS = sheetMauBS.getDataRange().getValues();
+        for (var n = 1; n < dataMauBS.length; n++) {
+          if (dataMauBS[n][0]) {
+            mauBacSi.push({
+              tenMau: dataMauBS[n][0].toString().trim(),
+              ngoai: (dataMauBS[n][1] || "").toString().trim(),
+              san: (dataMauBS[n][2] || "").toString().trim(),
+              ptgm: (dataMauBS[n][3] || "").toString().trim(),
+              mattmh: (dataMauBS[n][4] || "").toString().trim(),
+              nhi: (dataMauBS[n][5] || "").toString().trim(),
+              noi: (dataMauBS[n][6] || "").toString().trim(),
+              yhct: (dataMauBS[n][7] || "").toString().trim()
+            });
+          }
+        }
+      }
+      
+      var resultNS = { 
+        lanhDao: lanhDao, chuyenMon: chuyenMon, bacSi: bacSi, 
+        anNinh: anNinh, diaChi: diaChi, chanDoan: chanDoan, nguoiLamBaoCao: nguoiLamBaoCao,
+        xetNghiem: xetNghiem, cdha: cdha,
+        mauNhanSu: mauNhanSu, mauBacSi: mauBacSi
+      };
+      return ContentService.createTextOutput(JSON.stringify(resultNS)).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // =======================================================
+    // 1.5. NẾU YÊU CẦU LÀ LẤY DỮ LIỆU LỊCH SỬ (AUDIT TRAIL)
+    // =======================================================
+    if (action === 'getLogs') {
+      var sheetLichSu = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("LichSu");
+      if (!sheetLichSu) {
+        return ContentService.createTextOutput("[]").setMimeType(ContentService.MimeType.JSON);
+      }
+      
+      var dataLogs = sheetLichSu.getDataRange().getValues();
+      var resultLogs = [];
+      for (var L = dataLogs.length - 1; L >= 1; L--) {
+        resultLogs.push({
+          time: dataLogs[L][0],
+          user: dataLogs[L][1],
+          details: dataLogs[L][2]
+        });
+        if (resultLogs.length >= 100) break;
+      }
+      return ContentService.createTextOutput(JSON.stringify(resultLogs)).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // =======================================================
+    // 2. NẾU LÀ YÊU CẦU LẤY DỮ LIỆU BÁO CÁO CLOUD (Mặc định)
+    // =======================================================
+    var sheetBC = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("QuanLyBaoCaoCloud");
+    if (!sheetBC) {
+      return ContentService.createTextOutput(JSON.stringify([])).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    var dataBC = sheetBC.getDataRange().getValues();
+    var resultBC = [];
+
+    for (var j = 1; j < dataBC.length; j++) { 
+      var row = dataBC[j];
+      if (row[0] && row[1]) {
+        resultBC.push({
+          ngayTruc: String(row[0]),
+          jsonData: String(row[1])
+        });
+      }
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify(resultBC)).setMimeType(ContentService.MimeType.JSON);
+    
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({error: err.toString()})).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+
+function doPost(e) {
+  if (typeof e === 'undefined' || typeof e.postData === 'undefined') {
+    return ContentService.createTextOutput(JSON.stringify({
+      status: "error", 
+      message: "Lỗi kết nối: Không nhận được dữ liệu từ trình duyệt."
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  try {
+    var body = JSON.parse(e.postData.contents);
+    var action = body.action;
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    if (!ss) {
+       return ContentService.createTextOutput(JSON.stringify({
+         status: "error", 
+         message: "Lỗi: Script chưa được gắn vào Google Sheet hoặc bị mất liên kết!"
+       })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // =======================================================
+    // HÀM HỖ TRỢ GHI LOG VÀO SHEET "LichSu"
+    // =======================================================
+    function writeLog(user, details) {
+      var historySheet = ss.getSheetByName("LichSu");
+      if (!historySheet) {
+        historySheet = ss.insertSheet("LichSu");
+        historySheet.appendRow(["Thời gian", "Tài khoản", "Hành động/Thay đổi"]);
+      }
+      var time = Utilities.formatDate(new Date(), "GMT+7", "HH:mm:ss dd/MM/yyyy");
+      historySheet.appendRow([time, user, details]);
+    }
+
+    // --- 0. TÍNH NĂNG ĐĂNG NHẬP ---
+    if (action === "login") {
+      var sheetTK = ss.getSheetByName("TaiKhoan");
+      if (!sheetTK) {
+        return ContentService.createTextOutput(JSON.stringify({
+          status: "error", message: "Không tìm thấy tab 'TaiKhoan'."
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+
+      var data = sheetTK.getDataRange().getValues();
+      var inputUser = (body.username || "").toString().trim();
+      var inputPass = (body.password || "").toString().trim();
+
+      for (var i = 1; i < data.length; i++) {
+        var sheetUser = (data[i][0] || "").toString().trim();
+        var sheetPass = (data[i][1] || "").toString().trim();
+
+        if (sheetUser === inputUser && sheetPass === inputPass) {
+          var roleCode = (data[i][2] || "").toString().trim().toLowerCase(); 
+          var fullName = (data[i][3] || "").toString().trim();
+          var roleDisplayName = (data[i][4] || "").toString().trim(); 
+          
+          if (!roleDisplayName) {
+              if (roleCode === 'admin') roleDisplayName = "Quản trị viên";
+              else roleDisplayName = "Người dùng";
+          }
+
+          return ContentService.createTextOutput(JSON.stringify({
+            status: "success",
+            role: roleCode,
+            roleDisplayName: roleDisplayName,
+            fullname: fullName
+          })).setMimeType(ContentService.MimeType.JSON);
+        }
+      }
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "error", message: "Sai tên đăng nhập hoặc mật khẩu!"
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // --- 0.5 TÍNH NĂNG ĐỔI MẬT KHẨU ---
+    if (action === "changePassword") {
+      var sheetTK = ss.getSheetByName("TaiKhoan");
+      if (!sheetTK) {
+        return ContentService.createTextOutput(JSON.stringify({
+          status: "error", message: "Không tìm thấy tab 'TaiKhoan'."
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+
+      var dataTK = sheetTK.getDataRange().getValues();
+      var inputUser = (body.username || "").toString().trim();
+      var oldPass = (body.oldPassword || "").toString().trim();
+      var newPass = (body.newPassword || "").toString().trim();
+      var userRowIndex = -1;
+
+      for (var k = 1; k < dataTK.length; k++) {
+        var sheetUser = (dataTK[k][0] || "").toString().trim();
+        if (sheetUser === inputUser) {
+          userRowIndex = k;
+          break;
+        }
+      }
+
+      if (userRowIndex === -1) {
+        return ContentService.createTextOutput(JSON.stringify({
+          status: "error", message: "Tài khoản không tồn tại trên hệ thống!"
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+
+      var currentPassword = (dataTK[userRowIndex][1] || "").toString().trim();
+      if (currentPassword !== oldPass) {
+        return ContentService.createTextOutput(JSON.stringify({
+          status: "error", message: "Mật khẩu hiện tại không chính xác!"
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+
+      sheetTK.getRange(userRowIndex + 1, 2).setValue(newPass);
+
+      var userNameLog = (dataTK[userRowIndex][3] || inputUser).toString().trim();
+      writeLog(userNameLog, "Đã tự đổi mật khẩu.");
+
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "success", message: "Đổi mật khẩu thành công!"
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // --- 1. TÍNH NĂNG GHI LOG TỪ TRÌNH DUYỆT (ĐĂNG NHẬP, XÓA, DUYỆT...) ---
+    if (action === "log") {
+      var userLog = body.fullname || body.username || "Ẩn danh";
+      writeLog(userLog, body.details);
+      return ContentService.createTextOutput(JSON.stringify({status: "success"})).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // --- KIỂM TRA SHEET QUẢN LÝ BÁO CÁO CLOUD ---
+    var sheet = ss.getSheetByName("QuanLyBaoCaoCloud");
+    if (!sheet) {
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "error", message: "Cấu hình lỗi: Không tìm thấy tab 'QuanLyBaoCaoCloud'."
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // --- 2. TÍNH NĂNG XÓA ---
+    if (action === "delete") {
+      var dateToDel = body.ngayTruc || body.date;
+      var dataRow = sheet.getDataRange().getValues();
+      
+      for (var m = dataRow.length - 1; m >= 1; m--) {
+        var rowDate = String(dataRow[m][0]);
+        if (rowDate.indexOf(dateToDel) > -1 || dateToDel.indexOf(rowDate) > -1) {
+          sheet.deleteRow(m + 1);
+        }
+      }
+      return ContentService.createTextOutput(JSON.stringify({status: "success"})).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // --- 3. TÍNH NĂNG LƯU MỚI (VÀ LƯU CHI TIẾT LOGS) ---
+    if (action === "save") {
+      var date = body.data.ngayTruc;
+      var jsonData = JSON.stringify(body.data);
+      sheet.appendRow([date, jsonData]); 
+      
+      if (body.logs && body.logs.length > 0) {
+        var userAction = body.data.nguoiSua || body.data.nguoiTao || "Hệ thống";
+        body.logs.forEach(function(msg) {
+           writeLog(userAction, msg);
+        });
+      }
+
+      return ContentService.createTextOutput(JSON.stringify({status: "success"})).setMimeType(ContentService.MimeType.JSON);
+    }
+
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({
+      status: "error", 
+      message: "Lỗi hệ thống nội bộ: " + err.toString()
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
