@@ -853,6 +853,23 @@
     let currentRejectMessage = "";
     let currentApprovalInfo = {};
 
+    // --- GỬI TÍN HIỆU KHÓA ĐANG SOẠN THẢO --- //
+    async function thongBaoDangSoan(dateStr, isEditing) {
+        if(!GOOGLE_SHEET_URL || !currentUserSession) return;
+        try {
+            fetch(GOOGLE_SHEET_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({ 
+                    action: "lockDraft", 
+                    date: dateStr, 
+                    user: currentUserSession.fullname,
+                    isDrafting: isEditing 
+                })
+            });
+        } catch(e) { console.error(e); }
+    }
+
     // --- INDEXEDDB HELPER (Nâng cấp bộ nhớ) --- //
     const LocalDB = {
         dbName: 'BaoCaoGiaoBanDB',
@@ -1679,35 +1696,62 @@
 
     let currentCalMonth = new Date().getMonth();
     let currentCalYear = new Date().getFullYear();
-    let checkCacheForCalendar = []; // Để tối ưu, lưu tạm danh sách key của local
+    
+    // NEW: Quản lý trạng thái chi tiết của lịch để xử lý ẩn/hiện chấm đỏ
+    let calendarStatusMap = {};
 
     async function updateCalendarCache() {
-        const all = await LocalDB.getAll();
-        checkCacheForCalendar = all.map(item => item.key);
+        const allLocal = await LocalDB.getAll();
+        calendarStatusMap = {};
+        
+        // Quét dữ liệu máy Local
+        allLocal.forEach(item => {
+            if (item.key.startsWith("BaoCaoGiaoBan_Data_")) {
+                try {
+                    let data = item.value;
+                    if (data && data.ngayTruc) {
+                        calendarStatusMap[data.ngayTruc] = {
+                            isSubmitted: data.isSubmitted || false,
+                            isApproved: data.isApproved || false,
+                            rejectMessage: data.rejectMessage || ""
+                        };
+                    }
+                } catch(e) {}
+            }
+        });
+        
+        // Cập nhật từ Cloud đè lên nếu có
+        if (cloudDataCache && cloudDataCache.length > 0) {
+            cloudDataCache.forEach(r => {
+                try {
+                    let dStr = r.jsonData || r.data || r.JsonData;
+                    let data = typeof dStr === 'string' ? JSON.parse(dStr) : dStr;
+                    let dKey = data.ngayTruc || r.ngayTruc || r.date;
+                    if (dKey) {
+                        calendarStatusMap[dKey] = {
+                            isSubmitted: data.isSubmitted || false,
+                            isApproved: data.isApproved || false,
+                            rejectMessage: data.rejectMessage || ""
+                        };
+                    }
+                } catch(e) {}
+            });
+        }
     }
 
     function checkDateHasData(dateStr) {
-        let key = getStorageKey(dateStr); 
-        let hasLocal = checkCacheForCalendar.includes(key);
+        let status = calendarStatusMap[dateStr];
+        if (!status) return false;
         
-        let hasCloud = false;
-        if (cloudDataCache && cloudDataCache.length > 0) {
-            hasCloud = cloudDataCache.some(r => {
-                let dField = r.ngayTruc || r.date || r.NgayTruc || r.Date;
-                if (!dField && r.jsonData) { 
-                    try { 
-                        let p = JSON.parse(r.jsonData); 
-                        dField = p.ngayTruc; 
-                    } catch(e){} 
-                }
-                return dField && String(dField).indexOf(dateStr) > -1;
-            });
+        // ĐIỀU KIỆN CHẤM ĐỎ: Chỉ hiển thị khi Đã Trình, Đã Duyệt, hoặc Bị Từ Chối (ẩn đi đối với Bản Nháp)
+        if (status.isSubmitted || status.isApproved || status.rejectMessage) {
+            return true;
         }
-        return hasLocal || hasCloud;
+        return false;
     }
 
     async function renderCalendar() {
-        await updateCalendarCache(); // Lấy keys trước khi vẽ lịch
+        await updateCalendarCache(); // Cập nhật mảng cache trước khi vẽ lịch
         const monthYearSpan = document.getElementById("calendarMonthYear");
         const grid = document.getElementById("calendarGrid"); 
         grid.innerHTML = "";
@@ -1993,6 +2037,9 @@
                 updateSyncStatus('saved');
             }
             
+            // XÓA CỜ KHÓA SAU KHI LƯU XONG
+            await thongBaoDangSoan(activeDate, false);
+            
             setTimeout(fetchCloudDataBackground, 1000); 
         } catch(e) { 
             showToast("Lỗi kết nối mạng!", "error"); 
@@ -2063,20 +2110,33 @@
 
         promptPassword(`Xác thực để SỬA báo cáo ngày ${dateStr}`, async function(user) { 
             if (user && ["admin", "quantri", "editor"].includes(user.role)) { 
-                if (user.role === "editor") {
-                    const today = new Date(); today.setHours(0,0,0,0);
-                    const targetDate = new Date(dateStr); targetDate.setHours(0,0,0,0);
-                    const diffDays = Math.ceil((today - targetDate) / (1000 * 60 * 60 * 24));
+                
+                let checkRecord = await getRecordForDate(dateStr);
+                if (checkRecord) {
+                    let isDraft = !checkRecord.isApproved && !checkRecord.isSubmitted && !checkRecord.rejectMessage;
                     
-                    let checkRecord = await getRecordForDate(dateStr);
-                    let isRejected = (checkRecord && checkRecord.rejectMessage && !checkRecord.isSubmitted);
-                    
-                    if ((diffDays > 1 || diffDays < 0) && !isRejected) {
-                        return showToast("Đã quá thời gian quy định! Bạn chỉ được sửa báo cáo của Hôm nay hoặc Hôm qua.", "error");
+                    // CHẶN QUYỀN SỬA NẾU LÀ BẢN NHÁP CỦA NGƯỜI KHÁC
+                    if (isDraft && checkRecord.nguoiTao && checkRecord.nguoiTao !== user.fullname) {
+                        return showToast(`Bản nháp này chỉ có thể được sửa bởi người tạo (BS. ${checkRecord.nguoiTao})`, "error");
+                    }
+
+                    if (user.role === "editor") {
+                        const today = new Date(); today.setHours(0,0,0,0);
+                        const targetDate = new Date(dateStr); targetDate.setHours(0,0,0,0);
+                        const diffDays = Math.ceil((today - targetDate) / (1000 * 60 * 60 * 24));
+                        let isRejected = (checkRecord.rejectMessage && !checkRecord.isSubmitted);
+                        
+                        if ((diffDays > 1 || diffDays < 0) && !isRejected) {
+                            return showToast("Đã quá thời gian quy định! Bạn chỉ được sửa báo cáo của Hôm nay hoặc Hôm qua.", "error");
+                        }
                     }
                 }
+                
                 if(isCloud) await loadFromCloudToEdit(dateStr); 
                 else await loadToEdit(dateStr); 
+                
+                // THÔNG BÁO ĐANG SỬA LÊN CLOUD
+                thongBaoDangSoan(dateStr, true);
             } else if (user) { 
                 showToast("Tài khoản không có quyền SỬA!", "error"); 
             } 
@@ -2101,10 +2161,21 @@
     
     window.quickEditCurrent = function() { 
         if (currentReportApproved) return showToast("Báo cáo đã phê duyệt. Cần Hủy phê duyệt trước khi Sửa!", "error");
+        if (currentReportSubmitted) return showToast("Báo cáo đang chờ duyệt. Không thể sửa!", "error");
 
         promptPassword(`Xác thực để SỬA báo cáo ngày ${activeDate}`, function(user) { 
             if (user && ["admin", "quantri", "editor"].includes(user.role)) { 
+                
+                // CHẶN QUYỀN SỬA NẾU LÀ BẢN NHÁP CỦA NGƯỜI KHÁC
+                let isDraft = !currentReportApproved && !currentReportSubmitted && !currentRejectMessage;
+                let nguoiTao = originalData ? originalData.nguoiTao : null;
+                if (isDraft && nguoiTao && nguoiTao !== user.fullname) {
+                    return showToast(`Bản nháp này chỉ có thể được sửa bởi người tạo (BS. ${nguoiTao})`, "error");
+                }
+
                 applyLockState(false, true); 
+                // THÔNG BÁO ĐANG SỬA LÊN CLOUD
+                thongBaoDangSoan(activeDate, true);
             } else if (user) { 
                 showToast("Tài khoản không có quyền SỬA!", "error"); 
             } 
@@ -2131,6 +2202,9 @@
                     }
 
                     applyLockState(false, false); 
+                    // THÔNG BÁO TẠO MỚI (KHÓA) LÊN CLOUD
+                    thongBaoDangSoan(activeDate, true);
+                    
                     let nguoiLamBaoCaoInput = document.getElementById("nguoiLamBaoCao");
                     if (!nguoiLamBaoCaoInput.value) nguoiLamBaoCaoInput.value = user.fullname;
                     
@@ -2478,19 +2552,26 @@
             }
 
             let canEdit = false;
-            let canDelete = false;
+            let canDelete = isITAdmin;
 
-            if (isITAdmin) {
-                canDelete = true;
+            let isDraft = !r.isApproved && !r.isSubmitted && !r.rejectMessage;
+            let isCreator = (currentUserSession && r.nguoiTao === currentUserSession.fullname);
+            
+            // XỬ LÝ QUYỀN SỬA MỚI: Bản nháp chỉ người tạo mới được sửa
+            if (isDraft) {
+                if (isCreator) canEdit = true;
+            } else {
+                if (!r.isApproved && !r.isSubmitted) {
+                    // Trạng thái từ chối (Editor hoặc Ban Quản Trị đều có thể sửa)
+                    if (isEditor || isSuperLevel) canEdit = true;
+                }
             }
 
-            if (isEditor) {
-                if (!r.isApproved && !r.isSubmitted) canEdit = true;
-                
+            // Time lock cho Editor
+            if (isEditor && canEdit) {
                 const today = new Date(); today.setHours(0,0,0,0);
                 const targetDate = new Date(trueDate); targetDate.setHours(0,0,0,0);
                 const diffDays = Math.ceil((today - targetDate) / (1000 * 60 * 60 * 24));
-                
                 if ((diffDays > 1 || diffDays < 0) && !r.rejectMessage) {
                     canEdit = false;
                 }
@@ -2704,7 +2785,7 @@
         return { hienCo, tyLe }; 
     }
 
-    function applyLockState(locked, hasData = false) {
+    function applyLockState(locked, hasData = false, lockedBySomeoneElse = null, lockedByCreator = null) {
         const isITAdmin = (currentUserSession && currentUserSession.role === 'admin');
         const isMedicalAdmin = (currentUserSession && currentUserSession.role === 'quantri');
         const isEditor = (currentUserSession && currentUserSession.role === "editor");
@@ -2728,6 +2809,11 @@
         else if (isEditor && currentReportSubmitted) finalLock = true;
         else if (isEditor && isTimeLocked) finalLock = true;
 
+        // KHÓA MỜ NẾU AI ĐÓ ĐANG SOẠN HOẶC LÀ BẢN NHÁP CỦA NGƯỜI KHÁC
+        if (lockedBySomeoneElse || lockedByCreator) {
+            finalLock = true;
+        }
+
         isFormLocked = finalLock; 
         
         const inputs = document.querySelectorAll('.report-card input:not(#searchReport), .report-card select, .report-card textarea'); 
@@ -2740,7 +2826,22 @@
         const sTitle = document.getElementById('statusTitle');
         const sInfo = document.getElementById('statusInfo');
 
-        if (currentReportApproved) {
+        if (lockedBySomeoneElse) {
+            banner.style.display = 'flex';
+            banner.style.backgroundColor = '#fffbeb'; banner.style.borderColor = '#f59e0b'; sTitle.style.color = '#b45309'; sInfo.style.color = '#92400e';
+            sTitle.innerText = "⚠️ ĐANG CÓ NGƯỜI SOẠN THẢO";
+            sInfo.innerText = `Báo cáo này đang được nhập liệu bởi: ${lockedBySomeoneElse}. Bạn chỉ có thể xem.`;
+        } else if (lockedByCreator) {
+            banner.style.display = 'flex';
+            // Đổi khung và chữ sang màu đỏ cảnh báo
+            banner.style.backgroundColor = '#fee2e2'; 
+            banner.style.borderColor = '#ef4444'; 
+            sTitle.style.color = '#b91c1c'; 
+            sInfo.style.color = '#991b1b';
+            
+            sTitle.innerText = "⚠️ BẢN BÁO CÁO ĐANG ĐƯỢC LÀM";
+            sInfo.innerText = `Báo cáo đang được làm bởi ${lockedByCreator}. Chỉ người tạo báo cáo mới có quyền chỉnh sửa.`;
+        } else if (currentReportApproved) {
             banner.style.display = 'flex';
             banner.style.backgroundColor = '#dcfce7'; banner.style.borderColor = '#22c55e'; sTitle.style.color = '#166534'; sInfo.style.color = '#15803d';
             sTitle.innerText = "✅ BÁO CÁO ĐÃ ĐƯỢC LÃNH ĐẠO PHÊ DUYỆT";
@@ -2761,11 +2862,13 @@
 
         document.getElementById('xoaDuLieuBtn').style.display = (finalLock || currentReportSubmitted) ? 'none' : 'inline-flex'; 
         document.getElementById('luuBtn').style.display = finalLock ? 'none' : 'inline-flex'; 
-        document.getElementById('btnTaoMoi').style.display = (finalLock && !hasData) ? 'inline-flex' : 'none'; 
+        document.getElementById('btnTaoMoi').style.display = (finalLock && !hasData && !lockedBySomeoneElse && !lockedByCreator) ? 'inline-flex' : 'none'; 
         
         let showEditBtn = false;
-        if (hasData && !currentReportApproved) {
+        // KHÔNG HIỂN THỊ NÚT SỬA NHANH NẾU BỊ KHÓA BỞI NGƯỜI KHÁC
+        if (hasData && !currentReportApproved && !lockedBySomeoneElse && !lockedByCreator) {
             if (isEditor && !currentReportSubmitted && !isTimeLocked) showEditBtn = finalLock;
+            else if (!isEditor && !currentReportSubmitted) showEditBtn = finalLock; // Cho phép Quản trị, Admin thấy nút Sửa
         }
         document.getElementById('btnSuaNhanh').style.display = showEditBtn ? 'inline-flex' : 'none';
 
@@ -2776,7 +2879,7 @@
 
         let btnTrinhDuyet = document.getElementById('btnTrinhDuyet');
         if(btnTrinhDuyet) {
-            let canSubmit = hasData && !currentReportSubmitted && !currentReportApproved && (!isEditor || !isTimeLocked);
+            let canSubmit = hasData && !currentReportSubmitted && !currentReportApproved && (!isEditor || !isTimeLocked) && !lockedBySomeoneElse && !lockedByCreator;
             btnTrinhDuyet.style.display = canSubmit ? 'inline-flex' : 'none';
         }
 
@@ -3174,6 +3277,30 @@
         clearFormToDefault(); 
         const key = getStorageKey(activeDate); 
         
+        // KIỂM TRA XEM CÓ AI ĐANG CHIẾM QUYỀN SỬA TRÊN CLOUD KHÔNG
+        let lockedBySomeoneElse = null;
+        let lockedByCreator = null; // Thêm check creator
+        if (cloudDataCache && cloudDataCache.length > 0) {
+            let cloudRecord = cloudDataCache.find(r => {
+                let dStr = r.jsonData || r.data || r.JsonData;
+                let p = {}; try { p = typeof dStr === 'string' ? JSON.parse(dStr) : dStr; } catch(e){}
+                return (r.ngayTruc === activeDate || r.date === activeDate || p.ngayTruc === activeDate);
+            });
+            if (cloudRecord && currentUserSession) {
+                if (cloudRecord.lockedBy && cloudRecord.lockedBy !== currentUserSession.fullname) {
+                    lockedBySomeoneElse = cloudRecord.lockedBy;
+                }
+                
+                // Khóa nếu là bản nháp của người khác
+                let dStr = cloudRecord.jsonData || cloudRecord.data || cloudRecord.JsonData;
+                let p = {}; try { p = typeof dStr === 'string' ? JSON.parse(dStr) : dStr; } catch(e){}
+                let isDraft = !p.isApproved && !p.isSubmitted && !p.rejectMessage;
+                if (isDraft && p.nguoiTao && p.nguoiTao !== currentUserSession.fullname) {
+                    lockedByCreator = p.nguoiTao;
+                }
+            }
+        }
+
         const data = await LocalDB.getItem(key);
         let hasData = false; 
         let isSavedStatus = false;
@@ -3215,7 +3342,8 @@
         
         let shouldLock = true; 
         if (hasData && isSavedStatus === false && !currentReportApproved) { shouldLock = false; } 
-        applyLockState(shouldLock, hasData);
+        // TRUYỀN THÊM BIẾN LÊN HÀM KHÓA
+        applyLockState(shouldLock, hasData, lockedBySomeoneElse, lockedByCreator);
         
         initMultiSelect("trucLanhDao", lanhDaoOptions); 
         initMultiSelect("trucChuyenMon", chuyenMonOptions); 
@@ -3585,14 +3713,15 @@
                 else if (typeof val === 'number' || (!isNaN(parseFloat(val)) && isFinite(val) && val !== "")) { hAlign = "center"; }
                 
                 let strVal = val.toString(); 
-                if (strVal.startsWith("Trực Lãnh Đạo:") || strVal.startsWith("Trực Chuyên môn:") || strVal.startsWith("Trực Phòng khám:") || strVal.startsWith("Trực Xét nghiệm:") || strVal.startsWith("Trực CĐHA:") || strVal.startsWith("Trực An ninh, bảo vệ:") || strVal.startsWith("Tình hình trang thiết bị") || strVal.startsWith("* Hiện có =") || strVal.startsWith("* Tỷ lệ =")) { hAlign = "left"; } 
+                let leftAlignLabels = ["Huyết học", "Hóa sinh", "Vi sinh", "Nước tiểu", "Đông máu", "Xquang", "Siêu âm", "CT-Scanner"];
+                if (strVal.startsWith("Trực Lãnh Đạo:") || strVal.startsWith("Trực Chuyên môn:") || strVal.startsWith("Trực Phòng khám:") || strVal.startsWith("Trực Xét nghiệm:") || strVal.startsWith("Trực CĐHA:") || strVal.startsWith("Trực An ninh, bảo vệ:") || strVal.startsWith("Tình hình trang thiết bị") || strVal.startsWith("* Hiện có =") || strVal.startsWith("* Tỷ lệ =") || leftAlignLabels.includes(strVal)) { hAlign = "left"; } 
                 if (R > headerBNRowIndex + 1 && R < totalBNRowIndex && (C === 0 || C === 1)) { hAlign = "left"; } 
                 
                 if (sect3Type) { 
                     if (sect3Type === "PTCC" && (C === 1 || C === 4 || C === 9 || C === 12)) hAlign = "left"; 
-                    else if(sect3Type === "VV" && (C === 1 || C === 4)) hAlign = "left"; 
-                    else if (sect3Type === "CV" && (C === 1 || C === 4 || C === 7)) hAlign = "left"; 
-                    else if (sect3Type === "RV" && (C === 1 || C === 4 || C === 7)) hAlign = "left"; 
+                    else if(sect3Type === "VV" && (C === 1 || C === 5 || C === 11)) hAlign = "left"; 
+                    else if (sect3Type === "CV" && (C === 1 || C === 4 || C === 11 || C === 17)) hAlign = "left"; 
+                    else if (sect3Type === "RV" && (C === 1 || C === 4 || C === 11 || C === 17)) hAlign = "left"; 
                 } 
                 
                 let borderStyle = { style: 'thin', color: { rgb: "000000" } }; 
@@ -3756,7 +3885,7 @@
             try {
                 let btn = document.getElementById('btnHuyDuyet');
                 if(btn) {
-                    btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg> Đang xử lý...`;
+                    btn.innerHTML = `<svg class=\"svg-icon\" viewBox=\"0 0 24 24\"><rect x=\"3\" y=\"11\" width=\"18\" height=\"11\" rx=\"2\" ry=\"2\"></rect><path d=\"M7 11V7a5 5 0 0 1 9.9-1\"></path></svg> Đang xử lý...`;
                     btn.disabled = true;
                 }
                 
@@ -3774,7 +3903,7 @@
             } finally {
                 let btn = document.getElementById('btnHuyDuyet');
                 if(btn) {
-                    btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg> Hủy Phê Duyệt`;
+                    btn.innerHTML = `<svg class=\"svg-icon\" viewBox=\"0 0 24 24\"><rect x=\"3\" y=\"11\" width=\"18\" height=\"11\" rx=\"2\" ry=\"2\"></rect><path d=\"M7 11V7a5 5 0 0 1 9.9-1\"></path></svg> Hủy Phê Duyệt`;
                     btn.disabled = false;
                 }
             }
