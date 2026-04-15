@@ -3713,14 +3713,15 @@
                 else if (typeof val === 'number' || (!isNaN(parseFloat(val)) && isFinite(val) && val !== "")) { hAlign = "center"; }
                 
                 let strVal = val.toString(); 
-                if (strVal.startsWith("Trực Lãnh Đạo:") || strVal.startsWith("Trực Chuyên môn:") || strVal.startsWith("Trực Phòng khám:") || strVal.startsWith("Trực Xét nghiệm:") || strVal.startsWith("Trực CĐHA:") || strVal.startsWith("Trực An ninh, bảo vệ:") || strVal.startsWith("Tình hình trang thiết bị") || strVal.startsWith("* Hiện có =") || strVal.startsWith("* Tỷ lệ =")) { hAlign = "left"; } 
+                let leftAlignLabels = ["Huyết học", "Hóa sinh", "Vi sinh", "Nước tiểu", "Đông máu", "Xquang", "Siêu âm", "CT-Scanner"];
+                if (strVal.startsWith("Trực Lãnh Đạo:") || strVal.startsWith("Trực Chuyên môn:") || strVal.startsWith("Trực Phòng khám:") || strVal.startsWith("Trực Xét nghiệm:") || strVal.startsWith("Trực CĐHA:") || strVal.startsWith("Trực An ninh, bảo vệ:") || strVal.startsWith("Tình hình trang thiết bị") || strVal.startsWith("* Hiện có =") || strVal.startsWith("* Tỷ lệ =") || leftAlignLabels.includes(strVal)) { hAlign = "left"; } 
                 if (R > headerBNRowIndex + 1 && R < totalBNRowIndex && (C === 0 || C === 1)) { hAlign = "left"; } 
                 
                 if (sect3Type) { 
                     if (sect3Type === "PTCC" && (C === 1 || C === 4 || C === 9 || C === 12)) hAlign = "left"; 
-                    else if(sect3Type === "VV" && (C === 1 || C === 4)) hAlign = "left"; 
-                    else if (sect3Type === "CV" && (C === 1 || C === 4 || C === 7)) hAlign = "left"; 
-                    else if (sect3Type === "RV" && (C === 1 || C === 4 || C === 7)) hAlign = "left"; 
+                    else if(sect3Type === "VV" && (C === 1 || C === 5 || C === 11)) hAlign = "left"; 
+                    else if (sect3Type === "CV" && (C === 1 || C === 4 || C === 11 || C === 17)) hAlign = "left"; 
+                    else if (sect3Type === "RV" && (C === 1 || C === 4 || C === 11 || C === 17)) hAlign = "left"; 
                 } 
                 
                 let borderStyle = { style: 'thin', color: { rgb: "000000" } }; 
