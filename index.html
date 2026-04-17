@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Báo Cáo Giao Ban</title>
-    <meta name="author" content="Hoàng Văn Thượng">
+    <meta name="author" content="Admin5715">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -2129,14 +2129,17 @@
 
             let isCreator = (checkRecord.nguoiTao === user.fullname);
             let isAdmin = (user.role === 'admin');
+            let isRejected = !!checkRecord.rejectMessage;
 
             // BỨC TƯỜNG LỬA 3: Chặn đứng mọi nỗ lực bấm nút
             if (!isAdmin && !isCreator) {
+                if (isRejected) {
+                    return showToast(`CẢNH BÁO: Báo cáo đang bị TỪ CHỐI. Chỉ người tạo (BS. ${checkRecord.nguoiTao || 'khác'}) hoặc Admin mới được sửa!`, "error");
+                }
                 return showToast(`CẢNH BÁO: Báo cáo này do BS. ${checkRecord.nguoiTao || 'khác'} tạo. Bạn không có quyền sửa!`, "error");
             }
 
             // Giới hạn thời gian 48h cho Bác sĩ (Nhưng nếu bị TỪ CHỐI thì cho phép sửa bất chấp thời gian)
-            let isRejected = !!checkRecord.rejectMessage;
             if (user.role === "editor" && !isRejected) {
                 const today = new Date(); today.setHours(0,0,0,0);
                 const targetDate = new Date(dateStr); targetDate.setHours(0,0,0,0);
@@ -2177,9 +2180,13 @@
             
             let isCreator = (originalData && originalData.nguoiTao === user.fullname);
             let isAdmin = (user.role === 'admin');
+            let isRejected = !!currentRejectMessage;
 
             // BỨC TƯỜNG LỬA 4: Chặn truy cập nhanh
             if (!isAdmin && !isCreator) {
+                if (isRejected) {
+                    return showToast(`CẢNH BÁO: Báo cáo đang bị TỪ CHỐI. Chỉ người tạo (BS. ${originalData ? originalData.nguoiTao : 'khác'}) hoặc Admin mới có quyền sửa!`, "error");
+                }
                 return showToast(`CẢNH BÁO: Báo cáo này do BS. ${originalData ? originalData.nguoiTao : 'khác'} tạo. Bạn không có quyền sửa!`, "error");
             }
 
@@ -2717,6 +2724,7 @@
         setTimeout(() => { 
             let isOwner = (originalData && currentUserSession && originalData.nguoiTao === currentUserSession.fullname);
             let isAdmin = (currentUserSession && currentUserSession.role === 'admin');
+            let isRejected = originalData && !!originalData.rejectMessage;
 
             if (currentReportApproved) {
                 showToast("Báo cáo đã phê duyệt. Không thể sửa!", "error");
@@ -2726,7 +2734,11 @@
                 applyLockState(true, true); 
             } else if (!isOwner && !isAdmin) {
                 // CHỐT CHẶN CUỐI CÙNG: Nếu không phải chủ nhân, KHÓA VĨNH VIỄN
-                showToast("Bảo mật: Bạn không phải người tạo báo cáo này. Từ chối quyền sửa!", "error");
+                if (isRejected) {
+                    showToast(`Bảo mật: Báo cáo bị từ chối. Chỉ người tạo (BS. ${originalData.nguoiTao || 'khác'}) mới có quyền sửa!`, "error");
+                } else {
+                    showToast("Bảo mật: Bạn không phải người tạo báo cáo này. Từ chối quyền sửa!", "error");
+                }
                 applyLockState(true, true); 
             } else {
                 applyLockState(false, true); 
@@ -2845,12 +2857,17 @@
             let session = window.currentUserSession || {};
             let isCreator = (originalData.nguoiTao === session.fullname);
             let isAdmin = (session.role === 'admin');
+            let isRejected = !!originalData.rejectMessage;
 
             // Bất kể lệnh mở khóa đến từ đâu, nếu không phải Chủ nhân hoặc Admin -> ÉP KHÓA LẠI!
             if (!isAdmin && !isCreator) {
                 locked = true; 
                 setTimeout(() => {
-                    showToast(`Bảo mật: Báo cáo do BS. ${originalData.nguoiTao || 'khác'} tạo. Bạn bị cấm sửa!`, "error");
+                    if (isRejected) {
+                        showToast(`Bảo mật: Báo cáo bị từ chối chỉ được sửa bởi người tạo (BS. ${originalData.nguoiTao || 'khác'})!`, "error");
+                    } else {
+                        showToast(`Bảo mật: Báo cáo do BS. ${originalData.nguoiTao || 'khác'} tạo. Bạn bị cấm sửa!`, "error");
+                    }
                 }, 300);
             }
         }
@@ -2958,9 +2975,20 @@
             btnExcel.style.display = isMedicalAdmin ? 'inline-flex' : 'none';
         }
 
+        // --- ĐIỀU KIỆN HIỂN THỊ NÚT TRÌNH DUYỆT ---
+        let isOwner = (originalData && currentUserSession && originalData.nguoiTao === currentUserSession.fullname);
+        let isAdminRole = (currentUserSession && currentUserSession.role === 'admin');
+
         let btnTrinhDuyet = document.getElementById('btnTrinhDuyet');
         if(btnTrinhDuyet) {
-            let canSubmit = hasData && !currentReportSubmitted && !currentReportApproved && (!isEditor || !isTimeLocked) && !lockedBySomeoneElse && !lockedByCreator && !isViewer;
+            let canSubmit = hasData && 
+                            !currentReportSubmitted && 
+                            !currentReportApproved && 
+                            (!isEditor || !isTimeLocked) && 
+                            !lockedBySomeoneElse && 
+                            !lockedByCreator && 
+                            !isViewer &&
+                            (isOwner || isAdminRole); // Chặn hiển thị với người không phải tác giả
             btnTrinhDuyet.style.display = canSubmit ? 'inline-flex' : 'none';
         }
 
@@ -3816,36 +3844,43 @@
         });
         
         window.trinhDuyetBaoCao = async function() {
-            promptPassword(`Xác thực để TRÌNH DUYỆT báo cáo ngày ${activeDate}`, async function(user) { 
-                if (user && ["admin", "quantri", "editor"].includes(user.role)) { 
-                    try {
-                        let btn = document.getElementById('btnTrinhDuyet');
-                        if(btn) {
-                            btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg> Đang xử lý...`;
-                            btn.disabled = true;
-                        }
-                        
-                        currentReportSubmitted = true; 
-                        currentRejectMessage = ""; 
-                        
-                        await window.saveReportAll(true, true); 
-                        
-                        logAction(`Đã TRÌNH DUYỆT báo cáo ngày ${activeDate}`);
-                        showToast("Đã Trình duyệt thành công! Chờ Lãnh đạo phê duyệt.", "success");
-                    } catch(e) {
-                        showToast("Lỗi khi trình duyệt: " + e.message, "error");
-                    } finally {
-                        let btn = document.getElementById('btnTrinhDuyet');
-                        if(btn) {
-                            btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"></path></svg> Trình Duyệt`;
-                            btn.disabled = false;
-                        }
+        promptPassword(`Xác thực để TRÌNH DUYỆT báo cáo ngày ${activeDate}`, async function(user) { 
+            if (!user) return;
+
+            // Kiểm tra quyền sở hữu ngay khi thực hiện lệnh
+            let isCreator = (originalData && originalData.nguoiTao === user.fullname);
+            let isAdmin = (user.role === 'admin');
+
+            // BỨC TƯỜNG LỬA: Chỉ người tạo hoặc admin mới được trình duyệt
+            if (isAdmin || isCreator) { 
+                try {
+                    let btn = document.getElementById('btnTrinhDuyet');
+                    if(btn) {
+                        btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg> Đang xử lý...`;
+                        btn.disabled = true;
                     }
-                } else if (user) { 
-                    showToast("Bạn không có quyền Trình duyệt báo cáo này!", "error"); 
-                } 
-            });
-        }
+                    
+                    currentReportSubmitted = true; 
+                    currentRejectMessage = ""; 
+                    
+                    await window.saveReportAll(true, true); 
+                    
+                    logAction(`Đã TRÌNH DUYỆT báo cáo ngày ${activeDate}`);
+                    showToast("Đã Trình duyệt thành công! Chờ Lãnh đạo phê duyệt.", "success");
+                } catch(e) {
+                    showToast("Lỗi khi trình duyệt: " + e.message, "error");
+                } finally {
+                    let btn = document.getElementById('btnTrinhDuyet');
+                    if(btn) {
+                        btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"></path></svg> Trình Duyệt`;
+                        btn.disabled = false;
+                    }
+                }
+            } else { 
+                showToast(`CẢNH BÁO: Bạn không có quyền trình báo cáo của BS. ${originalData ? originalData.nguoiTao : 'khác'}!`, "error"); 
+            } 
+        });
+    }
         
         window.duyetBaoCao = async function() {
             promptPassword(`Xác thực Lãnh đạo để DUYỆT báo cáo ngày ${activeDate}`, async function(user) { 
