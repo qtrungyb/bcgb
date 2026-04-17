@@ -4,10 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Báo Cáo Giao Ban</title>
-    <meta name="author" content="Quang Trung">
+    <meta name="author" content="Hoàng Văn Thượng">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	
+	<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     
     <style>
         /* =========================================
@@ -665,9 +668,9 @@
                         <option value="all">Tất cả các tháng</option>
                     </select>
                     <input type="text" id="searchReport" placeholder="🔍 Tìm..." style="width: 200px; padding: 10px 16px; border: 1px dashed #cbd5e1; border-radius: 8px; font-size: 14px; background: transparent; color: inherit; outline: none; transition: 0.2s;">
-                    <button class="add-row-btn" style="background:rgba(192, 38, 211, 0.1); border-color:#f0abfc; color:#c026d3; padding: 10px 16px; margin-right: 32px;" onclick="fetchFromCloudAndRefreshUI()">
-                        <svg class="svg-icon" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> Tải
-                    </button>
+                    <button class="add-row-btn" style="background:rgba(192, 38, 211, 0.1); border-color:#f0abfc; color:#c026d3; padding: 10px 16px; margin-right: 32px;" onclick="fetchFromCloudAndRefreshUI(true)">
+    <svg class="svg-icon" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> Tải
+</button>
                 </div>
             </div>
 
@@ -833,10 +836,28 @@
 <script>
     // HIDDEN SYSTEM SIGNATURE
     eval(atob("Y29uc29sZS5sb2coJyVjU3lzdGVtIEFyY2hpdGVjdDogVHJ1bmcnLCAnY29sb3I6ICMwMjg0YzM7IGZvbnQtd2VpZ2h0OiBib2xkOyBmb250LXNpemU6IDExcHgnKTs="));
+	
 
     // --- GOOGLE SHEETS CONFIG --- //
-    const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbw7PIy4MCkWi52jfs3wxKTrvTxf53Gs5EShuFgTxbM8-lTTmiChFdm3dsjOgVq-hK-M/exec"; 
-
+    // const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbw7PIy4MCkWi52jfs3wxKTrvTxf53Gs5EShuFgTxbM8-lTTmiChFdm3dsjOgVq-hK-M/exec";
+	const GOOGLE_SHEET_URL = "";
+	// --- CẤU HÌNH FIREBASE CỦA BẠN DÁN Ở ĐÂY --- //
+	const firebaseConfig = {
+        apiKey: "AIzaSyA1dJll06zh2TLddgxG4Vpds03CuQ57fsg",
+        authDomain: "baocaogiaoban-156eb.firebaseapp.com",
+        
+        // DÒNG NÀY ĐÃ ĐƯỢC SỬA LẠI THÀNH ĐỊA CHỈ MẶC ĐỊNH (US)
+        databaseURL: "https://baocaogiaoban-156eb-default-rtdb.firebaseio.com",
+        
+        projectId: "baocaogiaoban-156eb",
+        storageBucket: "baocaogiaoban-156eb.firebasestorage.app",
+        messagingSenderId: "596104466494",
+        appId: "1:596104466494:web:896185eaa62fcd75d4416f",
+        measurementId: "G-D5W7H9FXFD"
+    };
+		// Khởi tạo Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
     // --- GLOBAL VARIABLES & UTILS --- //
     let originalData = null; 
     let cloudDataCache = []; 
@@ -894,66 +915,44 @@
         
         tbody.innerHTML = "<tr><td colspan='3' style='text-align:center; padding: 20px; font-weight: 500;'>Đang tải dữ liệu lịch sử...</td></tr>";
         
-        if (!GOOGLE_SHEET_URL || !currentUserSession || !currentUserSession.token) {
-            tbody.innerHTML = "<tr><td colspan='3' style='text-align:center; color: var(--danger);'>Lỗi: Phiên đăng nhập không hợp lệ!</td></tr>";
-            return;
-        }
-
         try {
-            let res = await fetch(GOOGLE_SHEET_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify({ action: "getLogs", token: currentUserSession.token })
-            });
-            
-            let data = await res.json();
-            
-            if (data.status === "error") {
-                tbody.innerHTML = `<tr><td colspan='3' style='text-align:center; color: var(--danger);'>${data.message}</td></tr>`;
-                return;
-            }
-
-            if (Array.isArray(data) && data.length > 0) {
+            const snapshot = await db.ref('logs').orderByKey().limitToLast(100).once('value');
+            if (snapshot.exists()) {
+                const logsObj = snapshot.val();
+                let logsArr = [];
+                for (let key in logsObj) { logsArr.push(logsObj[key]); }
+                
                 tbody.innerHTML = "";
-                [...data].reverse().forEach(log => {
+                logsArr.reverse().forEach(log => {
                     let tr = document.createElement("tr");
                     tr.innerHTML = `
-                        <td style="white-space: nowrap; font-size: 12px; color: var(--text-muted); text-align: center;">
-                            ${log.timestamp || log.thoiGian || ""}
-                        </td>
-                        <td style="font-weight: 600; color: var(--primary); text-align: left; padding-left: 16px;">
-                            ${log.fullname || log.username || log.taiKhoan || ""}
-                        </td>
-                        <td style="font-size: 13px; line-height: 1.5; text-align: left; padding-left: 16px;">
-                            ${log.details || log.thaoTac || ""}
-                        </td>
+                        <td style="white-space: nowrap; font-size: 12px; color: var(--text-muted); text-align: center;">${log.thoiGian || ""}</td>
+                        <td style="font-weight: 600; color: var(--primary); text-align: left; padding-left: 16px;">${log.taiKhoan || ""}</td>
+                        <td style="font-size: 13px; line-height: 1.5; text-align: left; padding-left: 16px;">${log.thaoTac || ""}</td>
                     `;
                     tbody.appendChild(tr);
                 });
             } else {
-                tbody.innerHTML = "<tr><td colspan='3' style='text-align:center; color: var(--text-muted); padding: 20px;'>Chưa có dữ liệu lịch sử hệ thống.</td></tr>";
+                tbody.innerHTML = "<tr><td colspan='3' style='text-align:center; color: var(--text-muted); padding: 20px;'>Chưa có dữ liệu lịch sử.</td></tr>";
             }
         } catch (e) {
-            tbody.innerHTML = "<tr><td colspan='3' style='text-align:center; color: var(--danger); padding: 20px;'>Lỗi kết nối máy chủ hoặc Google App Script chưa cấu hình API getLogs!</td></tr>";
-            console.error("Lỗi tải lịch sử:", e);
+            tbody.innerHTML = "<tr><td colspan='3' style='text-align:center; color: var(--danger); padding: 20px;'>Lỗi tải lịch sử từ Firebase!</td></tr>";
         }
     };
 
     // --- GỬI TÍN HIỆU KHÓA ĐANG SOẠN THẢO --- //
     async function thongBaoDangSoan(dateStr, isEditing) {
-        if(!GOOGLE_SHEET_URL || !currentUserSession || !currentUserSession.token) return;
+        if(!currentUserSession) return;
         try {
-            fetch(GOOGLE_SHEET_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify({ 
-                    action: "lockDraft",
-                    token: currentUserSession.token,
-                    date: dateStr, 
-                    user: currentUserSession.fullname,
-                    isDrafting: isEditing 
-                })
-            });
+            const lockRef = db.ref('reports/' + dateStr + '/lockedBy');
+            if (isEditing) {
+                await lockRef.set(currentUserSession.fullname);
+                // Tự động xóa khóa nếu trình duyệt đóng hoặc rớt mạng
+                lockRef.onDisconnect().remove();
+            } else {
+                await lockRef.remove();
+                lockRef.onDisconnect().cancel();
+            }
         } catch(e) { console.error(e); }
     }
 
@@ -1085,82 +1084,49 @@
     }
 
     async function fetchDanhSachNhanSu() {
-    if (!GOOGLE_SHEET_URL || !currentUserSession || !currentUserSession.token) return;
-    try {
-        let res = await fetch(GOOGLE_SHEET_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({ action: "getStaff", token: currentUserSession.token })
-        });
-        if (!res.ok) throw new Error("Network error");
-        let data = await res.json();
-        
-        if (data.status === "error") throw new Error(data.message);
+        try {
+            const snapshot = await db.ref('settings').once('value');
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                
+                if (data.staff.lanhDao) lanhDaoOptions = ["-- Chọn --", ...data.staff.lanhDao];
+                if (data.staff.chuyenMon) chuyenMonOptions = ["-- Chọn --", ...data.staff.chuyenMon];
+                if (data.staff.anNinh) anNinhOptions = ["-- Chọn --", ...data.staff.anNinh];
+                if (data.staff.bacSi) bacSiOptions = ["-- Chọn --", ...data.staff.bacSi];
+                if (data.staff.xetNghiem) xetNghiemOptions = ["-- Chọn --", ...data.staff.xetNghiem];
+                if (data.staff.cdha) cdhaOptions = ["-- Chọn --", ...data.staff.cdha];
+                if (data.staff.nguoiLamBaoCao) dsNguoiLamBaoCao = data.staff.nguoiLamBaoCao;
+                
+                if (data.autocomplete.diaChi) commonAddresses = data.autocomplete.diaChi;
+                if (data.autocomplete.chanDoan) commonDiagnoses = data.autocomplete.chanDoan;
 
-        if (data.lanhDao) lanhDaoOptions = ["-- Chọn --", ...data.lanhDao];
-        if (data.chuyenMon) chuyenMonOptions = ["-- Chọn --", ...data.chuyenMon];
-        if (data.anNinh) anNinhOptions = ["-- Chọn --", ...data.anNinh];
-        if (data.bacSi) bacSiOptions = ["-- Chọn --", ...data.bacSi];
-        if (data.diaChi) commonAddresses = data.diaChi;
-        if (data.chanDoan) commonDiagnoses = data.chanDoan;
-        if (data.nguoiLamBaoCao) dsNguoiLamBaoCao = data.nguoiLamBaoCao;
-        if (data.xetNghiem) xetNghiemOptions = ["-- Chọn --", ...data.xetNghiem];
-        if (data.cdha) cdhaOptions = ["-- Chọn --", ...data.cdha];
-
-        if (data.mauNhanSu) {
-            mauNhanSuData = data.mauNhanSu;
-            let mauNSSelect = document.getElementById("chonMauNhanSu");
-            if (mauNSSelect) {
-                mauNSSelect.innerHTML = '<option value="">Chọn mẫu...</option>';
-                mauNhanSuData.forEach((mau, idx) => {
-                    let opt = document.createElement('option');
-                    opt.value = idx; opt.textContent = mau.tenMau;
-                    mauNSSelect.appendChild(opt);
-                });
+                let dlBacSi = document.getElementById("bacSiList");
+                if (dlBacSi && data.staff.bacSi) {
+                    dlBacSi.innerHTML = "";
+                    data.staff.bacSi.forEach(bs => {
+                        let opt = document.createElement('option');
+                        opt.value = bs; dlBacSi.appendChild(opt);
+                    });
+                }
             }
+        } catch (e) {
+            console.error("Lỗi khi tải danh sách nhân sự:", e);
         }
-
-        if (data.mauBacSi) {
-            mauBacSiData = data.mauBacSi;
-            let mauBSSelect = document.getElementById("chonMauBacSi");
-            if (mauBSSelect) {
-                mauBSSelect.innerHTML = '<option value="">Chọn mẫu...</option>';
-                mauBacSiData.forEach((mau, idx) => {
-                    let opt = document.createElement('option');
-                    opt.value = idx; opt.textContent = mau.tenMau;
-                    mauBSSelect.appendChild(opt);
-                });
-            }
-        }
-
-        let dlBacSi = document.getElementById("bacSiList");
-        if (dlBacSi && data.bacSi) {
-            dlBacSi.innerHTML = "";
-            data.bacSi.forEach(bs => {
-                let opt = document.createElement('option');
-                opt.value = bs; dlBacSi.appendChild(opt);
-            });
-        }
-    } catch (e) {
-        console.error("Lỗi khi tải danh sách nhân sự:", e);
     }
-}
 
     async function logAction(details) {
-        if (!currentUserSession || !currentUserSession.token || !GOOGLE_SHEET_URL) return;
+        if (!currentUserSession) return;
         try {
-            fetch(GOOGLE_SHEET_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify({
-                    action: "log",
-                    token: currentUserSession.token,
-                    username: currentUserSession.username,
-                    fullname: currentUserSession.fullname,
-                    details: details
-                })
-            }); 
-        } catch(e) {}
+            // Gửi log lên Firebase với đầy đủ thông tin
+            db.ref('logs').push({
+                thoiGian: new Date().toLocaleString('vi-VN'),
+                taiKhoan: currentUserSession.fullname,
+                vaiTro: currentUserSession.roleDisplayName || currentUserSession.role,
+                thaoTac: details
+            });
+        } catch(e) {
+            console.error("Lỗi ghi log:", e);
+        }
     }
 
     function getDiffLogs(oldD, newD) {
@@ -1382,45 +1348,46 @@
         btn.disabled = true;
 
         try {
-            let res = await fetch(GOOGLE_SHEET_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain' }, 
-                body: JSON.stringify({ action: "login", username: userVal, password: passVal })
-            });
+            // Truy vấn trực tiếp vào Firebase nhánh 'users/tên_đăng_nhập'
+            const snapshot = await db.ref('users/' + userVal).once('value');
             
-            if (!res.ok) throw new Error(`Mã lỗi HTTP: ${res.status}`);
-
-            let textResult = await res.text();
-            let result;
-            try {
-                result = JSON.parse(textResult);
-            } catch (parseErr) {
-                console.error("Lỗi phản hồi từ server:", textResult);
-                throw new Error("Phản hồi không phải JSON. Cần kiểm tra lại phân quyền Apps Script.");
-            }
-
             btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Đăng Nhập`;
             btn.disabled = false;
 
-            if (result.status === "success") {
-                currentUserSession = { 
-                    token: result.token,
-                    username: userVal, 
-                    fullname: result.fullname, 
-                    role: result.role,
-                    roleDisplayName: result.roleDisplayName 
-                };
-                sessionStorage.setItem('loggedInUser', JSON.stringify(currentUserSession));
-                showToast(`Xin chào, ${result.fullname}!`, "success");
-                logAction("Đăng nhập hệ thống.");
-                await checkInitialLogin(); 
+            if (snapshot.exists()) {
+                const userData = snapshot.val();
+                
+                // Kiểm tra mật khẩu
+                if (userData.password === passVal) {
+                    currentUserSession = { 
+                        token: "firebase-auth-token", // Tạm giả lập token để tương thích hàm cũ
+                        username: userData.username, 
+                        fullname: userData.fullname, 
+                        role: userData.role,
+                        roleDisplayName: userData.role === 'admin' ? "Quản trị hệ thống" : (userData.role === 'quantri' ? "Lãnh đạo" : "Bác sĩ")
+                    };
+                    
+                    sessionStorage.setItem('loggedInUser', JSON.stringify(currentUserSession));
+                    showToast(`Xin chào, ${userData.fullname}!`, "success");
+                    
+                    // Ghi log đăng nhập lên Firebase
+                    db.ref('logs').push({
+                        thoiGian: new Date().toLocaleString('vi-VN'),
+                        taiKhoan: userData.fullname,
+                        thaoTac: "Đăng nhập hệ thống."
+                    });
+
+                    await checkInitialLogin(); 
+                } else {
+                    showToast("Sai mật khẩu!", "error");
+                }
             } else {
-                showToast(result.message || "Tài khoản không tồn tại hoặc sai mật khẩu.", "error");
+                showToast("Tài khoản không tồn tại trên hệ thống!", "error");
             }
         } catch (err) {
             btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Đăng Nhập`;
             btn.disabled = false;
-            showToast("Lỗi kết nối máy chủ: " + err.message, "error");
+            showToast("Lỗi kết nối máy chủ Firebase: " + err.message, "error");
         }
     }
 
@@ -1929,62 +1896,60 @@
     });
 
     async function fetchCloudDataBackground() {
-    if(!GOOGLE_SHEET_URL || !currentUserSession || !currentUserSession.token) return;
-    try { 
-        let res = await fetch(GOOGLE_SHEET_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({ action: "getCloudData", token: currentUserSession.token })
-        });
-        let newData = await res.json(); 
-        
-        if (newData.status === "error") {
-            console.error(newData.message);
-            return;
-        }
-        
-        cloudDataCache = newData; 
-        let needReloadCurrent = false;
-
-        for (let row of newData) {
-            try {
-                let dStr = row.jsonData || row.data || row.JsonData; 
-                let dataObj = typeof dStr === 'string' ? JSON.parse(dStr) : dStr; 
-                let dateKey = dataObj.ngayTruc || row.ngayTruc || row.date;
-                if (!dateKey) continue;
-                
-                let key = getStorageKey(dateKey);
-                let localSaved = await LocalDB.getItem(key);
-                let isDraft = false;
-                
-                if (localSaved) {
-                    if (localSaved.isSaved === false) {
-                        isDraft = true;
+        if (!currentUserSession) return;
+        try {
+            // Lắng nghe dữ liệu realtime thay vì fetch 1 lần
+            db.ref('reports').on('value', async (snapshot) => {
+                let newData = [];
+                if (snapshot.exists()) {
+                    const reportsObj = snapshot.val();
+                    for (let dateKey in reportsObj) {
+                        newData.push({
+                            ngayTruc: dateKey,
+                            jsonData: reportsObj[dateKey] // Firebase lưu dạng Object
+                        });
                     }
                 }
                 
-                let isEditingCurrent = (dateKey === activeDate && !isFormLocked);
-                
-                if (!isDraft && !isEditingCurrent) {
-                    dataObj.isSaved = true; 
-                    await LocalDB.setItem(key, dataObj);
-                    if (dateKey === activeDate && isFormLocked) {
-                        needReloadCurrent = true;
-                    }
+                cloudDataCache = newData;
+                let needReloadCurrent = false;
+
+                for (let row of newData) {
+                    try {
+                        let dataObj = row.jsonData; 
+                        let dateKey = row.ngayTruc;
+                        
+                        let key = getStorageKey(dateKey);
+                        let localSaved = await LocalDB.getItem(key);
+                        let isDraft = false;
+                        
+                        if (localSaved && localSaved.isSaved === false) {
+                            isDraft = true;
+                        }
+                        
+                        let isEditingCurrent = (dateKey === activeDate && !isFormLocked);
+                        
+                        if (!isDraft && !isEditingCurrent) {
+                            dataObj.isSaved = true; 
+                            await LocalDB.setItem(key, dataObj);
+                            if (dateKey === activeDate && isFormLocked) {
+                                needReloadCurrent = true;
+                            }
+                        }
+                    } catch(ex) {}
                 }
-            } catch(ex) {}
-        }
 
-        if (needReloadCurrent) {
-            await loadData();
-        }
+                if (needReloadCurrent) {
+                    await loadData();
+                }
 
-        if (document.getElementById('dashboardModal').classList.contains('show')) await renderDashboard(); 
-        await renderCalendar(); 
-    } catch(e) {
-        console.error("Lỗi khi tải dữ liệu nền:", e);
+                if (document.getElementById('dashboardModal').classList.contains('show')) await renderDashboard(); 
+                await renderCalendar(); 
+            });
+        } catch(e) {
+            console.error("Lỗi khi tải dữ liệu nền:", e);
+        }
     }
-}
 
     window.fetchFromCloudAndRefreshUI = async function() {
         if(!GOOGLE_SHEET_URL) return showToast("Chưa có link Google Sheet!", "error");
@@ -2013,6 +1978,7 @@
 
             const checkField = (id, name) => {
                 const el = document.getElementById(id);
+                if (!el) return;
                 if (!el.value) {
                     missingFields.push(name);
                     el.classList.add('error-highlight');
@@ -2030,7 +1996,8 @@
             const selects = document.querySelectorAll('#tbodyBenhNhan .bs-input');
             selects.forEach((sel, idx) => {
                 if (!sel.value) {
-                    missingFields.push("Bác sĩ trực (" + benhNhanData[idx].khoa + ")");
+                    let khoaName = benhNhanData[idx] ? benhNhanData[idx].khoa : "Khoa";
+                    missingFields.push("Bác sĩ trực (" + khoaName + ")");
                     sel.classList.add('error-highlight');
                     if (!firstErrorEl) firstErrorEl = sel;
                 }
@@ -2046,111 +2013,60 @@
         }
 
         const key = getStorageKey(activeDate); 
-        let isUpdateLocal = false; 
-        let currentDbData = await LocalDB.getItem(key);
-        if (currentDbData && currentDbData.isSaved) { 
-            isUpdateLocal = true; 
-        }
-        
         const btn = document.getElementById("luuBtn"); 
-        if(btn) { btn.disabled = true; }
-
-        let isUpdateCloud = false; 
-        let existingCloudRows = [];
-        if (GOOGLE_SHEET_URL) {
-            updateSyncStatus('pending');
-            try { 
-                let checkRes = await fetch(GOOGLE_SHEET_URL + "?t=" + new Date().getTime(), { cache: "no-store" }); 
-                let freshCloudData = await checkRes.json(); 
-                cloudDataCache = freshCloudData; 
-                existingCloudRows = freshCloudData.filter(r => { 
-                    try { 
-                        let dStr = r.jsonData || r.data || r.JsonData; 
-                        let d = typeof dStr === 'string' ? JSON.parse(dStr) : dStr; 
-                        return d && d.ngayTruc === activeDate; 
-                    } catch(e) { return false; } 
-                });
-                if (existingCloudRows.length > 0) isUpdateCloud = true;
-            } catch(e) { 
-                updateSyncStatus('error');
-            }
-        }
-
-        if (!skipOverwriteCheck && (isUpdateLocal || isUpdateCloud) && !currentReportApproved) {
-            let userConfirmed = await askOverwriteConfirm(activeDate);
-            if (!userConfirmed) { 
-                if(btn) { btn.disabled = false; }
-                updateSyncStatus('saved'); 
-                return false; 
-            }
-            if(btn) { btn.disabled = true; }
-        }
-
-        await saveData(true, forceSave); 
-        const finalDataObj = await LocalDB.getItem(key);
-
-        if(!GOOGLE_SHEET_URL) { 
-            showToast("Đã lưu mới thành công", "success"); 
-            originalData = JSON.parse(JSON.stringify(finalDataObj));
-            applyLockState(true, true); 
-            await renderDashboard(); 
-            if(btn) { btn.disabled = false; }
-            return true; 
-        }
+        if(btn) { btn.disabled = true; btn.innerHTML = 'Đang lưu...'; }
 
         try {
-            let diffs = getDiffLogs(originalData, finalDataObj);
-            
-            // Xác định action là "update" nếu đã có dữ liệu trên Cloud, ngược lại là "save"
-            let actionType = (isUpdateCloud && existingCloudRows.length > 0) ? "update" : "save";
+            // 1. Lưu vào bộ nhớ máy (IndexedDB) trước cho an toàn
+            await saveData(true, forceSave); 
+            const finalDataObj = await LocalDB.getItem(key);
 
-            let res = await fetch(GOOGLE_SHEET_URL, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'text/plain' }, 
-                // Gửi 1 request duy nhất với actionType tương ứng
-                body: JSON.stringify({ 
-                    action: actionType, 
-                    token: currentUserSession.token, 
-                    data: finalDataObj, 
-                    logs: diffs 
-                }) 
-            });
-            let textResult = await res.text();
+            // 2. MÀNG LỌC FIREBASE: Loại bỏ hoàn toàn các giá trị undefined
+            const cleanDataForFirebase = JSON.parse(JSON.stringify(finalDataObj));
+
+            // 3. TÍNH TOÁN VÀ GHI LOG CHI TIẾT TRƯỚC KHI CẬP NHẬT ORIGINAL DATA
+            let chiTietThayDoi = "";
+            let diffs = getDiffLogs(originalData, cleanDataForFirebase);
             
-            try { 
-                let result = JSON.parse(textResult); 
-                if(result.status === 'success') {
-                    originalData = JSON.parse(JSON.stringify(finalDataObj));
-                    showToast("Đã lưu và đồng bộ thành công!", "success"); 
-                    updateSyncStatus('saved');
-                    
-                    let newCloudRow = {
-                        ngayTruc: activeDate,
-                        jsonData: JSON.stringify(finalDataObj)
-                    };
-                    cloudDataCache.push(newCloudRow);
-                    
-                } else {
-                    showToast(`Lỗi đồng bộ lên Cloud: ${result.message}`, "error"); 
-                    updateSyncStatus('error');
-                }
-            } catch(e) { 
-                originalData = JSON.parse(JSON.stringify(finalDataObj));
-                showToast("Đã lưu thành công!", "success"); 
-                updateSyncStatus('saved');
+            if (originalData) {
+                if (diffs.length > 0) chiTietThayDoi = "Cập nhật: " + diffs.join(" | ");
+            } else {
+                chiTietThayDoi = `Tạo mới báo cáo ngày ${activeDate}.`;
             }
             
-            await thongBaoDangSoan(activeDate, false);
+            // 4. LƯU LÊN FIREBASE REALTIME
+            await db.ref('reports/' + activeDate).set(cleanDataForFirebase);
             
-            setTimeout(fetchCloudDataBackground, 1000); 
+            // 5. GHI LOG NẾU CÓ SỰ THAY ĐỔI THỰC SỰ
+            if (chiTietThayDoi !== "") {
+                await logAction(chiTietThayDoi);
+            }
+            
+            // 6. Cập nhật lại originalData cho lần lưu tiếp theo
+            originalData = JSON.parse(JSON.stringify(cleanDataForFirebase));
+            
+            showToast("Đã lưu và đồng bộ thành công!", "success"); 
+            updateSyncStatus('saved');
+            
+            await thongBaoDangSoan(activeDate, false);
         } catch(e) { 
-            showToast("Lỗi kết nối mạng!", "error"); 
+            console.error("Lỗi khi lưu báo cáo:", e);
+            showToast("Lỗi khi lưu: " + e.message, "error"); 
             updateSyncStatus('error');
         }
 
-        applyLockState(true, true); 
-        await renderDashboard(); 
-        if(btn) { btn.disabled = false; }
+        try {
+            applyLockState(true, true); 
+            await renderDashboard(); 
+        } catch(e) {
+            console.error("Lỗi cập nhật giao diện:", e);
+        }
+
+        // Mở khóa nút bấm
+        if(btn) { 
+            btn.disabled = false; 
+            btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg> Lưu Báo Cáo`;
+        }
         return true;
     }
     
@@ -2159,22 +2075,12 @@
     window.xoaTrenCloud = async function(dateStr, gSheetKey) {
         if(!dateStr) return; 
         let trueDate = dateStr.trim().substring(0, 10); 
-        let keyToDelete = gSheetKey || trueDate; 
         
-        if(!GOOGLE_SHEET_URL) return showToast("Chưa có link Google Sheet!", "error");
-        if(!currentUserSession || !currentUserSession.token) return showToast("Phiên đăng nhập không hợp lệ!", "error");
+        if(!currentUserSession) return showToast("Phiên đăng nhập không hợp lệ!", "error");
         
         try { 
-            let res = await fetch(GOOGLE_SHEET_URL, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'text/plain' }, 
-                body: JSON.stringify({ action: "delete", token: currentUserSession.token, date: keyToDelete, ngayTruc: keyToDelete, id: keyToDelete }) 
-            }); 
-            let result = await res.json();
-            
-            if (result.status === "error") {
-                return showToast(result.message, "error");
-            }
+            // XÓA TRÊN FIREBASE REALTIME
+            await db.ref('reports/' + trueDate).remove();
 
             await LocalDB.removeItem(getStorageKey(trueDate));
             
@@ -2185,9 +2091,8 @@
 
             logAction(`Xóa dữ liệu báo cáo ngày ${trueDate}`);
             showToast(`Đã xóa báo cáo ngày ${trueDate} trên hệ thống`, "success"); 
-            await fetchFromCloudAndRefreshUI(); 
         } catch(e) { 
-            showToast("Lỗi mạng hoặc phân quyền!", "error"); 
+            showToast("Lỗi khi xóa: " + e.message, "error"); 
         }
     }
 
@@ -2213,38 +2118,37 @@
     }
 
     window.handleEditClick = function(dateStr, isCloud, isAppr) { 
-        if (isAppr) return showToast("Báo cáo đã phê duyệt. Cần Hủy phê duyệt trước khi Sửa!", "error");
-
         promptPassword(`Xác thực để SỬA báo cáo ngày ${dateStr}`, async function(user) { 
-            if (user && ["admin", "quantri", "editor"].includes(user.role)) { 
-                
-                let checkRecord = await getRecordForDate(dateStr);
-                if (checkRecord) {
-                    let isDraft = !checkRecord.isApproved && !checkRecord.isSubmitted && !checkRecord.rejectMessage;
-                    
-                    if (isDraft && checkRecord.nguoiTao && checkRecord.nguoiTao !== user.fullname) {
-                        return showToast(`Bản nháp này chỉ có thể được sửa bởi người tạo (BS. ${checkRecord.nguoiTao})`, "error");
-                    }
+            if (!user) return;
+            
+            let checkRecord = await getRecordForDate(dateStr);
+            if (!checkRecord) return showToast("Không tìm thấy dữ liệu báo cáo!", "error");
 
-                    if (user.role === "editor") {
-                        const today = new Date(); today.setHours(0,0,0,0);
-                        const targetDate = new Date(dateStr); targetDate.setHours(0,0,0,0);
-                        const diffDays = Math.ceil((today - targetDate) / (1000 * 60 * 60 * 24));
-                        let isRejected = (checkRecord.rejectMessage && !checkRecord.isSubmitted);
-                        
-                        if ((diffDays > 1 || diffDays < 0) && !isRejected) {
-                            return showToast("Bạn chỉ được sửa báo cáo của Hôm nay hoặc Hôm qua.", "error");
-                        }
-                    }
+            if (checkRecord.isApproved) return showToast("Báo cáo đã duyệt. Cần Hủy phê duyệt trước!", "error");
+            if (checkRecord.isSubmitted) return showToast("Báo cáo đang chờ duyệt. Không thể sửa!", "error");
+
+            let isCreator = (checkRecord.nguoiTao === user.fullname);
+            let isAdmin = (user.role === 'admin');
+
+            // BỨC TƯỜNG LỬA 3: Chặn đứng mọi nỗ lực bấm nút
+            if (!isAdmin && !isCreator) {
+                return showToast(`CẢNH BÁO: Báo cáo này do BS. ${checkRecord.nguoiTao || 'khác'} tạo. Bạn không có quyền sửa!`, "error");
+            }
+
+            // Giới hạn thời gian 48h cho Bác sĩ (Nhưng nếu bị TỪ CHỐI thì cho phép sửa bất chấp thời gian)
+            let isRejected = !!checkRecord.rejectMessage;
+            if (user.role === "editor" && !isRejected) {
+                const today = new Date(); today.setHours(0,0,0,0);
+                const targetDate = new Date(dateStr); targetDate.setHours(0,0,0,0);
+                const diffDays = Math.ceil((today - targetDate) / (1000 * 60 * 60 * 24));
+                if (diffDays > 1 || diffDays < 0) {
+                    return showToast("Bạn chỉ được sửa báo cáo (Nháp) của Hôm nay hoặc Hôm qua.", "error");
                 }
-                
-                if(isCloud) await loadFromCloudToEdit(dateStr); 
-                else await loadToEdit(dateStr); 
-                
-                thongBaoDangSoan(dateStr, true);
-            } else if (user) { 
-                showToast("Tài khoản không có quyền SỬA!", "error"); 
-            } 
+            }
+            
+            if(isCloud) await loadFromCloudToEdit(dateStr); 
+            else await loadToEdit(dateStr); 
+            thongBaoDangSoan(dateStr, true);
         }); 
     }
     
@@ -2265,23 +2169,22 @@
     }
     
     window.quickEditCurrent = function() { 
-        if (currentReportApproved) return showToast("Báo cáo đã phê duyệt. Cần Hủy phê duyệt trước khi Sửa!", "error");
+        if (currentReportApproved) return showToast("Báo cáo đã duyệt. Cần Hủy phê duyệt trước!", "error");
         if (currentReportSubmitted) return showToast("Báo cáo đang chờ duyệt. Không thể sửa!", "error");
 
         promptPassword(`Xác thực để SỬA báo cáo ngày ${activeDate}`, function(user) { 
-            if (user && ["admin", "quantri", "editor"].includes(user.role)) { 
-                
-                let isDraft = !currentReportApproved && !currentReportSubmitted && !currentRejectMessage;
-                let nguoiTao = originalData ? originalData.nguoiTao : null;
-                if (isDraft && nguoiTao && nguoiTao !== user.fullname) {
-                    return showToast(`Bản nháp này chỉ có thể được sửa bởi người tạo (BS. ${nguoiTao})`, "error");
-                }
+            if (!user) return;
+            
+            let isCreator = (originalData && originalData.nguoiTao === user.fullname);
+            let isAdmin = (user.role === 'admin');
 
-                applyLockState(false, true); 
-                thongBaoDangSoan(activeDate, true);
-            } else if (user) { 
-                showToast("Tài khoản không có quyền SỬA!", "error"); 
-            } 
+            // BỨC TƯỜNG LỬA 4: Chặn truy cập nhanh
+            if (!isAdmin && !isCreator) {
+                return showToast(`CẢNH BÁO: Báo cáo này do BS. ${originalData ? originalData.nguoiTao : 'khác'} tạo. Bạn không có quyền sửa!`, "error");
+            }
+
+            applyLockState(false, true); 
+            thongBaoDangSoan(activeDate, true);
         }); 
     }
 
@@ -2649,23 +2552,18 @@
             let canEdit = false;
             let canDelete = isITAdmin;
 
-            let isDraft = !r.isApproved && !r.isSubmitted && !r.rejectMessage;
             let isCreator = (currentUserSession && r.nguoiTao === currentUserSession.fullname);
-            
-            if (isDraft) {
-                if (isCreator) canEdit = true;
-            } else {
-                if (!r.isApproved && !r.isSubmitted) {
-                    if (isEditor || isSuperLevel) canEdit = true;
-                }
-            }
+            let isAdmin = (currentUserSession && currentUserSession.role === 'admin');
 
-            if (isEditor && canEdit) {
-                const today = new Date(); today.setHours(0,0,0,0);
-                const targetDate = new Date(trueDate); targetDate.setHours(0,0,0,0);
-                const diffDays = Math.ceil((today - targetDate) / (1000 * 60 * 60 * 24));
-                if ((diffDays > 1 || diffDays < 0) && !r.rejectMessage) {
-                    canEdit = false;
+            // LỌC QUYỀN HIỂN THỊ NÚT SỬA TUYỆT ĐỐI
+            if (r.isApproved || r.isSubmitted) {
+                canEdit = false; // Đã Nộp hoặc Đã Duyệt -> Tàng hình nút Sửa với tất cả
+            } else {
+                // Nháp hoặc Bị Từ Chối -> CHỈ Bác sĩ tạo ra nó hoặc Admin mới thấy nút Sửa
+                if (isCreator || isAdmin) {
+                    canEdit = true;
+                } else {
+                    canEdit = false; // BS B vĩnh viễn không thấy nút này
                 }
             }
 
@@ -2740,7 +2638,44 @@
         }
     }
     document.getElementById("searchReport").addEventListener("input", filterReports);
-
+	
+	// --- HÀM TẢI DỮ LIỆU LÊN THẺ "ĐÃ LƯU (CLOUD)" ---
+    window.fetchFromCloudAndRefreshUI = async function(isManual = false) {
+        if (!currentUserSession) return;
+        
+        try {
+            const subtitleEl = document.getElementById("dashboardSubtitle");
+            if(subtitleEl) subtitleEl.innerText = "Đang tải dữ liệu từ Cloud...";
+            
+            // Kéo toàn bộ danh sách báo cáo từ Firebase
+            const snapshot = await db.ref('reports').once('value');
+            let newData = [];
+            
+            if (snapshot.exists()) {
+                const reportsObj = snapshot.val();
+                for (let dateKey in reportsObj) {
+                    newData.push({
+                        ngayTruc: dateKey,
+                        jsonData: reportsObj[dateKey] 
+                    });
+                }
+            }
+            
+            cloudDataCache = newData;
+            await renderDashboard();
+            
+            // Nếu là bấm nút thủ công thì hiện thông báo
+            if (isManual) {
+                showToast("Đã làm mới danh sách dữ liệu từ Cloud!", "success");
+            }
+            
+        } catch(e) {
+            console.error("Lỗi tải danh sách Cloud:", e);
+            showToast("Lỗi khi kết nối Cloud: " + e.message, "error");
+        }
+    };
+	
+	
     window.openDashboard = async function() { 
         const modal = document.getElementById('dashboardModal'); 
         modal.style.display = "flex"; 
@@ -2773,24 +2708,31 @@
     }
     
     window.loadToEdit = async function(dateStr) { 
-    let cleanD = dateStr.trim().substring(0, 10); 
-    activeDate = cleanD; 
-    updateDateDisplay(); 
-    closeDashboard(); 
-    await loadData(); 
-    
-    setTimeout(() => { 
-        if (currentReportApproved) {
-            showToast("Báo cáo đã phê duyệt. Không thể sửa!", "error");
-            applyLockState(true, true); 
-        } else if (currentReportSubmitted) {
-            showToast("Báo cáo đang chờ duyệt. Không thể sửa!", "error");
-            applyLockState(true, true); 
-        } else {
-            applyLockState(false, true); 
-        }
-    }, 150); 
-}
+        let cleanD = dateStr.trim().substring(0, 10); 
+        activeDate = cleanD; 
+        updateDateDisplay(); 
+        closeDashboard(); 
+        await loadData(); 
+        
+        setTimeout(() => { 
+            let isOwner = (originalData && currentUserSession && originalData.nguoiTao === currentUserSession.fullname);
+            let isAdmin = (currentUserSession && currentUserSession.role === 'admin');
+
+            if (currentReportApproved) {
+                showToast("Báo cáo đã phê duyệt. Không thể sửa!", "error");
+                applyLockState(true, true); 
+            } else if (currentReportSubmitted) {
+                showToast("Báo cáo đang chờ duyệt. Không thể sửa!", "error");
+                applyLockState(true, true); 
+            } else if (!isOwner && !isAdmin) {
+                // CHỐT CHẶN CUỐI CÙNG: Nếu không phải chủ nhân, KHÓA VĨNH VIỄN
+                showToast("Bảo mật: Bạn không phải người tạo báo cáo này. Từ chối quyền sửa!", "error");
+                applyLockState(true, true); 
+            } else {
+                applyLockState(false, true); 
+            }
+        }, 150); 
+    }
     
     window.loadFromCloudToView = async function(trueDate) { 
         const cloudRecord = cloudDataCache.find(r => { 
@@ -2896,6 +2838,24 @@
     }
 
     function applyLockState(locked, hasData = false, lockedBySomeoneElse = null, lockedByCreator = null) {
+        // =========================================================
+        // 🛡️ TƯỜNG LỬA BẢO MẬT (FIREWALL LÕI) - CHẶN MỌI NỖ LỰC LÁCH LUẬT
+        // =========================================================
+        if (locked === false && typeof originalData !== 'undefined' && originalData) {
+            let session = window.currentUserSession || {};
+            let isCreator = (originalData.nguoiTao === session.fullname);
+            let isAdmin = (session.role === 'admin');
+
+            // Bất kể lệnh mở khóa đến từ đâu, nếu không phải Chủ nhân hoặc Admin -> ÉP KHÓA LẠI!
+            if (!isAdmin && !isCreator) {
+                locked = true; 
+                setTimeout(() => {
+                    showToast(`Bảo mật: Báo cáo do BS. ${originalData.nguoiTao || 'khác'} tạo. Bạn bị cấm sửa!`, "error");
+                }, 300);
+            }
+        }
+        // =========================================================
+
         const isITAdmin = (currentUserSession && currentUserSession.role === 'admin');
         const isMedicalAdmin = (currentUserSession && currentUserSession.role === 'quantri');
         const isEditor = (currentUserSession && currentUserSession.role === "editor");
@@ -2970,8 +2930,7 @@
             sTitle.style.color = '#b91c1c'; 
             sInfo.style.color = '#991b1b';
             sTitle.innerText = "⚠️ BÁO CÁO ĐANG LÀM";
-            sInfo.innerText = `Báo cáo đang được làm bởi ${nguoiKhoa}. 
-			Bạn chỉ có thể xem và không được phép sửa.`;
+            sInfo.innerText = `Báo cáo đang được làm bởi ${nguoiKhoa}. Bạn chỉ có thể xem và không được phép sửa.`;
         } else {
             banner.style.display = 'none';
         }
@@ -2981,9 +2940,16 @@
         document.getElementById('btnTaoMoi').style.display = (finalLock && !hasData && !lockedBySomeoneElse && !lockedByCreator && !isViewer) ? 'inline-flex' : 'none'; 
         
         let showEditBtn = false;
-        if (hasData && !currentReportApproved && !lockedBySomeoneElse && !lockedByCreator) {
-            if (isEditor && !currentReportSubmitted && !isTimeLocked) showEditBtn = finalLock;
-            else if (!isEditor && !currentReportSubmitted && !isViewer) showEditBtn = finalLock; 
+        if (hasData) {
+            let isCreator = (originalData && currentUserSession && originalData.nguoiTao === currentUserSession.fullname);
+            let isAdmin = (currentUserSession && currentUserSession.role === 'admin');
+            
+            // BỨC TƯỜNG LỬA 2: Ẩn nút Sửa báo cáo ở góc trái
+            if (!currentReportApproved && !currentReportSubmitted && !lockedBySomeoneElse) {
+                if (isCreator || isAdmin) {
+                    showEditBtn = finalLock; 
+                }
+            }
         }
         document.getElementById('btnSuaNhanh').style.display = showEditBtn ? 'inline-flex' : 'none';
 
@@ -3216,7 +3182,8 @@
                         btn.className = "remove-row-btn"; 
                         btn.style.display = isFormLocked ? 'none' : 'inline-flex';
                         btn.addEventListener("click", () => { 
-                            if(isFormLocked) return; 
+                            if(isFormLocked) return;
+							logAction(`Xóa 1 bệnh nhân khỏi danh sách ${tableId}`); // Thêm dòng này							
                             defaultRows.splice(idx, 1); 
                             renderRows(); 
                             updateSyncStatus('pending');
@@ -3333,6 +3300,7 @@
         }
         window[`addRow_${tableId}`] = function() { 
             if(isFormLocked) return; 
+			logAction(`Thêm bệnh nhân mới vào danh sách ${tableId}`); // Thêm dòng này
             defaultRows.push(Object.fromEntries(columnsConfig.filter(c=>c!="actions").map(c=>[c,""]))); 
             renderRows(); 
             updateSyncStatus('pending');
@@ -3552,10 +3520,11 @@
     const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     activeDate = todayStr;
     
+    // Tự động lưu vào máy (IndexedDB) mỗi khi có bất kỳ thay đổi nào trên form
     document.addEventListener("input", function(e) {
-        if (!e.target.classList.contains("modal-input")) {
+        if (!e.target.classList.contains("modal-input") && !isFormLocked) {
             updateSyncStatus('pending');
-            saveData(false);
+            saveData(false); // Lưu tạm vào bộ nhớ máy
         }
     });
 
