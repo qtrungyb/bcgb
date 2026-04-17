@@ -1,11 +1,10 @@
-
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Báo Cáo Giao Ban</title>
-    <meta name="author" content="Quang Trung">
+    <meta name="author" content="Hoàng Văn Thượng">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -471,8 +470,7 @@
         </div>
         
         <div style="text-align: center; margin-bottom: 32px; margin-top: -12px;">
-            <button id="btnTaoMoi" class="btn-create" style="display: none;">
-                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg> Tạo Mới Báo Cáo
+            <button id="btnTaoMoi" class="btn-create" style="display: none;">Tạo Mới Báo Cáo
             </button>
         </div>
 
@@ -763,7 +761,7 @@
     <div id="customInputModal" class="modal-overlay">
         <div class="modal-box" style="border-color: #bae6fd;">
             <h3 id="modalTitle">Nhập thông tin nhân sự:</h3>
-            <input type="text" id="modalInput" class="modal-input" placeholder="Gõ tên vào đây..." autocomplete="off" />
+            <input type="text" id="modalInput" class="modal-input" placeholder="Lý do..." autocomplete="off" />
             <div class="modal-actions">
                 <button class="modal-btn" onclick="closeModal(false)">Hủy</button>
                 <button class="modal-btn" style="background: rgba(2, 132, 199, 0.1); color: var(--primary); border-color: var(--primary);" onclick="closeModal(true)">Xác nhận</button>
@@ -1608,7 +1606,7 @@
             }
 
             const msgEl = document.getElementById('confirmDeleteMessage');
-            msgEl.innerHTML = `Bạn có chắc chắn muốn xóa báo cáo ngày <b>${d}</b> tháng <b>${m}</b> năm <b>${y}</b> không?<br><br><span style="color: var(--danger); font-weight: 600;">Dữ liệu báo cáo ngày ${d}/${m}/${y} sẽ bị xóa hoàn toàn và không thể khôi phục lại!</span>`;
+            msgEl.innerHTML = `Bạn có chắc chắn muốn xóa báo cáo ngày <b>${d}</b> tháng <b>${m}</b> năm <b>${y}</b> không?<br><br><span style="color: var(--danger); font-weight: 600;">Dữ liệu sẽ bị xóa hoàn toàn và không thể khôi phục lại!</span>`;
 
             const modal = document.getElementById('confirmModal');
             modal.style.display = "flex";
@@ -1632,7 +1630,7 @@
     let overwriteResolve = null;
     function askOverwriteConfirm(date) {
         return new Promise((resolve) => {
-            document.getElementById('overwriteConfirmMsg').innerHTML = `Báo cáo ngày ${date} đã có trên hệ thống.<br>Bạn có chắc chắn muốn <b>CẬP NHẬT</b> không?`;
+            document.getElementById('overwriteConfirmMsg').innerHTML = `Báo cáo ngày ${date} đã có trên hệ thống.<br>Có chắc chắn muốn <b>CẬP NHẬT</b> không?`;
             const modal = document.getElementById('overwriteConfirmModal');
             modal.style.display = "flex";
             setTimeout(() => modal.classList.add("show"), 10);
@@ -2161,7 +2159,7 @@
                         let isRejected = (checkRecord.rejectMessage && !checkRecord.isSubmitted);
                         
                         if ((diffDays > 1 || diffDays < 0) && !isRejected) {
-                            return showToast("Đã quá thời gian quy định! Bạn chỉ được sửa báo cáo của Hôm nay hoặc Hôm qua.", "error");
+                            return showToast("Bạn chỉ được sửa báo cáo của Hôm nay hoặc Hôm qua.", "error");
                         }
                     }
                 }
@@ -2282,77 +2280,6 @@
         showToast("Đã điền nhanh ghi chú!", "success");
     }
 
-    async function fetchAuditLogs() {
-    if (!GOOGLE_SHEET_URL || !currentUserSession || !currentUserSession.token) return;
-    const tbody = document.getElementById("historyTableBody");
-    tbody.innerHTML = "<tr><td colspan='3' style='text-align: center; padding: 20px;'>Đang tải lịch sử...</td></tr>";
-    try {
-        let res = await fetch(GOOGLE_SHEET_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({ action: "getLogs", token: currentUserSession.token })
-        });
-        let logs = await res.json();
-        
-        tbody.innerHTML = "";
-        if (logs.status === "error") {
-             tbody.innerHTML = `<tr><td colspan='3' style='text-align: center; color: red;'>${logs.message}</td></tr>`;
-             return;
-        }
-
-        if (logs.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='3' style='text-align: center; padding: 20px;'>Chưa có lịch sử.</td></tr>";
-        } else {
-            logs.forEach(log => {
-                let tr = document.createElement("tr");
-                tr.innerHTML = `<td>${log.time}</td><td><b>${log.user}</b></td><td style="text-align: left;">${log.details}</td>`;
-                tbody.appendChild(tr);
-            });
-        }
-    } catch(e) { 
-        tbody.innerHTML = "<tr><td colspan='3' style='text-align: center; color: red;'>Lỗi khi tải lịch sử.</td></tr>"; 
-    }
-}
-
-    window.switchTab = async function(tab) {
-        document.getElementById('btnTabLocal').classList.remove('active'); 
-        document.getElementById('btnTabCloud').classList.remove('active'); 
-        document.getElementById('btnTabChart').classList.remove('active');
-        document.getElementById('btnTabHistory').classList.remove('active');
-        
-        document.getElementById('tab-local').classList.remove('active'); 
-        document.getElementById('tab-cloud').classList.remove('active'); 
-        document.getElementById('tab-chart').classList.remove('active');
-        document.getElementById('tab-history').classList.remove('active');
-        
-        if (tab === 'local') { 
-            document.getElementById('btnTabLocal').classList.add('active'); 
-            document.getElementById('tab-local').classList.add('active'); 
-        } else if (tab === 'chart') { 
-            document.getElementById('btnTabChart').classList.add('active'); 
-            document.getElementById('tab-chart').classList.add('active'); 
-            await renderChart(); 
-        } else if (tab === 'history') {
-            document.getElementById('btnTabHistory').classList.add('active'); 
-            document.getElementById('tab-history').classList.add('active'); 
-            fetchAuditLogs();
-        } else { 
-            document.getElementById('btnTabCloud').classList.add('active'); 
-            document.getElementById('tab-cloud').classList.add('active'); 
-        }
-        await filterReports(); 
-    }
-    
-    window.toggleLocalTab = function() { 
-        const btn = document.getElementById('btnTabLocal'); 
-        if(btn.style.display === 'none') { 
-            btn.style.display = 'inline-flex'; 
-        } else { 
-            btn.style.display = 'none'; 
-            if(btn.classList.contains('active')) switchTab('cloud'); 
-        } 
-    }
-
     async function getCombinedRecords() {
         let records = [];
         let localMap = new Set();
@@ -2365,6 +2292,15 @@
                     let data = item.value; 
                     if (!data || !data.ngayTruc) return; 
                     if (data.isSaved === false) return; 
+
+                    // --- ĐIỀU KIỆN LỌC MỚI ---
+                    // Ẩn Bản nháp khỏi Quản lý báo cáo (Chỉ hiện khi Đã trình, Đã duyệt, hoặc Bị từ chối để sửa lại)
+                    let isApprLocal = data.isApproved || false;
+                    let isSubLocal = data.isSubmitted || false;
+                    let rejectMsgLocal = data.rejectMessage || "";
+                    if (!isSubLocal && !isApprLocal && !rejectMsgLocal) return;
+                    // -------------------------
+
                     if(localMap.has(data.ngayTruc)) return; 
                     
                     localMap.add(data.ngayTruc);
@@ -2388,9 +2324,9 @@
                         tongVao: tongVao,
                         tongRa: tongRa,
                         khoaStats: khoaStatsLocal,
-                        isApproved: data.isApproved || false,
-                        isSubmitted: data.isSubmitted || false,
-                        rejectMessage: data.rejectMessage || "",
+                        isApproved: isApprLocal,
+                        isSubmitted: isSubLocal,
+                        rejectMessage: rejectMsgLocal,
                         isCloud: false, 
                         nguoiTao: data.nguoiTao, 
                         thoiGianTao: data.thoiGianTao, 
@@ -2403,7 +2339,6 @@
         
         let cloudMap = new Set();
         if (Array.isArray(cloudDataCache)) {
-            // BẢN VÁ: Đảo ngược mảng để ưu tiên lấy dòng dữ liệu mới nhất (nằm ở cuối Sheet)
             let reversedCloudData = [...cloudDataCache].reverse();
             
             reversedCloudData.forEach(row => {
@@ -2415,13 +2350,17 @@
                     let trueDate = data.ngayTruc || row.ngayTruc || row.date; 
                     if (!trueDate) return; 
                     
-                    if(cloudMap.has(trueDate)) return; 
-                    cloudMap.add(trueDate);
-                    
-                    // Xử lý an toàn boolean phòng trường hợp Google Sheet trả về dạng chuỗi "true"
                     let isAppr = data.isApproved === true || data.isApproved === "true" || row.isApproved === true || row.isApproved === "true";
                     let isSub = data.isSubmitted === true || data.isSubmitted === "true" || row.isSubmitted === true || row.isSubmitted === "true";
                     let rejectMsg = data.rejectMessage || row.rejectMessage || "";
+                    
+                    // --- ĐIỀU KIỆN LỌC MỚI ---
+                    // Ẩn Bản nháp khỏi Quản lý báo cáo
+                    if (!isSub && !isAppr && !rejectMsg) return;
+                    // -------------------------
+
+                    if(cloudMap.has(trueDate)) return; 
+                    cloudMap.add(trueDate);
                     
                     let hienCo = 0, tongVao = 0, tongRa = 0;
                     let khoaStatsCloud = {}; 
@@ -2894,7 +2833,7 @@
         if (currentReportApproved) {
             banner.style.display = 'flex';
             banner.style.backgroundColor = '#dcfce7'; banner.style.borderColor = '#22c55e'; sTitle.style.color = '#166534'; sInfo.style.color = '#15803d';
-            sTitle.innerText = "✅ BÁO CÁO ĐÃ ĐƯỢC LÃNH ĐẠO PHÊ DUYỆT";
+            sTitle.innerText = "✅ BÁO CÁO ĐÃ ĐƯỢC PHÊ DUYỆT";
             sInfo.innerText = `Duyệt bởi: ${currentApprovalInfo.nguoiDuyet || ''} - Lúc: ${currentApprovalInfo.thoiGianDuyet || ''}`;
         } else if (currentReportSubmitted) {
             banner.style.display = 'flex';
@@ -2906,19 +2845,17 @@
             banner.style.backgroundColor = '#fee2e2'; banner.style.borderColor = '#ef4444'; sTitle.style.color = '#b91c1c'; sInfo.style.color = '#991b1b';
             sTitle.innerText = "❌ BÁO CÁO BỊ TỪ CHỐI";
             sInfo.innerText = `Lý do: ${currentRejectMessage}`;
-        } else if (lockedBySomeoneElse) {
-            banner.style.display = 'flex';
-            banner.style.backgroundColor = '#fffbeb'; banner.style.borderColor = '#f59e0b'; sTitle.style.color = '#b45309'; sInfo.style.color = '#92400e';
-            sTitle.innerText = "⚠️ ĐANG CÓ NGƯỜI SOẠN THẢO";
-            sInfo.innerText = `Báo cáo này đang được nhập liệu bởi: ${lockedBySomeoneElse}. Bạn chỉ có thể xem.`;
-        } else if (lockedByCreator) {
+        } else if (lockedBySomeoneElse || lockedByCreator) {
+            // GỘP 2 TRẠNG THÁI KHÓA (SOẠN THẢO/BẢN NHÁP) VÀ ĐỔI TEXT CẢNH BÁO
+            let nguoiKhoa = lockedBySomeoneElse || lockedByCreator;
             banner.style.display = 'flex';
             banner.style.backgroundColor = '#fee2e2'; 
             banner.style.borderColor = '#ef4444'; 
             sTitle.style.color = '#b91c1c'; 
             sInfo.style.color = '#991b1b';
-            sTitle.innerText = "⚠️ BẢN BÁO CÁO ĐANG ĐƯỢC LÀM";
-            sInfo.innerText = `Báo cáo đang được làm bởi ${lockedByCreator}. Chỉ người tạo báo cáo mới có quyền chỉnh sửa.`;
+            sTitle.innerText = "⚠️ BÁO CÁO ĐANG LÀM";
+            sInfo.innerText = `Báo cáo đang được làm bởi ${nguoiKhoa}. 
+			Bạn chỉ có thể xem và không được phép sửa.`;
         } else {
             banner.style.display = 'none';
         }
@@ -3340,9 +3277,9 @@
         clearFormToDefault(); 
         const key = getStorageKey(activeDate); 
         
-        // KIỂM TRA XEM CÓ AI ĐANG CHIẾM QUYỀN SỬA TRÊN CLOUD KHÔNG
+        // 1. KIỂM TRA KHÓA (DO NGƯỜI KHÁC ĐANG SOẠN HOẶC BẢN NHÁP CỦA NGƯỜI KHÁC)
         let lockedBySomeoneElse = null;
-        let lockedByCreator = null; // Thêm check creator
+        let lockedByCreator = null; 
         if (cloudDataCache && cloudDataCache.length > 0) {
             let cloudRecord = cloudDataCache.find(r => {
                 let dStr = r.jsonData || r.data || r.JsonData;
@@ -3354,7 +3291,6 @@
                     lockedBySomeoneElse = cloudRecord.lockedBy;
                 }
                 
-                // Khóa nếu là bản nháp của người khác
                 let dStr = cloudRecord.jsonData || cloudRecord.data || cloudRecord.JsonData;
                 let p = {}; try { p = typeof dStr === 'string' ? JSON.parse(dStr) : dStr; } catch(e){}
                 let isDraft = !p.isApproved && !p.isSubmitted && !p.rejectMessage;
@@ -3366,7 +3302,6 @@
 
         const data = await LocalDB.getItem(key);
         let hasData = false; 
-        let isSavedStatus = false;
         currentReportApproved = false;
         currentApprovalInfo = {};
 
@@ -3374,7 +3309,6 @@
             try { 
                 originalData = JSON.parse(JSON.stringify(data)); 
                 hasData = true; 
-                if(data.isSaved === true) isSavedStatus = true; 
                 
                 if (data.isApproved) {
                     currentReportApproved = true;
@@ -3383,6 +3317,13 @@
                 currentReportSubmitted = data.isSubmitted || false;
                 currentRejectMessage = data.rejectMessage || "";
 
+                // KIỂM TRA QUYỀN: Nếu là bản nháp của người khác, BS B sẽ bị khóa và hiện banner cảnh báo
+                let isDraftLocal = !currentReportApproved && !currentReportSubmitted && !currentRejectMessage;
+                if (isDraftLocal && data.nguoiTao && currentUserSession && data.nguoiTao !== currentUserSession.fullname) {
+                    lockedByCreator = data.nguoiTao;
+                }
+
+                // Đổ dữ liệu vào các ô nhập liệu
                 if (data.trucLanhDao) { document.getElementById("trucLanhDao").value = data.trucLanhDao; document.getElementById("trucLanhDao").dataset.prevValue = data.trucLanhDao; }
                 if (data.trucChuyenMon) { document.getElementById("trucChuyenMon").value = data.trucChuyenMon; document.getElementById("trucChuyenMon").dataset.prevValue = data.trucChuyenMon; }
                 if (data.trucPhongKham) { document.getElementById("trucPhongKham").value = data.trucPhongKham; document.getElementById("trucPhongKham").dataset.prevValue = data.trucPhongKham; }
@@ -3403,11 +3344,14 @@
             originalData = null;
         }
         
-        let shouldLock = true; 
-        if (hasData && isSavedStatus === false && !currentReportApproved) { shouldLock = false; } 
-        // TRUYỀN THÊM BIẾN LÊN HÀM KHÓA
+        // 2. CÀI ĐẶT TRẠNG THÁI KHÓA (CHẾ ĐỘ XEM)
+        // Luôn để shouldLock = true khi có dữ liệu cũ. 
+        // Khi đó, hệ thống sẽ hiện nút "Sửa báo cáo" thay vì cho phép sửa luôn.
+        let shouldLock = true;
+        
         applyLockState(shouldLock, hasData, lockedBySomeoneElse, lockedByCreator);
         
+        // Khởi tạo lại các thành phần UI
         initMultiSelect("trucLanhDao", lanhDaoOptions); 
         initMultiSelect("trucChuyenMon", chuyenMonOptions); 
         initMultiSelect("trucPhongKham", chuyenMonOptions); 
@@ -3879,7 +3823,7 @@
                     }
                 });
             } else if (user) {
-                showToast("Chỉ Lãnh đạo hoặc Admin mới có quyền Từ Chối!", "error");
+                showToast("Chỉ Lãnh đạo mới có quyền Từ Chối!", "error");
             }
         });
     }
@@ -3915,7 +3859,7 @@
                     }
                 }
             } else if (user) {
-                showToast("Chỉ Lãnh đạo hoặc Admin mới có quyền Duyệt báo cáo!", "error");
+                showToast("Chỉ Lãnh đạo mới có quyền Duyệt báo cáo!", "error");
             }
         });
     }
@@ -3953,7 +3897,7 @@
                     }
                 }
             } else if (user) {
-                showToast("Chỉ Lãnh đạo hoặc Admin mới có quyền Hủy Duyệt báo cáo!", "error");
+                showToast("Chỉ Lãnh đạo mới có quyền Hủy Duyệt báo cáo!", "error");
             }
         });
     }
