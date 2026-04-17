@@ -2099,26 +2099,21 @@
         }
 
         try {
-            if (isUpdateCloud && existingCloudRows.length > 0) {
-                try { 
-                    for (let row of existingCloudRows) { 
-                        let exactCloudKey = row.ngayTruc || row.date || row.NgayTruc || row.Date || activeDate; 
-                        await fetch(GOOGLE_SHEET_URL, { 
-                            method: 'POST', 
-                            headers: { 'Content-Type': 'text/plain' }, 
-                            body: JSON.stringify({ action: "delete", token: currentUserSession.token, date: exactCloudKey, ngayTruc: exactCloudKey, id: exactCloudKey }) 
-                        }); 
-                    } 
-                    await new Promise(resolve => setTimeout(resolve, 3000)); 
-                } catch (delErr) {}
-            }
-            
             let diffs = getDiffLogs(originalData, finalDataObj);
+            
+            // Xác định action là "update" nếu đã có dữ liệu trên Cloud, ngược lại là "save"
+            let actionType = (isUpdateCloud && existingCloudRows.length > 0) ? "update" : "save";
 
             let res = await fetch(GOOGLE_SHEET_URL, { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'text/plain' }, 
-                body: JSON.stringify({ action: "save", token: currentUserSession.token, data: finalDataObj, logs: diffs }) 
+                // Gửi 1 request duy nhất với actionType tương ứng
+                body: JSON.stringify({ 
+                    action: actionType, 
+                    token: currentUserSession.token, 
+                    data: finalDataObj, 
+                    logs: diffs 
+                }) 
             });
             let textResult = await res.text();
             
