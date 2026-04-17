@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Báo Cáo Giao Ban</title>
-    <meta name="author" content="Hoàng Văn Thượng">
+    <meta name="author" content="Quang Trung">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -571,7 +571,7 @@
             </div>
         </div>
 
-        <div class="section">
+        <div class="section" id="sectionChuyenMon">
             <h2>III. TÌNH HÌNH CHUYÊN MÔN</h2>
             
             <h3>A. Bệnh nhân phẫu thuật cấp cứu (PTCC)</h3>
@@ -611,7 +611,7 @@
             <div class="add-btn-wrapper"><button type="button" class="add-row-btn" data-table="ravien"><svg class="svg-icon"><path d="M12 5v14M5 12h14"></path></svg> Thêm bệnh nhân ra viện</button></div>
         </div>
 
-        <div class="signature-section">
+        <div class="signature-section" id="sectionChuKy">
             <div class="signature-box" style="position: relative;">
                 <div class="signature-title">Người làm báo cáo</div>
                 <div class="signature-sub">(ký, ghi rõ họ tên)</div>
@@ -851,32 +851,26 @@
     let currentReportSubmitted = false;
     let currentRejectMessage = "";
     let currentApprovalInfo = {};
+
 	// ==========================================
     // XỬ LÝ CHUYỂN TAB TRONG QUẢN LÝ BÁO CÁO
     // ==========================================
     window.switchTab = async function(tabName) {
-        // 1. Gỡ trạng thái active của tất cả các nút
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-        
-        // 2. Thêm trạng thái active cho nút vừa click
-        // Hàm này tự động viết hoa chữ cái đầu: cloud -> btnTabCloud
         const activeBtn = document.getElementById('btnTab' + tabName.charAt(0).toUpperCase() + tabName.slice(1));
         if (activeBtn) activeBtn.classList.add('active');
 
-        // 3. Ẩn tất cả nội dung tab hiện tại
         document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-        
-        // 4. Hiển thị nội dung của tab được chọn
         const activeContent = document.getElementById('tab-' + tabName);
         if (activeContent) activeContent.classList.add('active');
 
-        // 5. Nếu mở tab Thống kê thì gọi hàm vẽ lại biểu đồ
         if (tabName === 'chart') {
             await renderChart();
+        } else if (tabName === 'history') {
+            await loadHistoryLogs();
         }
     };
 
-    // Hàm xử lý nút "Ẩn/hiện bộ nhớ máy tính"
     window.toggleLocalTab = function() {
         const localTabBtn = document.getElementById('btnTabLocal');
         if (localTabBtn) {
@@ -884,13 +878,13 @@
                 localTabBtn.style.display = 'inline-flex';
             } else {
                 localTabBtn.style.display = 'none';
-                // Nếu đang đứng ở tab Local mà bấm ẩn đi thì tự động chuyển về tab Cloud
                 if (localTabBtn.classList.contains('active')) {
                     switchTab('cloud');
                 }
             }
         }
     };
+
 	// ==========================================
     // TẢI DỮ LIỆU LỊCH SỬ (LOG) TỪ GOOGLE SHEET
     // ==========================================
@@ -906,7 +900,6 @@
         }
 
         try {
-            // Gửi request yêu cầu lấy log
             let res = await fetch(GOOGLE_SHEET_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain' },
@@ -920,10 +913,8 @@
                 return;
             }
 
-            // Xử lý và in dữ liệu ra bảng
             if (Array.isArray(data) && data.length > 0) {
                 tbody.innerHTML = "";
-                // Đảo ngược mảng để hành động mới nhất hiện lên đầu
                 [...data].reverse().forEach(log => {
                     let tr = document.createElement("tr");
                     tr.innerHTML = `
@@ -948,25 +939,6 @@
         }
     };
 
-    // ==========================================
-    // CẬP NHẬT LẠI HÀM SWITCH TAB ĐỂ GỌI LOG
-    // ==========================================
-    window.switchTab = async function(tabName) {
-        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-        const activeBtn = document.getElementById('btnTab' + tabName.charAt(0).toUpperCase() + tabName.slice(1));
-        if (activeBtn) activeBtn.classList.add('active');
-        
-        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-        const activeContent = document.getElementById('tab-' + tabName);
-        if (activeContent) activeContent.classList.add('active');
-
-        // Bổ sung gọi hàm khi chuyển tab
-        if (tabName === 'chart') {
-            await renderChart();
-        } else if (tabName === 'history') {
-            await loadHistoryLogs(); // <-- Dòng này sẽ kích hoạt việc tải Log
-        }
-    };
     // --- GỬI TÍN HIỆU KHÓA ĐANG SOẠN THẢO --- //
     async function thongBaoDangSoan(dateStr, isEditing) {
         if(!GOOGLE_SHEET_URL || !currentUserSession || !currentUserSession.token) return;
@@ -985,7 +957,7 @@
         } catch(e) { console.error(e); }
     }
 
-    // --- INDEXEDDB HELPER (Nâng cấp bộ nhớ) --- //
+    // --- INDEXEDDB HELPER --- //
     const LocalDB = {
         dbName: 'BaoCaoGiaoBanDB',
         storeName: 'reports',
@@ -1071,7 +1043,6 @@
         }
     };
 
-    // Chuyển đổi dữ liệu cũ từ localStorage sang IndexedDB
     async function migrateFromLocalStorage() {
         let hasMigrated = false;
         for (let i = 0; i < localStorage.length; i++) {
@@ -1092,7 +1063,6 @@
         }
     }
 
-    // Datalist population
     const datalist = document.getElementById('numberOptions'); 
     for (let i = 0; i <= 100; i++) { 
         let opt = document.createElement('option'); 
@@ -1100,7 +1070,6 @@
         datalist.appendChild(opt); 
     }
 
-    // Toast Notification
     function showToast(message, type="success") {
         const container = document.getElementById("toast-container"); 
         const toast = document.createElement("div"); 
@@ -1115,7 +1084,6 @@
         }, 3500);
     }
 
-    // --- LẤY DANH SÁCH NHÂN SỰ TỪ GOOGLE SHEET ---
     async function fetchDanhSachNhanSu() {
     if (!GOOGLE_SHEET_URL || !currentUserSession || !currentUserSession.token) return;
     try {
@@ -1129,7 +1097,6 @@
         
         if (data.status === "error") throw new Error(data.message);
 
-        // Giữ nguyên toàn bộ logic map dữ liệu bên dưới của bạn...
         if (data.lanhDao) lanhDaoOptions = ["-- Chọn --", ...data.lanhDao];
         if (data.chuyenMon) chuyenMonOptions = ["-- Chọn --", ...data.chuyenMon];
         if (data.anNinh) anNinhOptions = ["-- Chọn --", ...data.anNinh];
@@ -1820,14 +1787,12 @@
     let currentCalMonth = new Date().getMonth();
     let currentCalYear = new Date().getFullYear();
     
-    // NEW: Quản lý trạng thái chi tiết của lịch để xử lý ẩn/hiện chấm đỏ
     let calendarStatusMap = {};
 
     async function updateCalendarCache() {
         const allLocal = await LocalDB.getAll();
         calendarStatusMap = {};
         
-        // Quét dữ liệu máy Local
         allLocal.forEach(item => {
             if (item.key.startsWith("BaoCaoGiaoBan_Data_")) {
                 try {
@@ -1843,7 +1808,6 @@
             }
         });
         
-        // Cập nhật từ Cloud đè lên nếu có
         if (cloudDataCache && cloudDataCache.length > 0) {
             cloudDataCache.forEach(r => {
                 try {
@@ -1866,6 +1830,9 @@
         let status = calendarStatusMap[dateStr];
         if (!status) return false;
         
+        const isViewer = currentUserSession && !["admin", "quantri", "editor"].includes(currentUserSession.role);
+        if (isViewer) return status.isApproved; // Viewer chỉ thấy chấm đỏ của ngày Đã duyệt
+
         // ĐIỀU KIỆN CHẤM ĐỎ: Chỉ hiển thị khi Đã Trình, Đã Duyệt, hoặc Bị Từ Chối (ẩn đi đối với Bản Nháp)
         if (status.isSubmitted || status.isApproved || status.rejectMessage) {
             return true;
@@ -2162,7 +2129,6 @@
                     showToast("Đã lưu và đồng bộ thành công!", "success"); 
                     updateSyncStatus('saved');
                     
-                    // BẢN VÁ: Bơm trực tiếp dữ liệu mới nhất vào Cache để Dashboard đổi màu ngay lập tức
                     let newCloudRow = {
                         ngayTruc: activeDate,
                         jsonData: JSON.stringify(finalDataObj)
@@ -2179,7 +2145,6 @@
                 updateSyncStatus('saved');
             }
             
-            // XÓA CỜ KHÓA SAU KHI LƯU XONG
             await thongBaoDangSoan(activeDate, false);
             
             setTimeout(fetchCloudDataBackground, 1000); 
@@ -2262,7 +2227,6 @@
                 if (checkRecord) {
                     let isDraft = !checkRecord.isApproved && !checkRecord.isSubmitted && !checkRecord.rejectMessage;
                     
-                    // CHẶN QUYỀN SỬA NẾU LÀ BẢN NHÁP CỦA NGƯỜI KHÁC
                     if (isDraft && checkRecord.nguoiTao && checkRecord.nguoiTao !== user.fullname) {
                         return showToast(`Bản nháp này chỉ có thể được sửa bởi người tạo (BS. ${checkRecord.nguoiTao})`, "error");
                     }
@@ -2282,7 +2246,6 @@
                 if(isCloud) await loadFromCloudToEdit(dateStr); 
                 else await loadToEdit(dateStr); 
                 
-                // THÔNG BÁO ĐANG SỬA LÊN CLOUD
                 thongBaoDangSoan(dateStr, true);
             } else if (user) { 
                 showToast("Tài khoản không có quyền SỬA!", "error"); 
@@ -2313,7 +2276,6 @@
         promptPassword(`Xác thực để SỬA báo cáo ngày ${activeDate}`, function(user) { 
             if (user && ["admin", "quantri", "editor"].includes(user.role)) { 
                 
-                // CHẶN QUYỀN SỬA NẾU LÀ BẢN NHÁP CỦA NGƯỜI KHÁC
                 let isDraft = !currentReportApproved && !currentReportSubmitted && !currentRejectMessage;
                 let nguoiTao = originalData ? originalData.nguoiTao : null;
                 if (isDraft && nguoiTao && nguoiTao !== user.fullname) {
@@ -2321,7 +2283,6 @@
                 }
 
                 applyLockState(false, true); 
-                // THÔNG BÁO ĐANG SỬA LÊN CLOUD
                 thongBaoDangSoan(activeDate, true);
             } else if (user) { 
                 showToast("Tài khoản không có quyền SỬA!", "error"); 
@@ -2344,12 +2305,11 @@
                         const targetDate = new Date(activeDate); targetDate.setHours(0,0,0,0);
                         const diffDays = Math.ceil((today - targetDate) / (1000 * 60 * 60 * 24));
                         if (diffDays > 1 || diffDays < 0) {
-                            return showToast("Đã quá thời gian quy định! Bạn chỉ được tạo báo cáo của Hôm nay hoặc Hôm qua.", "error");
+                            return showToast("Bạn chỉ được tạo báo cáo của Hôm nay hoặc Hôm qua.", "error");
                         }
                     }
 
                     applyLockState(false, false); 
-                    // THÔNG BÁO TẠO MỚI (KHÓA) LÊN CLOUD
                     thongBaoDangSoan(activeDate, true);
                     
                     let nguoiLamBaoCaoInput = document.getElementById("nguoiLamBaoCao");
@@ -2409,10 +2369,13 @@
                     if (data.isSaved === false) return; 
 
                     // --- ĐIỀU KIỆN LỌC MỚI ---
-                    // Ẩn Bản nháp khỏi Quản lý báo cáo (Chỉ hiện khi Đã trình, Đã duyệt, hoặc Bị từ chối để sửa lại)
                     let isApprLocal = data.isApproved || false;
                     let isSubLocal = data.isSubmitted || false;
                     let rejectMsgLocal = data.rejectMessage || "";
+                    
+                    const isViewer = currentUserSession && !["admin", "quantri", "editor"].includes(currentUserSession.role);
+                    if (isViewer && !isApprLocal) return; // KIỂM SOÁT VIEWER: Chỉ thấy Đã duyệt
+
                     if (!isSubLocal && !isApprLocal && !rejectMsgLocal) return;
                     // -------------------------
 
@@ -2470,7 +2433,9 @@
                     let rejectMsg = data.rejectMessage || row.rejectMessage || "";
                     
                     // --- ĐIỀU KIỆN LỌC MỚI ---
-                    // Ẩn Bản nháp khỏi Quản lý báo cáo
+                    const isViewer = currentUserSession && !["admin", "quantri", "editor"].includes(currentUserSession.role);
+                    if (isViewer && !isAppr) return; // KIỂM SOÁT VIEWER: Chỉ thấy Đã duyệt
+                    
                     if (!isSub && !isAppr && !rejectMsg) return;
                     // -------------------------
 
@@ -2583,11 +2548,15 @@
         const isMedicalAdmin = (currentUserSession && currentUserSession.role === 'quantri');
         const isEditor = (currentUserSession && currentUserSession.role === 'editor');
         const isSuperLevel = isITAdmin || isMedicalAdmin;
+        const isViewer = currentUserSession && !["admin", "quantri", "editor"].includes(currentUserSession.role);
 
         const subtitleEl = document.getElementById("dashboardSubtitle");
         const toggleBtnEl = document.getElementById("btnToggleLocalMemory");
+        const tabCloudBtnEl = document.getElementById("btnTabCloud");
         const tabLocalBtnEl = document.getElementById("btnTabLocal");
         const tabHistoryBtnEl = document.getElementById("btnTabHistory");
+        const monthFilterEl = document.getElementById("monthFilter");
+        const searchReportEl = document.getElementById("searchReport");
         
         if (subtitleEl) subtitleEl.style.display = isITAdmin ? "block" : "none";
         if (toggleBtnEl) toggleBtnEl.style.display = isITAdmin ? "inline-flex" : "none";
@@ -2595,8 +2564,33 @@
         
         if (!isITAdmin && tabLocalBtnEl) {
             tabLocalBtnEl.style.display = "none";
-            if(tabLocalBtnEl.classList.contains('active')) switchTab('cloud');
+            if(tabLocalBtnEl.classList.contains('active') && !isViewer) switchTab('cloud');
         }
+
+        // --- PHÂN QUYỀN VIEWER TRÊN DASHBOARD ---
+        const btnRefresh = document.querySelector("button[onclick='fetchFromCloudAndRefreshUI()']");
+        if (isViewer) {
+            if (tabCloudBtnEl) tabCloudBtnEl.style.display = "none";
+            if (monthFilterEl) monthFilterEl.style.display = "none";
+            if (searchReportEl) searchReportEl.style.display = "none";
+            if (btnRefresh) btnRefresh.style.display = "none";
+            
+            let trendChartBox = document.getElementById("trendChart")?.closest('.chart-container-box');
+            if (trendChartBox) trendChartBox.style.display = "none";
+            let doughnutChartBox = document.getElementById("doughnutChart")?.closest('.chart-container-box');
+            if (doughnutChartBox) doughnutChartBox.style.gridColumn = "1 / -1"; // Kéo giãn biểu đồ tròn ra giữa
+        } else {
+            if (tabCloudBtnEl) tabCloudBtnEl.style.display = "inline-flex";
+            if (monthFilterEl) monthFilterEl.style.display = "inline-block";
+            if (searchReportEl) searchReportEl.style.display = "inline-block";
+            if (btnRefresh) btnRefresh.style.display = "inline-flex";
+            
+            let trendChartBox = document.getElementById("trendChart")?.closest('.chart-container-box');
+            if (trendChartBox) trendChartBox.style.display = "block";
+            let doughnutChartBox = document.getElementById("doughnutChart")?.closest('.chart-container-box');
+            if (doughnutChartBox) doughnutChartBox.style.gridColumn = "auto";
+        }
+        // ----------------------------------------
 
         const monthFilter = document.getElementById("monthFilter");
         const currentMonthVal = monthFilter.value;
@@ -2663,17 +2657,14 @@
             let isDraft = !r.isApproved && !r.isSubmitted && !r.rejectMessage;
             let isCreator = (currentUserSession && r.nguoiTao === currentUserSession.fullname);
             
-            // XỬ LÝ QUYỀN SỬA MỚI: Bản nháp chỉ người tạo mới được sửa
             if (isDraft) {
                 if (isCreator) canEdit = true;
             } else {
                 if (!r.isApproved && !r.isSubmitted) {
-                    // Trạng thái từ chối (Editor hoặc Ban Quản Trị đều có thể sửa)
                     if (isEditor || isSuperLevel) canEdit = true;
                 }
             }
 
-            // Time lock cho Editor
             if (isEditor && canEdit) {
                 const today = new Date(); today.setHours(0,0,0,0);
                 const targetDate = new Date(trueDate); targetDate.setHours(0,0,0,0);
@@ -2759,7 +2750,14 @@
         const modal = document.getElementById('dashboardModal'); 
         modal.style.display = "flex"; 
         setTimeout(() => modal.classList.add("show"), 10); 
-        await switchTab('cloud'); 
+        
+        const isViewer = currentUserSession && !["admin", "quantri", "editor"].includes(currentUserSession.role);
+        if (isViewer) {
+            await switchTab('chart'); // Viewer mặc định mở tab thống kê
+        } else {
+            await switchTab('cloud'); // Các role khác mở tab Đã lưu
+        }
+        
         await renderDashboard(); 
         if(cloudDataCache.length === 0) { await fetchFromCloudAndRefreshUI(); } 
     }
@@ -2787,15 +2785,14 @@
     await loadData(); 
     
     setTimeout(() => { 
-        // Lớp bảo vệ: Kiểm tra lại trạng thái thực tế sau khi loadData
         if (currentReportApproved) {
             showToast("Báo cáo đã phê duyệt. Không thể sửa!", "error");
-            applyLockState(true, true); // Ép khóa form
+            applyLockState(true, true); 
         } else if (currentReportSubmitted) {
             showToast("Báo cáo đang chờ duyệt. Không thể sửa!", "error");
-            applyLockState(true, true); // Ép khóa form
+            applyLockState(true, true); 
         } else {
-            applyLockState(false, true); // An toàn để mở khóa
+            applyLockState(false, true); 
         }
     }, 150); 
 }
@@ -2907,6 +2904,18 @@
         const isITAdmin = (currentUserSession && currentUserSession.role === 'admin');
         const isMedicalAdmin = (currentUserSession && currentUserSession.role === 'quantri');
         const isEditor = (currentUserSession && currentUserSession.role === "editor");
+        const isViewer = currentUserSession && !["admin", "quantri", "editor"].includes(currentUserSession.role);
+
+        // ẨN / HIỆN PHẦN III & CHỮ KÝ DÀNH CHO VIEWER
+        let secChuyenMon = document.getElementById("sectionChuyenMon");
+        let secChuKy = document.getElementById("sectionChuKy");
+        if (isViewer) {
+            if (secChuyenMon) secChuyenMon.style.display = "none";
+            if (secChuKy) secChuKy.style.display = "none";
+        } else {
+            if (secChuyenMon) secChuyenMon.style.display = "";
+            if (secChuKy) secChuKy.style.display = "";
+        }
 
         let isTimeLocked = false;
         if (isEditor && activeDate) {
@@ -2927,7 +2936,6 @@
         else if (isEditor && currentReportSubmitted) finalLock = true;
         else if (isEditor && isTimeLocked) finalLock = true;
 
-        // KHÓA MỜ NẾU AI ĐÓ ĐANG SOẠN HOẶC LÀ BẢN NHÁP CỦA NGƯỜI KHÁC
         if (lockedBySomeoneElse || lockedByCreator) {
             finalLock = true;
         }
@@ -2944,7 +2952,6 @@
         const sTitle = document.getElementById('statusTitle');
         const sInfo = document.getElementById('statusInfo');
 
-        // Đã đảo ngược thứ tự ưu tiên: Ưu tiên Workflow lên trên cùng
         if (currentReportApproved) {
             banner.style.display = 'flex';
             banner.style.backgroundColor = '#dcfce7'; banner.style.borderColor = '#22c55e'; sTitle.style.color = '#166534'; sInfo.style.color = '#15803d';
@@ -2961,7 +2968,6 @@
             sTitle.innerText = "❌ BÁO CÁO BỊ TỪ CHỐI";
             sInfo.innerText = `Lý do: ${currentRejectMessage}`;
         } else if (lockedBySomeoneElse || lockedByCreator) {
-            // GỘP 2 TRẠNG THÁI KHÓA (SOẠN THẢO/BẢN NHÁP) VÀ ĐỔI TEXT CẢNH BÁO
             let nguoiKhoa = lockedBySomeoneElse || lockedByCreator;
             banner.style.display = 'flex';
             banner.style.backgroundColor = '#fee2e2'; 
@@ -2977,13 +2983,12 @@
 
         document.getElementById('xoaDuLieuBtn').style.display = (finalLock || currentReportSubmitted) ? 'none' : 'inline-flex'; 
         document.getElementById('luuBtn').style.display = finalLock ? 'none' : 'inline-flex'; 
-        document.getElementById('btnTaoMoi').style.display = (finalLock && !hasData && !lockedBySomeoneElse && !lockedByCreator) ? 'inline-flex' : 'none'; 
+        document.getElementById('btnTaoMoi').style.display = (finalLock && !hasData && !lockedBySomeoneElse && !lockedByCreator && !isViewer) ? 'inline-flex' : 'none'; 
         
         let showEditBtn = false;
-        // KHÔNG HIỂN THỊ NÚT SỬA NHANH NẾU BỊ KHÓA BỞI NGƯỜI KHÁC
         if (hasData && !currentReportApproved && !lockedBySomeoneElse && !lockedByCreator) {
             if (isEditor && !currentReportSubmitted && !isTimeLocked) showEditBtn = finalLock;
-            else if (!isEditor && !currentReportSubmitted) showEditBtn = finalLock; // Cho phép Quản trị, Admin thấy nút Sửa
+            else if (!isEditor && !currentReportSubmitted && !isViewer) showEditBtn = finalLock; 
         }
         document.getElementById('btnSuaNhanh').style.display = showEditBtn ? 'inline-flex' : 'none';
 
@@ -2994,7 +2999,7 @@
 
         let btnTrinhDuyet = document.getElementById('btnTrinhDuyet');
         if(btnTrinhDuyet) {
-            let canSubmit = hasData && !currentReportSubmitted && !currentReportApproved && (!isEditor || !isTimeLocked) && !lockedBySomeoneElse && !lockedByCreator;
+            let canSubmit = hasData && !currentReportSubmitted && !currentReportApproved && (!isEditor || !isTimeLocked) && !lockedBySomeoneElse && !lockedByCreator && !isViewer;
             btnTrinhDuyet.style.display = canSubmit ? 'inline-flex' : 'none';
         }
 
@@ -3392,7 +3397,6 @@
         clearFormToDefault(); 
         const key = getStorageKey(activeDate); 
         
-        // 1. KIỂM TRA KHÓA (DO NGƯỜI KHÁC ĐANG SOẠN HOẶC BẢN NHÁP CỦA NGƯỜI KHÁC)
         let lockedBySomeoneElse = null;
         let lockedByCreator = null; 
         if (cloudDataCache && cloudDataCache.length > 0) {
@@ -3432,10 +3436,18 @@
                 currentReportSubmitted = data.isSubmitted || false;
                 currentRejectMessage = data.rejectMessage || "";
 
-                // KIỂM TRA QUYỀN: Nếu là bản nháp của người khác, BS B sẽ bị khóa và hiện banner cảnh báo
                 let isDraftLocal = !currentReportApproved && !currentReportSubmitted && !currentRejectMessage;
                 if (isDraftLocal && data.nguoiTao && currentUserSession && data.nguoiTao !== currentUserSession.fullname) {
                     lockedByCreator = data.nguoiTao;
+                }
+
+                // KIỂM SOÁT VIEWER KHÔNG CHO XEM BÁO CÁO CHƯA DUYỆT
+                const isViewer = currentUserSession && !["admin", "quantri", "editor"].includes(currentUserSession.role);
+                if (isViewer && !currentReportApproved) {
+                    showToast("Bạn chỉ có quyền xem các báo cáo đã được PHÊ DUYỆT!", "error");
+                    clearFormToDefault();
+                    applyLockState(true, false);
+                    return; // Chặn ngay lập tức
                 }
 
                 // Đổ dữ liệu vào các ô nhập liệu
@@ -3459,14 +3471,10 @@
             originalData = null;
         }
         
-        // 2. CÀI ĐẶT TRẠNG THÁI KHÓA (CHẾ ĐỘ XEM)
-        // Luôn để shouldLock = true khi có dữ liệu cũ. 
-        // Khi đó, hệ thống sẽ hiện nút "Sửa báo cáo" thay vì cho phép sửa luôn.
         let shouldLock = true;
         
         applyLockState(shouldLock, hasData, lockedBySomeoneElse, lockedByCreator);
         
-        // Khởi tạo lại các thành phần UI
         initMultiSelect("trucLanhDao", lanhDaoOptions); 
         initMultiSelect("trucChuyenMon", chuyenMonOptions); 
         initMultiSelect("trucPhongKham", chuyenMonOptions); 
@@ -3757,269 +3765,250 @@
             rows.push([]); 
         };
         
-        exportSection("A. Bệnh nhân PTCC", validPTCC, [1, 3, 3, 2, 3, 4, 2, 2], ["STT","Họ tên","Địa chỉ","Giờ vào","Chẩn đoán trước mổ","Chẩn đoán sau mổ & kết quả","Giờ PTCC","Khoa"], (r, i) => [i+1, r.hoTen, r.diaChi, formatDT(r.gioVao), r.chuanDoanTruocMo, r.chuanDoanSauKetQua, formatDT(r.gioPTCC), r.khoa], "PTCC");
-        exportSection("B. Bệnh nhân vào viện", validVaoVien, [1, 4, 4, 2, 6, 3], ["STT","Họ tên","Địa chỉ","Giờ vào","Chẩn đoán lúc vào","Khoa"], (r, i) => [i+1, r.hoTen, r.diaChi, formatDT(r.gioVao), r.chuanDoanVao, r.khoa], "VV");
-        exportSection("C. Bệnh nhân chuyển viện", validChuyenVien, [1, 3, 3, 2, 2, 4, 2, 3], ["STT","Họ tên","Địa chỉ","Giờ vào","Khoa","Chẩn đoán lúc vào","Giờ chuyển","Chẩn đoán lúc chuyển"], (r, i) => [i+1, r.hoTen, r.diaChi, formatDT(r.gioVao), r.khoa, r.chuanDoanVao, formatDT(r.gioChuyen), r.chuanDoanChuyen], "CV");
-        exportSection("D. Bệnh nhân ra viện, xin về", validRaVien, [1, 3, 3, 2, 2, 4, 2, 3], ["STT","Họ tên","Địa chỉ","Giờ vào","Khoa","Chẩn đoán lúc vào","Giờ ra","Chẩn đoán lúc ra"], (r, i) => [i+1, r.hoTen, r.diaChi, formatDT(r.gioVao), r.khoa, r.chuanDoanVao, formatDT(r.gioRa), r.chuanDoanRa], "RV");
-        
-        let dsNguoiLBC = document.getElementById("nguoiLamBaoCao").value || ""; 
-        rows.push([]); 
-        let sigArr1 = Array(20).fill(""); sigArr1[15] = "Người làm báo cáo"; 
-        let sigRow1 = rows.length; rows.push(sigArr1); merges.push({ s: { r: sigRow1, c: 15 }, e: { r: sigRow1, c: 19 } }); 
-        
-        let sigArr2 = Array(20).fill(""); sigArr2[15] = "(ký, ghi rõ họ tên)"; 
-        let sigRow2 = rows.length; rows.push(sigArr2); merges.push({ s: { r: sigRow2, c: 15 }, e: { r: sigRow2, c: 19 } }); 
-        
-        rows.push([]); rows.push([]); rows.push([]); rows.push([]); 
-        
-        let sigArr3 = Array(20).fill(""); sigArr3[15] = dsNguoiLBC; 
-        let sigRow3 = rows.length; rows.push(sigArr3); merges.push({ s: { r: sigRow3, c: 15 }, e: { r: sigRow3, c: 19 } });
-        
-        const ws = XLSX.utils.aoa_to_sheet(rows); 
-        ws['!pageSetup'] = { paperSize: "9", orientation: "landscape", scale: "100" }; 
-        const marginInch = 0.5 / 2.54; 
-        ws['!margins'] = { left: marginInch, right: marginInch, top: marginInch, bottom: marginInch, header: 0.3, footer: 0.3 }; 
-        ws['!views'] = [{ zoom: 82 }]; 
-        
-        const colWidths = [{ wch: 15 }, { wch: 15 }]; 
-        for (let i = 2; i < 20; i++) colWidths.push({ wch: 10 }); 
-        ws['!cols'] = colWidths; 
-        
-        const rowHeights = []; 
-        for (let i = 0; i < rows.length; i++) { 
-            if (rows[i].length === 0) rowHeights.push({ hpt: 8 }); 
-            else if (customRowHeights[i]) rowHeights.push({ hpt: customRowHeights[i] }); 
-            else rowHeights.push({}); 
-        } 
-        ws['!rows'] = rowHeights; 
-        ws['!merges'] = merges; 
-        
-        const range = XLSX.utils.decode_range(ws['!ref'] || 'A1'); 
-        if (range.e.c < 19) range.e.c = 19; 
-        if (range.e.r < rows.length - 1) range.e.r = rows.length - 1; 
-        
-        for (let R = 0; R <= range.e.r; ++R) {
-            for (let C = 0; C <= range.e.c; ++C) {
-                const cellAddress = XLSX.utils.encode_cell({ r: R, c: C }); 
-                if (!ws[cellAddress]) ws[cellAddress] = { t: 's', v: '' }; 
-                if (!ws[cellAddress].s) ws[cellAddress].s = {}; 
-                
-                ws[cellAddress].s.border = { 
-                    top: { style: "thin", color: { auto: 1 } }, 
-                    bottom: { style: "thin", color: { auto: 1 } }, 
-                    left: { style: "thin", color: { auto: 1 } }, 
-                    right: { style: "thin", color: { auto: 1 } } 
-                };
-                
-                ws[cellAddress].s.font = { name: "Times New Roman", sz: 11 };
-                ws[cellAddress].s.alignment = { vertical: "center", wrapText: true };
-                
-                // Căn lề
-                if (C >= 2 && C <= 19 && R >= headerBNRowIndex) {
-                    ws[cellAddress].s.alignment.horizontal = "center";
-                } else if (C === 1 && R > headerBNRowIndex + 1 && R < totalBNRowIndex) {
-                    ws[cellAddress].s.alignment.horizontal = "center";
-                } else {
-                    ws[cellAddress].s.alignment.horizontal = "left";
-                }
-                
-                // Tạo kiểu cho Tiêu đề và Header
-                if (R === 0) { 
-                    ws[cellAddress].s.font = { name: "Times New Roman", sz: 16, bold: true }; 
-                    ws[cellAddress].s.alignment.horizontal = "center"; 
-                    ws[cellAddress].s.border = {}; 
-                } else if (R === 1) { 
-                    ws[cellAddress].s.font = { name: "Times New Roman", sz: 12, italic: true }; 
-                    ws[cellAddress].s.alignment.horizontal = "center"; 
-                    ws[cellAddress].s.border = {}; 
-                } else if (R === 3 || R === 12 || R === totalBNRowIndex + 4) { 
-                    ws[cellAddress].s.font = { name: "Times New Roman", sz: 12, bold: true }; 
-                    ws[cellAddress].s.border = {}; 
-                } else if (R >= 4 && R <= 9) { 
-                    ws[cellAddress].s.font = { name: "Times New Roman", sz: 11, bold: true }; 
-                    ws[cellAddress].s.border = {}; 
-                } else if (R === xnCdhaRowIndex || R === headerBNRowIndex || R === headerBNRowIndex + 1 || section3Headers.includes(R)) { 
-                    ws[cellAddress].s.font = { name: "Times New Roman", sz: 11, bold: true }; 
-                    ws[cellAddress].s.alignment.horizontal = "center"; 
-                    ws[cellAddress].s.fill = { fgColor: { rgb: "F1F5F9" } }; 
-                } else if (R === totalBNRowIndex) {
-                    ws[cellAddress].s.font = { name: "Times New Roman", sz: 11, bold: true };
-                    ws[cellAddress].s.fill = { fgColor: { rgb: "F1F5F9" } };
-                } else if (section3TableAreas.some(area => R > area.start && R <= area.end)) {
-                    if (C === 0 || C === 3 || C === 6 || C === 7) ws[cellAddress].s.alignment.horizontal = "center";
-                } else if (R >= sigRow1 && R <= sigRow3) {
-                    ws[cellAddress].s.border = {};
-                    ws[cellAddress].s.alignment.horizontal = "center";
-                    if (R === sigRow1 || R === sigRow3) ws[cellAddress].s.font = { name: "Times New Roman", sz: 12, bold: true };
-                    if (R === sigRow2) ws[cellAddress].s.font = { name: "Times New Roman", sz: 11, italic: true };
-                }
-            }
-        }
-        
-        ws['!ref'] = XLSX.utils.encode_range(range); 
-        const wb = XLSX.utils.book_new(); 
-        XLSX.utils.book_append_sheet(wb, ws, "BaoCao"); 
-        XLSX.writeFile(wb, `BaoCaoGiaoBan_${nam}${thang}${ngay}.xlsx`); 
-    });
+        exportSection("A. Bệnh nhân PTCC", validPTCC, [1, 3, 3, 2, 3, 4, 2, 2], ["STT", "Họ và tên", "Địa chỉ", "Giờ vào", "Chẩn đoán trước mổ", "Chẩn đoán sau mổ & kết quả", "Giờ PTCC", "Khoa"], (r, i) => [i+1, r.hoTen, r.diaChi, formatDT(r.gioVao), r.chuanDoanTruocMo, r.chuanDoanSauKetQua, formatDT(r.gioPTCC), r.khoa], "ptcc");
+            
+            exportSection("B. Bệnh nhân vào viện", validVaoVien, [1, 4, 4, 2, 6, 3], ["STT", "Họ và tên", "Địa chỉ", "Giờ vào", "Chẩn đoán lúc vào", "Khoa"], (r, i) => [i+1, r.hoTen, r.diaChi, formatDT(r.gioVao), r.chuanDoanVao, r.khoa], "vaovien");
+            
+            exportSection("C. Bệnh nhân chuyển viện", validChuyenVien, [1, 3, 3, 2, 2, 4, 2, 3], ["STT", "Họ và tên", "Địa chỉ", "Giờ vào", "Khoa", "Chẩn đoán lúc vào", "Giờ chuyển", "Chẩn đoán lúc chuyển"], (r, i) => [i+1, r.hoTen, r.diaChi, formatDT(r.gioVao), r.khoa, r.chuanDoanVao, formatDT(r.gioChuyen), r.chuanDoanChuyen], "chuyenvien");
+            
+            exportSection("D. Bệnh nhân ra viện, xin về", validRaVien, [1, 3, 3, 2, 2, 4, 2, 3], ["STT", "Họ và tên", "Địa chỉ", "Giờ vào", "Khoa", "Chẩn đoán lúc vào", "Giờ ra", "Chẩn đoán lúc ra"], (r, i) => [i+1, r.hoTen, r.diaChi, formatDT(r.gioVao), r.khoa, r.chuanDoanVao, formatDT(r.gioRa), r.chuanDoanRa], "ravien");
 
-    // ==========================================
-    // WORKFLOW DUYỆT BÁO CÁO
-    // ==========================================
-    window.trinhDuyetBaoCao = async function() {
-        // ĐÃ XÓA: if(isFormLocked) return; <--- Bỏ dòng này đi
-        
-        // Kiểm tra xem đã lưu chưa
-        const key = getStorageKey(activeDate);
-        let data = await LocalDB.getItem(key);
-        if (!data || !data.isSaved) {
-            return showToast("Vui lòng Lưu báo cáo trước khi Trình duyệt!", "error");
-        }
-
-        promptPassword("Xác nhận TRÌNH DUYỆT báo cáo", async function(user) {
-            if (user) {
-                let btn = document.getElementById('btnTrinhDuyet');
-                if(btn) {
-                    btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"></path></svg> Đang gửi...`;
-                    btn.disabled = true;
-                }
-                
-                try {
-                    currentReportSubmitted = true;
-                    currentReportApproved = false;
-                    currentRejectMessage = "";
+            rows.push([]); 
+            
+            merges.push({ s: { r: rows.length, c: 13 }, e: { r: rows.length, c: 19 } }); 
+            rows.push(["", "", "", "", "", "", "", "", "", "", "", "", "", "Người làm báo cáo", "", "", "", "", "", ""]);
+            
+            merges.push({ s: { r: rows.length, c: 13 }, e: { r: rows.length, c: 19 } }); 
+            rows.push(["", "", "", "", "", "", "", "", "", "", "", "", "", "(ký, ghi rõ họ tên)", "", "", "", "", "", ""]);
+            
+            rows.push([]); rows.push([]); rows.push([]); 
+            
+            merges.push({ s: { r: rows.length, c: 13 }, e: { r: rows.length, c: 19 } }); 
+            rows.push(["", "", "", "", "", "", "", "", "", "", "", "", "", document.getElementById("nguoiLamBaoCao").value.toUpperCase(), "", "", "", "", "", ""]);
+            
+            const wb = XLSX.utils.book_new(); 
+            const ws = XLSX.utils.aoa_to_sheet(rows); 
+            ws['!merges'] = merges;
+            
+            const rowHeights = []; 
+            for(let i = 0; i < rows.length; i++) { 
+                rowHeights.push({ hpx: customRowHeights[i] || (i === 0 ? 30 : i === 1 ? 20 : 25) }); 
+            } 
+            ws['!rows'] = rowHeights;
+            
+            const colWidths = Array(20).fill({ wch: 7 }); 
+            ws['!cols'] = colWidths;
+            
+            const range = XLSX.utils.decode_range(ws['!ref']); 
+            for(let R = range.s.r; R <= range.e.r; ++R) { 
+                for(let C = range.s.c; C <= range.e.c; ++C) { 
+                    const cellRef = XLSX.utils.encode_cell({ r: R, c: C }); 
+                    if (!ws[cellRef]) continue; 
                     
-                    // Gọi hàm lưu với tham số forceSave = true để vượt qua lớp khóa form
-                    await window.saveReportAll(true, true); 
+                    let style = { font: { name: "Times New Roman", sz: 11 }, alignment: { vertical: "center", wrapText: true } }; 
                     
-                    logAction(`Đã TRÌNH DUYỆT báo cáo ngày ${activeDate}`);
-                    showToast("📤 Đã trình duyệt thành công! Báo cáo đang chờ Lãnh đạo duyệt.", "success");
-                } catch(e) {
-                    showToast("Lỗi khi trình duyệt: " + e.message, "error");
-                } finally {
-                    if(btn) {
-                        btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"></path></svg> Trình Duyệt`;
-                        btn.disabled = false;
-                    }
-                }
-            }
+                    if (R === 0) { 
+                        style.font.bold = true; style.font.sz = 16; style.font.color = { rgb: "0070C0" }; style.alignment.horizontal = "center"; 
+                    } else if (R === 1) { 
+                        style.font.italic = true; style.font.sz = 12; style.alignment.horizontal = "center"; 
+                    } else if (ws[cellRef].v && String(ws[cellRef].v).startsWith("I. ") || String(ws[cellRef].v).startsWith("II. ") || String(ws[cellRef].v).startsWith("III. ")) { 
+                        style.font.bold = true; style.font.sz = 12; style.font.color = { rgb: "0070C0" }; 
+                    } else if (ws[cellRef].v && (String(ws[cellRef].v).startsWith("A. ") || String(ws[cellRef].v).startsWith("B. ") || String(ws[cellRef].v).startsWith("C. ") || String(ws[cellRef].v).startsWith("D. "))) { 
+                        style.font.bold = true; style.font.italic = true; 
+                    } else if (R === headerBNRowIndex || R === headerBNRowIndex + 1 || section3Headers.includes(R)) { 
+                        style.font.bold = true; style.alignment.horizontal = "center"; style.fill = { fgColor: { rgb: "D9E1F2" } }; 
+                        style.border = { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } }; 
+                    } else if (R > headerBNRowIndex + 1 && R <= totalBNRowIndex) { 
+                        style.border = { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } }; 
+                        if (R === totalBNRowIndex) style.font.bold = true; 
+                        if (C === 0 || C === 1) style.alignment.horizontal = "left"; 
+                        else style.alignment.horizontal = "center"; 
+                    } else if (section3TableAreas.some(area => R > area.start && R <= area.end)) { 
+                        style.border = { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } }; 
+                        const area = section3TableAreas.find(a => R > a.start && R <= a.end); 
+                        if ((area.type === "ptcc" && (C === 1 || C === 2 || C === 4 || C === 5)) || 
+                            (area.type === "vaovien" && (C === 1 || C === 2 || C === 4)) || 
+                            (area.type === "chuyenvien" && (C === 1 || C === 2 || C === 5 || C === 7)) || 
+                            (area.type === "ravien" && (C === 1 || C === 2 || C === 5 || C === 7))) { 
+                            style.alignment.horizontal = "left"; 
+                        } else { 
+                            style.alignment.horizontal = "center"; 
+                        } 
+                    } else if (R >= xnCdhaRowIndex && R <= xnCdhaRowIndex + 5) { 
+                        if (C === 0 || C === 3) style.font.bold = true; 
+                        if (R === xnCdhaRowIndex) style.font.color = { rgb: "C00000" }; 
+                    } else if (String(ws[cellRef].v) === "Người làm báo cáo" || String(ws[cellRef].v) === "(ký, ghi rõ họ tên)" || String(ws[cellRef].v) === document.getElementById("nguoiLamBaoCao").value.toUpperCase()) { 
+                        style.alignment.horizontal = "center"; 
+                        if (String(ws[cellRef].v) === "Người làm báo cáo" || String(ws[cellRef].v) === document.getElementById("nguoiLamBaoCao").value.toUpperCase()) style.font.bold = true; 
+                        if (String(ws[cellRef].v) === "(ký, ghi rõ họ tên)") style.font.italic = true; 
+                    } 
+                    ws[cellRef].s = style; 
+                } 
+            } 
+            
+            XLSX.utils.book_append_sheet(wb, ws, "BaoCao"); 
+            XLSX.writeFile(wb, `BaoCaoGiaoBan_${dateVal}.xlsx`); 
+            logAction(`Xuất file Excel báo cáo ngày ${dateVal}`);
         });
-    }
-
-    window.tuChoiBaoCao = async function() {
-        promptPassword("Xác thực Lãnh đạo để TỪ CHỐI", async function(user) {
-            if (user && ["admin", "quantri"].includes(user.role)) {
-                openModal("Nhập lý do từ chối (bắt buộc):", async (lyDo) => {
-                    if (!lyDo || lyDo.trim() === "") {
-                        return showToast("Vui lòng nhập lý do từ chối để nhân viên sửa lại!", "error");
-                    }
-                    
-                    let btn = document.getElementById('btnTuChoi');
-                    if(btn) {
-                        btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Đang xử lý...`;
-                        btn.disabled = true;
-                    }
-
+        
+        window.trinhDuyetBaoCao = async function() {
+            promptPassword(`Xác thực để TRÌNH DUYỆT báo cáo ngày ${activeDate}`, async function(user) { 
+                if (user && ["admin", "quantri", "editor"].includes(user.role)) { 
                     try {
-                        currentReportSubmitted = false;
-                        currentReportApproved = false;
-                        currentRejectMessage = lyDo.trim();
+                        let btn = document.getElementById('btnTrinhDuyet');
+                        if(btn) {
+                            btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg> Đang xử lý...`;
+                            btn.disabled = true;
+                        }
+                        
+                        currentReportSubmitted = true; 
+                        currentRejectMessage = ""; 
                         
                         await window.saveReportAll(true, true); 
                         
-                        logAction(`Đã TỪ CHỐI báo cáo ngày ${activeDate}. Lý do: ${currentRejectMessage}`);
-                        showToast("❌ Đã từ chối báo cáo. Nhân viên có thể sửa lại.", "success");
+                        logAction(`Đã TRÌNH DUYỆT báo cáo ngày ${activeDate}`);
+                        showToast("Đã Trình duyệt thành công! Chờ Lãnh đạo phê duyệt.", "success");
                     } catch(e) {
-                        showToast("Lỗi khi từ chối: " + e.message, "error");
+                        showToast("Lỗi khi trình duyệt: " + e.message, "error");
                     } finally {
+                        let btn = document.getElementById('btnTrinhDuyet');
                         if(btn) {
-                            btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Từ Chối`;
+                            btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"></path></svg> Trình Duyệt`;
                             btn.disabled = false;
                         }
                     }
-                });
-            } else if (user) {
-                showToast("Chỉ Lãnh đạo mới có quyền Từ Chối!", "error");
-            }
-        });
-    }
-
-    window.duyetBaoCao = async function() {
-        promptPassword("Xác thực Lãnh đạo để DUYỆT báo cáo", async function(user) {
-            if (user && ["admin", "quantri"].includes(user.role)) {
-                let btn = document.getElementById('btnDuyet');
-                if(btn) {
-                    btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg> Đang duyệt...`;
-                    btn.disabled = true;
-                }
-                
-                try {
-                    currentReportApproved = true;
-                    currentReportSubmitted = true; 
-                    currentRejectMessage = "";
-                    currentApprovalInfo = {
-                        nguoiDuyet: user.fullname,
-                        thoiGianDuyet: new Date().toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'}) + ' ' + new Date().toLocaleDateString('vi-VN')
-                    };
-                    
-                    await window.saveReportAll(true, true); 
-                    
-                    logAction(`Đã DUYỆT báo cáo ngày ${activeDate}`);
-                    showToast("✅ Đã phê duyệt báo cáo thành công!", "success");
-                } catch(e) {
-                    showToast("Lỗi khi duyệt: " + e.message, "error");
-                } finally {
-                    if(btn) {
-                        btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg> Duyệt Báo Cáo`;
-                        btn.disabled = false;
+                } else if (user) { 
+                    showToast("Bạn không có quyền Trình duyệt báo cáo này!", "error"); 
+                } 
+            });
+        }
+        
+        window.duyetBaoCao = async function() {
+            promptPassword(`Xác thực Lãnh đạo để DUYỆT báo cáo ngày ${activeDate}`, async function(user) { 
+                if (user && ["admin", "quantri"].includes(user.role)) { 
+                    try {
+                        let btn = document.getElementById('btnDuyet');
+                        if(btn) {
+                            btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg> Đang xử lý...`;
+                            btn.disabled = true;
+                        }
+                        
+                        currentReportApproved = true; 
+                        currentReportSubmitted = true; 
+                        currentRejectMessage = ""; 
+                        
+                        let nowTime = new Date().toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'}) + ' ' + new Date().toLocaleDateString('vi-VN');
+                        currentApprovalInfo = {
+                            nguoiDuyet: user.fullname,
+                            thoiGianDuyet: nowTime
+                        };
+                        
+                        await window.saveReportAll(true, true); 
+                        
+                        logAction(`Đã PHÊ DUYỆT báo cáo ngày ${activeDate}`);
+                        showToast("✅ Đã phê duyệt báo cáo thành công!", "success");
+                    } catch(e) {
+                        showToast("Lỗi khi phê duyệt: " + e.message, "error");
+                    } finally {
+                        let btn = document.getElementById('btnDuyet');
+                        if(btn) {
+                            btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg> Duyệt Báo Cáo`;
+                            btn.disabled = false;
+                        }
                     }
-                }
-            } else if (user) {
-                showToast("Chỉ Lãnh đạo mới có quyền Duyệt báo cáo!", "error");
-            }
-        });
-    }
+                } else if (user) { 
+                    showToast("Chỉ Lãnh đạo (Admin) mới có quyền Phê duyệt!", "error"); 
+                } 
+            });
+        }
+        
+        window.tuChoiBaoCao = async function() {
+            promptPassword(`Xác thực Lãnh đạo để TỪ CHỐI báo cáo ngày ${activeDate}`, async function(user) { 
+                if (user && ["admin", "quantri"].includes(user.role)) { 
+                    
+                    openModal("Nhập lý do từ chối báo cáo:", async (lyDo) => {
+                        if (lyDo) {
+                            try {
+                                let btn = document.getElementById('btnTuChoi');
+                                if(btn) {
+                                    btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg> Đang xử lý...`;
+                                    btn.disabled = true;
+                                }
+                                
+                                currentReportApproved = false;
+                                currentReportSubmitted = false; 
+                                currentRejectMessage = lyDo;
+                                currentApprovalInfo = {};
+                                
+                                await window.saveReportAll(true, true); 
+                                
+                                logAction(`Đã TỪ CHỐI báo cáo ngày ${activeDate}. Lý do: ${lyDo}`);
+                                showToast("❌ Đã trả lại báo cáo cho người lập!", "success");
+                            } catch(e) {
+                                showToast("Lỗi khi từ chối: " + e.message, "error");
+                            } finally {
+                                let btn = document.getElementById('btnTuChoi');
+                                if(btn) {
+                                    btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Từ Chối`;
+                                    btn.disabled = false;
+                                }
+                            }
+                        }
+                    });
 
-    window.huyDuyetBaoCao = async function() {
-        promptPassword("Xác thực Lãnh đạo để HỦY DUYỆT", async function(user) {
-            if (user && ["admin", "quantri"].includes(user.role)) {
-                
-                const isConfirmed = await openCancelApprovalConfirm();
-                if (!isConfirmed) return;
-
-                try {
-                    let btn = document.getElementById('btnHuyDuyet');
-                    if(btn) {
-                        btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg> Đang xử lý...`;
-                        btn.disabled = true;
+                } else if (user) { 
+                    showToast("Chỉ Lãnh đạo (Admin) mới có quyền Từ chối!", "error"); 
+                } 
+            });
+        }
+        
+        window.huyDuyetBaoCao = async function() {
+            promptPassword(`Xác thực Lãnh đạo để HỦY DUYỆT báo cáo ngày ${activeDate}`, async function(user) { 
+                if (user && ["admin", "quantri"].includes(user.role)) { 
+                    const isConfirmed = await openCancelApprovalConfirm();
+                    if (!isConfirmed) return;
+                    
+                    try {
+                        let btn = document.getElementById('btnHuyDuyet');
+                        if(btn) {
+                            btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg> Đang xử lý...`;
+                            btn.disabled = true;
+                        }
+                        
+                        currentReportApproved = false;
+                        currentReportSubmitted = true; 
+                        currentRejectMessage = "";
+                        currentApprovalInfo = {};
+                        
+                        await window.saveReportAll(true, true); 
+                        
+                        logAction(`Đã HỦY DUYỆT báo cáo ngày ${activeDate}`);
+                        showToast("🔓 Đã hủy phê duyệt. Báo cáo chuyển về trạng thái Chờ Duyệt!", "success");
+                    } catch(e) {
+                        showToast("Lỗi khi hủy duyệt: " + e.message, "error");
+                    } finally {
+                        let btn = document.getElementById('btnHuyDuyet');
+                        if(btn) {
+                            btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg> Hủy Phê Duyệt`;
+                            btn.disabled = false;
+                        }
                     }
-                    
-                    currentReportApproved = false;
-                    currentReportSubmitted = true; 
-                    currentRejectMessage = "";
-                    currentApprovalInfo = {};
-                    
-                    await window.saveReportAll(true, true); 
-                    
-                    logAction(`Đã HỦY DUYỆT báo cáo ngày ${activeDate}`);
-                    showToast("🔓 Đã hủy phê duyệt. Báo cáo chuyển về trạng thái Chờ Duyệt!", "success");
-                } catch(e) {
-                    showToast("Lỗi khi hủy duyệt: " + e.message, "error");
-                } finally {
-                    let btn = document.getElementById('btnHuyDuyet');
-                    if(btn) {
-                        btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg> Hủy Phê Duyệt`;
-                        btn.disabled = false;
-                    }
+                } else if (user) { 
+                    showToast("Chỉ Lãnh đạo (Admin) mới có quyền Hủy duyệt!", "error"); 
+                } 
+            });
+        }
+        
+        window.loginProactively = function() {
+            promptPassword("Vui lòng đăng nhập để sử dụng tính năng:", async function(user) {
+                if (user) {
+                    await checkInitialLogin();
                 }
-            } else if (user) {
-                showToast("Chỉ Lãnh đạo mới có quyền Hủy Duyệt báo cáo!", "error");
-            }
-        });
-    }
+            });
+        };
 
-    // Initialize application check
-    checkInitialLogin();
+        checkInitialLogin();
 
-</script>
+    </script>
 </body>
 </html>
