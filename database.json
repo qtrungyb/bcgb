@@ -1,0 +1,43 @@
+{
+  "users": {
+    "admin": {
+      "username": "admin",
+      "password": "1",
+      "fullname": "Quản trị viên Trung",
+      "role": "admin"
+    },
+    "bstuyen": {
+      "username": "bstuyen",
+      "password": "1",
+      "fullname": "BS Tuyên",
+      "role": "editor"
+    },
+    "bsquyen": {
+      "username": "bsquyen",
+      "password": "1",
+      "fullname": "BS Quyền",
+      "role": "quantri"
+    },
+    "bstinh": {
+      "username": "bstinh",
+      "password": "1",
+      "fullname": "BS Tình",
+      "role": "editor"
+    }
+  },
+  "settings": {
+    "staff": {
+      "lanhDao": ["BS Tình", "BS Quyền", "BS Tuyên"],
+      "chuyenMon": ["BS Tuyên", "BS Quyền", "BS Tình"],
+      "anNinh": ["Bảo vệ 1", "Bảo vệ 2"],
+      "bacSi": ["BS Tình", "BS Quyền", "BS Tuyên"],
+      "xetNghiem": ["KTV Xét Nghiệm 1", "KTV Xét Nghiệm 2"],
+      "cdha": ["KTV X-Quang", "KTV Siêu Âm"],
+      "nguoiLamBaoCao": ["BS Tuyên", "BS Quyền", "BS Tình"]
+    },
+    "autocomplete": {
+      "chanDoan": ["Viêm ruột thừa cấp", "Gãy xương đùi", "Viêm phổi", "Viêm phế quản"],
+      "diaChi": ["Nghĩa Lộ, Yên Bái", "Văn Chấn, Yên Bái", "Mù Cang Chải, Yên Bái"]
+    }
+  }
+}
