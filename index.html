@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Báo Cáo Giao Ban</title>
-    <meta name="author" content="Quang Trung">
+    <meta name="author" content="Hoàng Văn Thượng">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -2099,26 +2099,21 @@
         }
 
         try {
-            if (isUpdateCloud && existingCloudRows.length > 0) {
-                try { 
-                    for (let row of existingCloudRows) { 
-                        let exactCloudKey = row.ngayTruc || row.date || row.NgayTruc || row.Date || activeDate; 
-                        await fetch(GOOGLE_SHEET_URL, { 
-                            method: 'POST', 
-                            headers: { 'Content-Type': 'text/plain' }, 
-                            body: JSON.stringify({ action: "delete", token: currentUserSession.token, date: exactCloudKey, ngayTruc: exactCloudKey, id: exactCloudKey }) 
-                        }); 
-                    } 
-                    await new Promise(resolve => setTimeout(resolve, 3000)); 
-                } catch (delErr) {}
-            }
-            
             let diffs = getDiffLogs(originalData, finalDataObj);
+            
+            // Xác định action là "update" nếu đã có dữ liệu trên Cloud, ngược lại là "save"
+            let actionType = (isUpdateCloud && existingCloudRows.length > 0) ? "update" : "save";
 
             let res = await fetch(GOOGLE_SHEET_URL, { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'text/plain' }, 
-                body: JSON.stringify({ action: "save", token: currentUserSession.token, data: finalDataObj, logs: diffs }) 
+                // Gửi 1 request duy nhất với actionType tương ứng
+                body: JSON.stringify({ 
+                    action: actionType, 
+                    token: currentUserSession.token, 
+                    data: finalDataObj, 
+                    logs: diffs 
+                }) 
             });
             let textResult = await res.text();
             
