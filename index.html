@@ -851,7 +851,122 @@
     let currentReportSubmitted = false;
     let currentRejectMessage = "";
     let currentApprovalInfo = {};
+	// ==========================================
+    // XỬ LÝ CHUYỂN TAB TRONG QUẢN LÝ BÁO CÁO
+    // ==========================================
+    window.switchTab = async function(tabName) {
+        // 1. Gỡ trạng thái active của tất cả các nút
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        
+        // 2. Thêm trạng thái active cho nút vừa click
+        // Hàm này tự động viết hoa chữ cái đầu: cloud -> btnTabCloud
+        const activeBtn = document.getElementById('btnTab' + tabName.charAt(0).toUpperCase() + tabName.slice(1));
+        if (activeBtn) activeBtn.classList.add('active');
 
+        // 3. Ẩn tất cả nội dung tab hiện tại
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        
+        // 4. Hiển thị nội dung của tab được chọn
+        const activeContent = document.getElementById('tab-' + tabName);
+        if (activeContent) activeContent.classList.add('active');
+
+        // 5. Nếu mở tab Thống kê thì gọi hàm vẽ lại biểu đồ
+        if (tabName === 'chart') {
+            await renderChart();
+        }
+    };
+
+    // Hàm xử lý nút "Ẩn/hiện bộ nhớ máy tính"
+    window.toggleLocalTab = function() {
+        const localTabBtn = document.getElementById('btnTabLocal');
+        if (localTabBtn) {
+            if (localTabBtn.style.display === 'none' || localTabBtn.style.display === '') {
+                localTabBtn.style.display = 'inline-flex';
+            } else {
+                localTabBtn.style.display = 'none';
+                // Nếu đang đứng ở tab Local mà bấm ẩn đi thì tự động chuyển về tab Cloud
+                if (localTabBtn.classList.contains('active')) {
+                    switchTab('cloud');
+                }
+            }
+        }
+    };
+	// ==========================================
+    // TẢI DỮ LIỆU LỊCH SỬ (LOG) TỪ GOOGLE SHEET
+    // ==========================================
+    window.loadHistoryLogs = async function() {
+        const tbody = document.getElementById("historyTableBody");
+        if (!tbody) return;
+        
+        tbody.innerHTML = "<tr><td colspan='3' style='text-align:center; padding: 20px; font-weight: 500;'>Đang tải dữ liệu lịch sử...</td></tr>";
+        
+        if (!GOOGLE_SHEET_URL || !currentUserSession || !currentUserSession.token) {
+            tbody.innerHTML = "<tr><td colspan='3' style='text-align:center; color: var(--danger);'>Lỗi: Phiên đăng nhập không hợp lệ!</td></tr>";
+            return;
+        }
+
+        try {
+            // Gửi request yêu cầu lấy log
+            let res = await fetch(GOOGLE_SHEET_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({ action: "getLogs", token: currentUserSession.token })
+            });
+            
+            let data = await res.json();
+            
+            if (data.status === "error") {
+                tbody.innerHTML = `<tr><td colspan='3' style='text-align:center; color: var(--danger);'>${data.message}</td></tr>`;
+                return;
+            }
+
+            // Xử lý và in dữ liệu ra bảng
+            if (Array.isArray(data) && data.length > 0) {
+                tbody.innerHTML = "";
+                // Đảo ngược mảng để hành động mới nhất hiện lên đầu
+                [...data].reverse().forEach(log => {
+                    let tr = document.createElement("tr");
+                    tr.innerHTML = `
+                        <td style="white-space: nowrap; font-size: 12px; color: var(--text-muted); text-align: center;">
+                            ${log.timestamp || log.thoiGian || ""}
+                        </td>
+                        <td style="font-weight: 600; color: var(--primary); text-align: left; padding-left: 16px;">
+                            ${log.fullname || log.username || log.taiKhoan || ""}
+                        </td>
+                        <td style="font-size: 13px; line-height: 1.5; text-align: left; padding-left: 16px;">
+                            ${log.details || log.thaoTac || ""}
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } else {
+                tbody.innerHTML = "<tr><td colspan='3' style='text-align:center; color: var(--text-muted); padding: 20px;'>Chưa có dữ liệu lịch sử hệ thống.</td></tr>";
+            }
+        } catch (e) {
+            tbody.innerHTML = "<tr><td colspan='3' style='text-align:center; color: var(--danger); padding: 20px;'>Lỗi kết nối máy chủ hoặc Google App Script chưa cấu hình API getLogs!</td></tr>";
+            console.error("Lỗi tải lịch sử:", e);
+        }
+    };
+
+    // ==========================================
+    // CẬP NHẬT LẠI HÀM SWITCH TAB ĐỂ GỌI LOG
+    // ==========================================
+    window.switchTab = async function(tabName) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        const activeBtn = document.getElementById('btnTab' + tabName.charAt(0).toUpperCase() + tabName.slice(1));
+        if (activeBtn) activeBtn.classList.add('active');
+        
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        const activeContent = document.getElementById('tab-' + tabName);
+        if (activeContent) activeContent.classList.add('active');
+
+        // Bổ sung gọi hàm khi chuyển tab
+        if (tabName === 'chart') {
+            await renderChart();
+        } else if (tabName === 'history') {
+            await loadHistoryLogs(); // <-- Dòng này sẽ kích hoạt việc tải Log
+        }
+    };
     // --- GỬI TÍN HIỆU KHÓA ĐANG SOẠN THẢO --- //
     async function thongBaoDangSoan(dateStr, isEditing) {
         if(!GOOGLE_SHEET_URL || !currentUserSession || !currentUserSession.token) return;
