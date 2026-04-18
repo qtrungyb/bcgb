@@ -2441,11 +2441,15 @@
     }
 
     async function renderDashboard() {
-        const tbodyLocal = document.getElementById("dashboardBodyLocal"); 
-        tbodyLocal.innerHTML = ""; 
-        const tbodyCloud = document.getElementById("dashboardBodyCloud"); 
-        tbodyCloud.innerHTML = "";
-        const allRecords = await getCombinedRecords();
+		// 1. CHỜ LẤY XONG DỮ LIỆU TRƯỚC
+		const allRecords = await getCombinedRecords();
+    
+		// 2. SAU ĐÓ MỚI XÓA BẢNG VÀ VẼ LẠI
+		const tbodyLocal = document.getElementById("dashboardBodyLocal");
+		tbodyLocal.innerHTML = "";
+		const tbodyCloud = document.getElementById("dashboardBodyCloud");
+		tbodyCloud.innerHTML = "";
+    
         
         const isITAdmin = (currentUserSession && currentUserSession.role === 'admin');
         const isMedicalAdmin = (currentUserSession && currentUserSession.role === 'quantri');
@@ -2935,7 +2939,7 @@
         } else if (currentRejectMessage) {
             banner.style.display = 'flex';
             banner.style.backgroundColor = '#fee2e2'; banner.style.borderColor = '#ef4444'; sTitle.style.color = '#b91c1c'; sInfo.style.color = '#991b1b';
-            sTitle.innerText = "❌ BÁO CÁO BỊ TỪ CHỐI";
+            sTitle.innerText = "❌ BÁO CÁO BỊ TỪ CHỐI PHÊ DUYỆT";
             sInfo.innerText = `Lý do: ${currentRejectMessage}`;
         } else if (lockedBySomeoneElse || lockedByCreator) {
             let nguoiKhoa = lockedBySomeoneElse || lockedByCreator;
@@ -2945,7 +2949,7 @@
             sTitle.style.color = '#b91c1c'; 
             sInfo.style.color = '#991b1b';
             sTitle.innerText = "⚠️ BÁO CÁO ĐANG LÀM";
-            sInfo.innerText = `Báo cáo đang được làm bởi ${nguoiKhoa}. Bạn chỉ có thể xem và không được phép sửa.`;
+            sInfo.innerText = `Báo cáo đang được làm bởi BS ${nguoiKhoa}. Bạn không được phép sửa.`;
         } else {
             banner.style.display = 'none';
         }
@@ -2970,8 +2974,8 @@
 
         const btnExcel = document.getElementById('xuatExcelBtn');
         if (btnExcel) {
-            btnExcel.style.display = isMedicalAdmin ? 'inline-flex' : 'none';
-        }
+            btnExcel.style.display = (isMedicalAdmin || isITAdmin) ? 'inline-flex' : 'none';
+		}
 
         // --- ĐIỀU KIỆN HIỂN THỊ NÚT TRÌNH DUYỆT ---
         let isOwner = (originalData && currentUserSession && originalData.nguoiTao === currentUserSession.fullname);
