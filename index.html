@@ -4,13 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Báo Cáo Giao Ban</title>
-    <meta name="author" content="Admin5715">
+    <meta name="author" content="Hoàng Văn Thượng">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 	
 	<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     
     <style>
         /* =========================================
@@ -1084,35 +1085,70 @@
     }
 
     async function fetchDanhSachNhanSu() {
-        try {
-            const snapshot = await db.ref('settings').once('value');
-            if (snapshot.exists()) {
-                const data = snapshot.val();
-                
-                if (data.staff.lanhDao) lanhDaoOptions = ["-- Chọn --", ...data.staff.lanhDao];
-                if (data.staff.chuyenMon) chuyenMonOptions = ["-- Chọn --", ...data.staff.chuyenMon];
-                if (data.staff.anNinh) anNinhOptions = ["-- Chọn --", ...data.staff.anNinh];
-                if (data.staff.bacSi) bacSiOptions = ["-- Chọn --", ...data.staff.bacSi];
-                if (data.staff.xetNghiem) xetNghiemOptions = ["-- Chọn --", ...data.staff.xetNghiem];
-                if (data.staff.cdha) cdhaOptions = ["-- Chọn --", ...data.staff.cdha];
-                if (data.staff.nguoiLamBaoCao) dsNguoiLamBaoCao = data.staff.nguoiLamBaoCao;
-                
-                if (data.autocomplete.diaChi) commonAddresses = data.autocomplete.diaChi;
-                if (data.autocomplete.chanDoan) commonDiagnoses = data.autocomplete.chanDoan;
+    try {
+        const snapshot = await db.ref('settings').once('value');
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            
+            if (data.staff.lanhDao) lanhDaoOptions = ["-- Chọn --", ...data.staff.lanhDao];
+            if (data.staff.chuyenMon) chuyenMonOptions = ["-- Chọn --", ...data.staff.chuyenMon];
+            if (data.staff.anNinh) anNinhOptions = ["-- Chọn --", ...data.staff.anNinh];
+            if (data.staff.bacSi) bacSiOptions = ["-- Chọn --", ...data.staff.bacSi];
+            if (data.staff.xetNghiem) xetNghiemOptions = ["-- Chọn --", ...data.staff.xetNghiem];
+            if (data.staff.cdha) cdhaOptions = ["-- Chọn --", ...data.staff.cdha];
+            if (data.staff.nguoiLamBaoCao) dsNguoiLamBaoCao = data.staff.nguoiLamBaoCao;
+            
+            if (data.autocomplete.diaChi) commonAddresses = data.autocomplete.diaChi;
+            if (data.autocomplete.chanDoan) commonDiagnoses = data.autocomplete.chanDoan;
 
-                let dlBacSi = document.getElementById("bacSiList");
-                if (dlBacSi && data.staff.bacSi) {
-                    dlBacSi.innerHTML = "";
-                    data.staff.bacSi.forEach(bs => {
+            // 1. CẬP NHẬT LẠI CÁC Ô NHẬP LIỆU NGAY KHI CÓ DATA
+            initMultiSelect("trucLanhDao", lanhDaoOptions); 
+            initMultiSelect("trucChuyenMon", chuyenMonOptions); 
+            initMultiSelect("trucPhongKham", chuyenMonOptions); 
+            initMultiSelect("trucXetNghiem", xetNghiemOptions);
+            initMultiSelect("trucCDHA", cdhaOptions);
+            initMultiSelect("trucAnNinh", anNinhOptions);
+
+            let dlBacSi = document.getElementById("bacSiList");
+            if (dlBacSi && data.staff.bacSi) {
+                dlBacSi.innerHTML = "";
+                data.staff.bacSi.forEach(bs => {
+                    let opt = document.createElement('option');
+                    opt.value = bs; dlBacSi.appendChild(opt);
+                });
+            }
+
+            // 2. XỬ LÝ MẪU NHÂN SỰ VÀ BÁC SĨ TỪ FIREBASE
+            if (data.mauNhanSu) {
+                mauNhanSuData = data.mauNhanSu;
+                let selectMauNS = document.getElementById("chonMauNhanSu");
+                if(selectMauNS) {
+                    selectMauNS.innerHTML = '<option value="">Chọn mẫu...</option>';
+                    mauNhanSuData.forEach((mau, index) => {
                         let opt = document.createElement('option');
-                        opt.value = bs; dlBacSi.appendChild(opt);
+                        opt.value = index; opt.textContent = mau.tenMau;
+                        selectMauNS.appendChild(opt);
                     });
                 }
             }
-        } catch (e) {
-            console.error("Lỗi khi tải danh sách nhân sự:", e);
+
+            if (data.mauBacSi) {
+                mauBacSiData = data.mauBacSi;
+                let selectMauBS = document.getElementById("chonMauBacSi");
+                if(selectMauBS) {
+                    selectMauBS.innerHTML = '<option value="">Chọn mẫu...</option>';
+                    mauBacSiData.forEach((mau, index) => {
+                        let opt = document.createElement('option');
+                        opt.value = index; opt.textContent = mau.tenMau;
+                        selectMauBS.appendChild(opt);
+                    });
+                }
+            }
         }
+    } catch (e) {
+        console.error("Lỗi khi tải danh sách nhân sự:", e);
     }
+}
 
     async function logAction(details) {
         if (!currentUserSession) return;
@@ -1130,28 +1166,57 @@
     }
 
     function getDiffLogs(oldD, newD) {
-        let logs = [];
-        if (!oldD) return [`Tạo mới báo cáo ngày ${newD.ngayTruc}.`];
-        
-        const fields = {trucLanhDao: "Trực Lãnh đạo", trucChuyenMon: "Trực CM", trucPhongKham: "Trực PK", trucXetNghiem: "Trực XN", trucCDHA: "Trực CĐHA", trucAnNinh: "Trực AN"};
-        for (let f in fields) {
-            if (oldD[f] !== newD[f]) logs.push(`Đổi ${fields[f]}: "${oldD[f] || ''}" -> "${newD[f] || ''}"`);
-        }
-        
-        if (newD.benhNhanData && oldD.benhNhanData) {
-            newD.benhNhanData.forEach((row, i) => {
-                let oldRow = oldD.benhNhanData[i];
-                if (!oldRow) return;
-                ["cu", "vaoHC", "vaoTruc", "vaoSang", "ra", "raSang", "xinVe", "tronVien", "chuyenVien", "chuyenDen", "chuyenDi", "tuVongNgoaiTru", "tuVongNoiTru", "ptCapCuu"].forEach(key => {
-                    if (row[key] !== oldRow[key]) {
-                        logs.push(`Khoa ${row.khoa} - ${key}: ${oldRow[key]} -> ${row[key]}`);
-                    }
-                });
-                if (row.bs !== oldRow.bs) logs.push(`Khoa ${row.khoa} - BS: "${oldRow.bs || ''}" -> "${row.bs || ''}"`);
-            });
-        }
-        return logs;
+    let logs = [];
+    if (!oldD) return [`Tạo mới báo cáo ngày ${newD.ngayTruc}.`];
+    
+    // 1. So sánh Thành phần trực
+    const fields = {trucLanhDao: "Trực Lãnh đạo", trucChuyenMon: "Trực CM", trucPhongKham: "Trực PK", trucXetNghiem: "Trực XN", trucCDHA: "Trực CĐHA", trucAnNinh: "Trực AN"};
+    for (let f in fields) {
+        if (oldD[f] !== newD[f]) logs.push(`Đổi ${fields[f]}: "${oldD[f] || ''}" -> "${newD[f] || ''}"`);
     }
+    
+    // 2. So sánh Bảng Bệnh Nhân (Thay đổi số liệu khoa)
+    if (newD.benhNhanData && oldD.benhNhanData) {
+        newD.benhNhanData.forEach((row, i) => {
+            let oldRow = oldD.benhNhanData[i];
+            if (!oldRow) return;
+            ["cu", "vaoHC", "vaoTruc", "vaoSang", "ra", "raSang", "xinVe", "tronVien", "chuyenVien", "chuyenDen", "chuyenDi", "tuVongNgoaiTru", "tuVongNoiTru", "ptCapCuu"].forEach(key => {
+                if (row[key] !== oldRow[key]) {
+                    logs.push(`Khoa ${row.khoa} - ${key}: sửa từ ${oldRow[key]} thành ${row[key]}`);
+                }
+            });
+            if (row.bs !== oldRow.bs) logs.push(`Khoa ${row.khoa} - Đổi BS trực: "${oldRow.bs || ''}" -> "${row.bs || ''}"`);
+        });
+    }
+
+    // 3. So sánh các bảng danh sách động (Thêm/Sửa)
+    const listTables = [
+        { key: 'ptccRows', name: 'bảng PTCC' },
+        { key: 'vaoVienRows', name: 'bảng Vào viện' },
+        { key: 'chuyenVienRows', name: 'bảng Chuyển viện' },
+        { key: 'raVienRows', name: 'bảng Ra viện' }
+    ];
+
+    listTables.forEach(table => {
+        let oldList = oldD[table.key] || [];
+        let newList = newD[table.key] || [];
+
+        // Kiểm tra sửa tên bệnh nhân hoặc thay đổi chi tiết
+        newList.forEach((newRow, i) => {
+            let oldRow = oldList[i];
+            if (oldRow) {
+                if (newRow.hoTen !== oldRow.hoTen && (newRow.hoTen || oldRow.hoTen)) {
+                    logs.push(`Sửa tên BN (${table.name} dòng ${i+1}): "${oldRow.hoTen}" -> "${newRow.hoTen}"`);
+                }
+                if (newRow.chuanDoanVao !== oldRow.chuanDoanVao && (newRow.chuanDoanVao || oldRow.chuanDoanVao)) {
+                    logs.push(`Sửa chẩn đoán của BN ${newRow.hoTen}: "${oldRow.chuanDoanVao}" -> "${newRow.chuanDoanVao}"`);
+                }
+            }
+        });
+    });
+
+    return logs;
+}
 
     function updateSyncStatus(status) { }
 
@@ -1215,17 +1280,21 @@
             item.className = "suggestion-item"; 
             item.textContent = match;
             item.onmousedown = function(e) { 
-                e.preventDefault(); 
-                inputEl.value = match; 
-                if(row && col) { row[col] = match; }
-                if(inputEl.tagName.toLowerCase() === 'textarea') {
-                    inputEl.style.height = 'auto'; 
-                    inputEl.style.height = (inputEl.scrollHeight) + 'px'; 
-                }
-                updateSyncStatus('pending');
-                saveData(false); 
-                box.style.display = "none"; 
-            };
+    e.preventDefault(); 
+    inputEl.value = match; 
+    if(row && col) { row[col] = match; }
+    if(inputEl.tagName.toLowerCase() === 'textarea') {
+        inputEl.style.height = 'auto'; 
+        inputEl.style.height = (inputEl.scrollHeight) + 'px'; 
+    }
+    
+    // THÊM DÒNG NÀY: Phóng ra tín hiệu để hệ thống Audit Trail ghi nhận log
+    inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+
+    updateSyncStatus('pending');
+    saveData(false); 
+    box.style.display = "none"; 
+};
             box.appendChild(item);
         });
         
@@ -1314,82 +1383,71 @@
         return `BaoCaoGiaoBan_Data_${dateStr.trim().substring(0, 10)}`; 
     }
 
-    async function checkInitialLogin() {
-        if (currentUserSession && currentUserSession.token) {
-            document.getElementById("startupLoginScreen").style.display = "none";
-            document.getElementById("mainApp").style.display = "block";
-            
-            await migrateFromLocalStorage();
+    window.closePasswordModal = async function(isOk) {
+        const userVal = document.getElementById('usernameInput').value.trim();
+        const passVal = document.getElementById('passwordInput').value.trim();
+        const modal = document.getElementById('passwordModal');
+        const btn = document.getElementById('btnConfirmAuth');
 
-            updateUserInfoBadge();
-            updateDateDisplay(); 
-            await loadData();
-            fetchDanhSachNhanSu();
-            fetchCloudDataBackground();
-        } else {
-            document.getElementById("startupLoginScreen").style.display = "flex";
-            document.getElementById("mainApp").style.display = "none";
+        if (!isOk) {
+            modal.classList.remove("show");
+            setTimeout(() => {
+                modal.style.display = "none";
+                if (window.currentPasswordCallback) { 
+                    window.currentPasswordCallback(null); 
+                    window.currentPasswordCallback = null; 
+                }
+            }, 100);
+            return;
         }
-    }
 
-    window.doStartupLogin = async function() {
-        const userVal = document.getElementById('startupUser').value.trim();
-        const passVal = document.getElementById('startupPass').value.trim();
-        const btn = document.getElementById('btnStartupLogin');
-
-        if (!userVal) {
-            return showToast("Vui lòng nhập tên tài khoản!", "error");
-        }
-        if (!passVal) {
-            return showToast("Vui lòng nhập mật khẩu!", "error");
+        if (!userVal || !passVal) {
+            showToast("Vui lòng nhập đầy đủ tài khoản và mật khẩu!", "error");
+            return;
         }
 
         btn.innerText = "Đang kiểm tra...";
         btn.disabled = true;
+        const emailVal = userVal + "@baocao.com";
 
         try {
-            // Truy vấn trực tiếp vào Firebase nhánh 'users/tên_đăng_nhập'
+            const userCredential = await firebase.auth().signInWithEmailAndPassword(emailVal, passVal);
             const snapshot = await db.ref('users/' + userVal).once('value');
-            
-            btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Đăng Nhập`;
+
+            btn.innerText = "Xác nhận";
             btn.disabled = false;
 
             if (snapshot.exists()) {
                 const userData = snapshot.val();
+                // Ưu tiên lấy từ Firebase, nếu không có mới dùng tên mặc định theo quyền
+                currentUserSession = { 
+                    token: userCredential.user.uid, // Đã sửa lỗi uid tại đây
+                    username: userVal, 
+                    fullname: userData.fullname, 
+                    role: userData.role,
+                    roleDisplayName: userData.roleDisplayName || (userData.role === 'admin' ? "Quản trị hệ thống" : (userData.role === 'quantri' ? "Lãnh đạo" : "Bác sĩ"))
+                };
+                sessionStorage.setItem('loggedInUser', JSON.stringify(currentUserSession));
+                updateUserInfoBadge(); 
                 
-                // Kiểm tra mật khẩu
-                if (userData.password === passVal) {
-                    currentUserSession = { 
-                        token: "firebase-auth-token", // Tạm giả lập token để tương thích hàm cũ
-                        username: userData.username, 
-                        fullname: userData.fullname, 
-                        role: userData.role,
-                        roleDisplayName: userData.role === 'admin' ? "Quản trị hệ thống" : (userData.role === 'quantri' ? "Lãnh đạo" : "Bác sĩ")
-                    };
-                    
-                    sessionStorage.setItem('loggedInUser', JSON.stringify(currentUserSession));
-                    showToast(`Xin chào, ${userData.fullname}!`, "success");
-                    
-                    // Ghi log đăng nhập lên Firebase
-                    db.ref('logs').push({
-                        thoiGian: new Date().toLocaleString('vi-VN'),
-                        taiKhoan: userData.fullname,
-                        thaoTac: "Đăng nhập hệ thống."
-                    });
-
-                    await checkInitialLogin(); 
-                } else {
-                    showToast("Sai mật khẩu!", "error");
-                }
+                modal.classList.remove("show");
+                showToast(`Xác thực thành công, ${userData.fullname}!`, "success");
+                setTimeout(() => {
+                    modal.style.display = "none";
+                    if (window.currentPasswordCallback) { 
+                        window.currentPasswordCallback(currentUserSession); 
+                        window.currentPasswordCallback = null; 
+                    }
+                }, 100);
             } else {
-                showToast("Tài khoản không tồn tại trên hệ thống!", "error");
+                showToast("Lỗi cấu hình tài khoản nội bộ!", "error");
             }
         } catch (err) {
-            btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Đăng Nhập`;
+            btn.innerText = "Xác nhận";
             btn.disabled = false;
-            showToast("Lỗi kết nối máy chủ Firebase: " + err.message, "error");
+            showToast("Sai tài khoản hoặc mật khẩu!", "error");
         }
-    }
+    };
 
     document.getElementById('startupPass').addEventListener("keypress", function(e) { 
         if (e.key === "Enter") { 
@@ -1399,20 +1457,26 @@
     });
 
     window.logoutUser = async function() {
-        logAction("Đăng xuất hệ thống.");
-        currentUserSession = null;
-        sessionStorage.removeItem('loggedInUser');
-        showToast("Đã đăng xuất!", "success");
-        
-        document.getElementById("startupUser").value = "";
-        document.getElementById("startupPass").value = "";
-        await checkInitialLogin();
-        
-        const menu = document.getElementById('userDropdownMenu');
-        const trigger = document.getElementById('userProfileTrigger');
-        if(menu) menu.classList.remove('show');
-        if(trigger) trigger.classList.remove('active');
+    logAction("Đăng xuất hệ thống.");
+    try {
+        await firebase.auth().signOut();
+    } catch (error) {
+        console.error("Lỗi đăng xuất Firebase:", error);
     }
+    
+    currentUserSession = null;
+    sessionStorage.removeItem('loggedInUser');
+    showToast("Đã đăng xuất!", "success");
+    
+    document.getElementById("startupUser").value = "";
+    document.getElementById("startupPass").value = "";
+    await checkInitialLogin();
+    
+    const menu = document.getElementById('userDropdownMenu');
+    const trigger = document.getElementById('userProfileTrigger');
+    if(menu) menu.classList.remove('show');
+    if(trigger) trigger.classList.remove('active');
+}
 
     function updateUserInfoBadge() {
         const container = document.getElementById("userInfoContainer");
@@ -1487,65 +1551,67 @@
     }
 
     window.closeChangePasswordModal = async function(isOk) {
-        const modal = document.getElementById('changePasswordModal');
-        
-        if (!isOk) {
-            modal.classList.remove("show");
-            setTimeout(() => modal.style.display = "none", 200);
-            return;
-        }
-        
-        const oldPass = document.getElementById('oldPasswordInput').value;
-        const newPass = document.getElementById('newPasswordInput').value;
-        const confirmPass = document.getElementById('confirmNewPasswordInput').value;
-        
-        if (!oldPass || !newPass || !confirmPass) {
-            return showToast("Vui lòng điền đầy đủ mật khẩu!", "error");
-        }
-        if (newPass !== confirmPass) {
-            return showToast("Mật khẩu mới không khớp!", "error");
-        }
-        if (newPass.length < 4) {
-            return showToast("Mật khẩu mới phải có ít nhất 4 ký tự!", "error");
-        }
+    const modal = document.getElementById('changePasswordModal');
+    
+    if (!isOk) {
+        modal.classList.remove("show");
+        setTimeout(() => modal.style.display = "none", 200);
+        return;
+    }
+    
+    const newPass = document.getElementById('newPasswordInput').value;
+    const confirmPass = document.getElementById('confirmNewPasswordInput').value;
+    
+    // Bạn có thể bỏ ô "Mật khẩu cũ" (oldPasswordInput) trong HTML vì Firebase Auth dùng cơ chế phiên hiện tại
+    if (!newPass || !confirmPass) {
+        return showToast("Vui lòng điền đầy đủ mật khẩu!", "error");
+    }
+    if (newPass !== confirmPass) {
+        return showToast("Mật khẩu mới không khớp!", "error");
+    }
+    if (newPass.length < 6) { // Firebase Auth bắt buộc mật khẩu >= 6 ký tự
+        return showToast("Mật khẩu mới phải có ít nhất 6 ký tự!", "error");
+    }
 
-        const btn = document.getElementById('btnConfirmChangePass');
-        btn.innerText = "Đang xử lý...";
-        btn.disabled = true;
+    const btn = document.getElementById('btnConfirmChangePass');
+    btn.innerText = "Đang xử lý...";
+    btn.disabled = true;
 
-        try {
-            let res = await fetch(GOOGLE_SHEET_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify({ 
-                    action: "changePassword",
-                    token: currentUserSession.token,
-                    username: currentUserSession.username, 
-                    oldPassword: oldPass, 
-                    newPassword: newPass 
-                })
-            });
-            let result = await res.json();
+    try {
+        const user = firebase.auth().currentUser;
+        if (user) {
+            await user.updatePassword(newPass);
             
             btn.innerText = "Cập nhật";
             btn.disabled = false;
+            showToast("Đổi mật khẩu thành công! Vui lòng đăng nhập lại.", "success");
+            
+            db.ref('logs').push({
+                thoiGian: new Date().toLocaleString('vi-VN'),
+                taiKhoan: currentUserSession.fullname,
+                thaoTac: "Đổi mật khẩu tài khoản."
+            });
 
-            if (result.status === "success") {
-                showToast("Đổi mật khẩu thành công! Vui lòng đăng nhập lại.", "success");
-                modal.classList.remove("show");
-                setTimeout(() => {
-                    modal.style.display = "none";
-                    logoutUser(); 
-                }, 1500);
-            } else {
-                showToast(result.message || "Đổi mật khẩu thất bại!", "error");
-            }
-        } catch (err) {
+            modal.classList.remove("show");
+            setTimeout(() => {
+                modal.style.display = "none";
+                logoutUser(); 
+            }, 1500);
+        } else {
+            showToast("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại trước khi đổi mật khẩu!", "error");
             btn.innerText = "Cập nhật";
             btn.disabled = false;
-            showToast("Lỗi kết nối máy chủ!", "error");
+        }
+    } catch (err) {
+        btn.innerText = "Cập nhật";
+        btn.disabled = false;
+        if (err.code === 'auth/requires-recent-login') {
+            showToast("Bảo mật: Vui lòng đăng xuất và đăng nhập lại trước khi đổi mật khẩu!", "error");
+        } else {
+            showToast("Lỗi: " + err.message, "error");
         }
     }
+}
 
     window.promptPassword = function(message, callback) {
         if (currentUserSession && currentUserSession.token) {
@@ -1563,74 +1629,6 @@
         }, 10);
         window.currentPasswordCallback = callback;
     };
-
-    window.closePasswordModal = async function(isOk) {
-        const userVal = document.getElementById('usernameInput').value.trim();
-        const passVal = document.getElementById('passwordInput').value.trim();
-        const modal = document.getElementById('passwordModal');
-        const btn = document.getElementById('btnConfirmAuth');
-
-        if (!isOk) {
-            modal.classList.remove("show");
-            setTimeout(() => {
-                modal.style.display = "none";
-                if (window.currentPasswordCallback) { 
-                    window.currentPasswordCallback(null); 
-                    window.currentPasswordCallback = null; 
-                }
-            }, 100);
-            return;
-        }
-
-        if (!userVal || !passVal) {
-            showToast("Vui lòng nhập đầy đủ tài khoản và mật khẩu!", "error");
-            return;
-        }
-
-        btn.innerText = "Đang kiểm tra...";
-        btn.disabled = true;
-
-        try {
-            let res = await fetch(GOOGLE_SHEET_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify({ action: "login", username: userVal, password: passVal })
-            });
-            let result = await res.json();
-
-            btn.innerText = "Xác nhận";
-            btn.disabled = false;
-
-            if (result.status === "success") {
-                currentUserSession = { 
-                    token: result.token,
-                    username: userVal, 
-                    fullname: result.fullname, 
-                    role: result.role,
-                    roleDisplayName: result.roleDisplayName 
-                };
-                sessionStorage.setItem('loggedInUser', JSON.stringify(currentUserSession));
-                updateUserInfoBadge(); 
-                
-                modal.classList.remove("show");
-                showToast(`Xin chào, ${result.fullname}!`, "success");
-                setTimeout(() => {
-                    modal.style.display = "none";
-                    if (window.currentPasswordCallback) { 
-                        window.currentPasswordCallback(currentUserSession); 
-                        window.currentPasswordCallback = null; 
-                    }
-                }, 100);
-            } else {
-                showToast(result.message, "error");
-            }
-        } catch (err) {
-            btn.innerText = "Xác nhận";
-            btn.disabled = false;
-            showToast("Lỗi kết nối máy chủ!", "error");
-        }
-    };
-
     document.getElementById('passwordInput').addEventListener("keypress", function(e) { 
         if (e.key === "Enter") { 
             e.preventDefault(); 
@@ -2127,7 +2125,7 @@
             if (checkRecord.isApproved) return showToast("Báo cáo đã duyệt. Cần Hủy phê duyệt trước!", "error");
             if (checkRecord.isSubmitted) return showToast("Báo cáo đang chờ duyệt. Không thể sửa!", "error");
 
-            let isCreator = (checkRecord.nguoiTao === user.fullname);
+            let isCreator = (checkRecord.nguoiTao === user.fullname || checkRecord.nguoiTao === user.username);
             let isAdmin = (user.role === 'admin');
             let isRejected = !!checkRecord.rejectMessage;
 
@@ -2178,7 +2176,7 @@
         promptPassword(`Xác thực để SỬA báo cáo ngày ${activeDate}`, function(user) { 
             if (!user) return;
             
-            let isCreator = (originalData && originalData.nguoiTao === user.fullname);
+            let isCreator = (originalData && (originalData.nguoiTao === user.fullname || originalData.nguoiTao === user.username));
             let isAdmin = (user.role === 'admin');
             let isRejected = !!currentRejectMessage;
 
@@ -2559,7 +2557,7 @@
             let canEdit = false;
             let canDelete = isITAdmin;
 
-            let isCreator = (currentUserSession && r.nguoiTao === currentUserSession.fullname);
+            let isCreator = (currentUserSession && (r.nguoiTao === currentUserSession.fullname || r.nguoiTao === currentUserSession.username));
             let isAdmin = (currentUserSession && currentUserSession.role === 'admin');
 
             // LỌC QUYỀN HIỂN THỊ NÚT SỬA TUYỆT ĐỐI
@@ -2722,7 +2720,7 @@
         await loadData(); 
         
         setTimeout(() => { 
-            let isOwner = (originalData && currentUserSession && originalData.nguoiTao === currentUserSession.fullname);
+            let isOwner = (originalData && currentUserSession && (originalData.nguoiTao === currentUserSession.fullname || originalData.nguoiTao === currentUserSession.username));
             let isAdmin = (currentUserSession && currentUserSession.role === 'admin');
             let isRejected = originalData && !!originalData.rejectMessage;
 
@@ -2854,8 +2852,8 @@
         // 🛡️ TƯỜNG LỬA BẢO MẬT (FIREWALL LÕI) - CHẶN MỌI NỖ LỰC LÁCH LUẬT
         // =========================================================
         if (locked === false && typeof originalData !== 'undefined' && originalData) {
-            let session = window.currentUserSession || {};
-            let isCreator = (originalData.nguoiTao === session.fullname);
+            let session = currentUserSession || {}; // Đã xóa window.
+            let isCreator = (originalData.nguoiTao === session.fullname || originalData.nguoiTao === session.username);
             let isAdmin = (session.role === 'admin');
             let isRejected = !!originalData.rejectMessage;
 
@@ -3210,13 +3208,14 @@
                         btn.className = "remove-row-btn"; 
                         btn.style.display = isFormLocked ? 'none' : 'inline-flex';
                         btn.addEventListener("click", () => { 
-                            if(isFormLocked) return;
-							logAction(`Xóa 1 bệnh nhân khỏi danh sách ${tableId}`); // Thêm dòng này							
-                            defaultRows.splice(idx, 1); 
-                            renderRows(); 
-                            updateSyncStatus('pending');
-                            saveData(false); 
-                        }); 
+    if(isFormLocked) return;
+    let tenBN = defaultRows[idx].hoTen || "Chưa có tên";
+    logAction(`Xóa bệnh nhân "${tenBN}" khỏi danh sách ${tableId}`);
+    defaultRows.splice(idx, 1); 
+    renderRows(); 
+    updateSyncStatus('pending');
+    saveData(false); 
+});
                         td.appendChild(btn); 
                         tr.appendChild(td);
                     } else {
@@ -3327,25 +3326,36 @@
             });
         }
         window[`addRow_${tableId}`] = function() { 
-            if(isFormLocked) return; 
-			logAction(`Thêm bệnh nhân mới vào danh sách ${tableId}`); // Thêm dòng này
-            defaultRows.push(Object.fromEntries(columnsConfig.filter(c=>c!="actions").map(c=>[c,""]))); 
-            renderRows(); 
-            updateSyncStatus('pending');
-            saveData(false); 
-        }; 
+    if(isFormLocked) return; 
+    
+    // Ghi Log Thêm
+    let tNameMap = { "tablePTCC": "PTCC", "tableVaoVien": "Vào viện", "tableChuyenVien": "Chuyển viện", "tableRaVien": "Ra viện" };
+    let actDate = activeDate.split('-').reverse().join('/');
+    logAction(`[Ngày ${actDate}] ➕ THÊM dòng mới vào cuối bảng ${tNameMap[tableId] || tableId}`);
+
+    defaultRows.push(Object.fromEntries(columnsConfig.filter(c=>c!="actions").map(c=>[c,""]))); 
+    renderRows(); 
+    updateSyncStatus('pending');
+    saveData(false); 
+};
         renderRows();
     }
 
     document.querySelectorAll(".add-row-btn").forEach(btn => { 
         btn.addEventListener("click", () => { 
-            if(isFormLocked) return; 
-            const target = btn.getAttribute("data-table"); 
-            if (target === "ptcc") window.addRow_tablePTCC?.(); 
-            else if (target === "vaovien") window.addRow_tableVaoVien?.(); 
-            else if (target === "chuyenvien") window.addRow_tableChuyenVien?.(); 
-            else if (target === "ravien") window.addRow_tableRaVien?.(); 
-        }); 
+    if(isFormLocked) return;
+    
+    // Ghi Log Xóa
+    let tenBN = defaultRows[idx].hoTen || "(Chưa có tên)";
+    let tNameMap = { "tablePTCC": "PTCC", "tableVaoVien": "Vào viện", "tableChuyenVien": "Chuyển viện", "tableRaVien": "Ra viện" };
+    let actDate = activeDate.split('-').reverse().join('/');
+    logAction(`[Ngày ${actDate}] ❌ XÓA dòng STT ${idx+1} (Bệnh nhân: ${tenBN}) khỏi bảng ${tNameMap[tableId] || tableId}`);
+
+    defaultRows.splice(idx, 1); 
+    renderRows(); 
+    updateSyncStatus('pending');
+    saveData(false); 
+});
     });
     
     const nguoiLamBaoCaoInput = document.getElementById("nguoiLamBaoCao"); 
@@ -3397,14 +3407,14 @@
                 return (r.ngayTruc === activeDate || r.date === activeDate || p.ngayTruc === activeDate);
             });
             if (cloudRecord && currentUserSession) {
-                if (cloudRecord.lockedBy && cloudRecord.lockedBy !== currentUserSession.fullname) {
+                if (cloudRecord.lockedBy && cloudRecord.lockedBy !== currentUserSession.fullname && cloudRecord.lockedBy !== currentUserSession.username) {
                     lockedBySomeoneElse = cloudRecord.lockedBy;
                 }
                 
                 let dStr = cloudRecord.jsonData || cloudRecord.data || cloudRecord.JsonData;
                 let p = {}; try { p = typeof dStr === 'string' ? JSON.parse(dStr) : dStr; } catch(e){}
                 let isDraft = !p.isApproved && !p.isSubmitted && !p.rejectMessage;
-                if (isDraft && p.nguoiTao && p.nguoiTao !== currentUserSession.fullname) {
+                if (isDraft && p.nguoiTao && p.nguoiTao !== currentUserSession.fullname && p.nguoiTao !== currentUserSession.username) {
                     lockedByCreator = p.nguoiTao;
                 }
             }
@@ -3428,7 +3438,7 @@
                 currentRejectMessage = data.rejectMessage || "";
 
                 let isDraftLocal = !currentReportApproved && !currentReportSubmitted && !currentRejectMessage;
-                if (isDraftLocal && data.nguoiTao && currentUserSession && data.nguoiTao !== currentUserSession.fullname) {
+                if (isDraftLocal && data.nguoiTao && currentUserSession && data.nguoiTao !== currentUserSession.fullname && data.nguoiTao !== currentUserSession.username) {
                     lockedByCreator = data.nguoiTao;
                 }
 
@@ -3757,91 +3767,117 @@
             rows.push([]); 
         };
         
-        exportSection("A. Bệnh nhân PTCC", validPTCC, [1, 3, 3, 2, 3, 4, 2, 2], ["STT", "Họ và tên", "Địa chỉ", "Giờ vào", "Chẩn đoán trước mổ", "Chẩn đoán sau mổ & kết quả", "Giờ PTCC", "Khoa"], (r, i) => [i+1, r.hoTen, r.diaChi, formatDT(r.gioVao), r.chuanDoanTruocMo, r.chuanDoanSauKetQua, formatDT(r.gioPTCC), r.khoa], "ptcc");
-            
-            exportSection("B. Bệnh nhân vào viện", validVaoVien, [1, 4, 4, 2, 6, 3], ["STT", "Họ và tên", "Địa chỉ", "Giờ vào", "Chẩn đoán lúc vào", "Khoa"], (r, i) => [i+1, r.hoTen, r.diaChi, formatDT(r.gioVao), r.chuanDoanVao, r.khoa], "vaovien");
-            
-            exportSection("C. Bệnh nhân chuyển viện", validChuyenVien, [1, 3, 3, 2, 2, 4, 2, 3], ["STT", "Họ và tên", "Địa chỉ", "Giờ vào", "Khoa", "Chẩn đoán lúc vào", "Giờ chuyển", "Chẩn đoán lúc chuyển"], (r, i) => [i+1, r.hoTen, r.diaChi, formatDT(r.gioVao), r.khoa, r.chuanDoanVao, formatDT(r.gioChuyen), r.chuanDoanChuyen], "chuyenvien");
-            
-            exportSection("D. Bệnh nhân ra viện, xin về", validRaVien, [1, 3, 3, 2, 2, 4, 2, 3], ["STT", "Họ và tên", "Địa chỉ", "Giờ vào", "Khoa", "Chẩn đoán lúc vào", "Giờ ra", "Chẩn đoán lúc ra"], (r, i) => [i+1, r.hoTen, r.diaChi, formatDT(r.gioVao), r.khoa, r.chuanDoanVao, formatDT(r.gioRa), r.chuanDoanRa], "ravien");
-
-            rows.push([]); 
-            
-            merges.push({ s: { r: rows.length, c: 13 }, e: { r: rows.length, c: 19 } }); 
-            rows.push(["", "", "", "", "", "", "", "", "", "", "", "", "", "Người làm báo cáo", "", "", "", "", "", ""]);
-            
-            merges.push({ s: { r: rows.length, c: 13 }, e: { r: rows.length, c: 19 } }); 
-            rows.push(["", "", "", "", "", "", "", "", "", "", "", "", "", "(ký, ghi rõ họ tên)", "", "", "", "", "", ""]);
-            
-            rows.push([]); rows.push([]); rows.push([]); 
-            
-            merges.push({ s: { r: rows.length, c: 13 }, e: { r: rows.length, c: 19 } }); 
-            rows.push(["", "", "", "", "", "", "", "", "", "", "", "", "", document.getElementById("nguoiLamBaoCao").value.toUpperCase(), "", "", "", "", "", ""]);
-            
-            const wb = XLSX.utils.book_new(); 
-            const ws = XLSX.utils.aoa_to_sheet(rows); 
-            ws['!merges'] = merges;
-            
-            const rowHeights = []; 
-            for(let i = 0; i < rows.length; i++) { 
-                rowHeights.push({ hpx: customRowHeights[i] || (i === 0 ? 30 : i === 1 ? 20 : 25) }); 
-            } 
-            ws['!rows'] = rowHeights;
-            
-            const colWidths = Array(20).fill({ wch: 7 }); 
-            ws['!cols'] = colWidths;
-            
-            const range = XLSX.utils.decode_range(ws['!ref']); 
-            for(let R = range.s.r; R <= range.e.r; ++R) { 
-                for(let C = range.s.c; C <= range.e.c; ++C) { 
-                    const cellRef = XLSX.utils.encode_cell({ r: R, c: C }); 
-                    if (!ws[cellRef]) continue; 
-                    
-                    let style = { font: { name: "Times New Roman", sz: 11 }, alignment: { vertical: "center", wrapText: true } }; 
-                    
-                    if (R === 0) { 
-                        style.font.bold = true; style.font.sz = 16; style.font.color = { rgb: "0070C0" }; style.alignment.horizontal = "center"; 
-                    } else if (R === 1) { 
-                        style.font.italic = true; style.font.sz = 12; style.alignment.horizontal = "center"; 
-                    } else if (ws[cellRef].v && String(ws[cellRef].v).startsWith("I. ") || String(ws[cellRef].v).startsWith("II. ") || String(ws[cellRef].v).startsWith("III. ")) { 
-                        style.font.bold = true; style.font.sz = 12; style.font.color = { rgb: "0070C0" }; 
-                    } else if (ws[cellRef].v && (String(ws[cellRef].v).startsWith("A. ") || String(ws[cellRef].v).startsWith("B. ") || String(ws[cellRef].v).startsWith("C. ") || String(ws[cellRef].v).startsWith("D. "))) { 
-                        style.font.bold = true; style.font.italic = true; 
-                    } else if (R === headerBNRowIndex || R === headerBNRowIndex + 1 || section3Headers.includes(R)) { 
-                        style.font.bold = true; style.alignment.horizontal = "center"; style.fill = { fgColor: { rgb: "D9E1F2" } }; 
-                        style.border = { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } }; 
-                    } else if (R > headerBNRowIndex + 1 && R <= totalBNRowIndex) { 
-                        style.border = { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } }; 
-                        if (R === totalBNRowIndex) style.font.bold = true; 
-                        if (C === 0 || C === 1) style.alignment.horizontal = "left"; 
-                        else style.alignment.horizontal = "center"; 
-                    } else if (section3TableAreas.some(area => R > area.start && R <= area.end)) { 
-                        style.border = { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } }; 
-                        const area = section3TableAreas.find(a => R > a.start && R <= a.end); 
-                        if ((area.type === "ptcc" && (C === 1 || C === 2 || C === 4 || C === 5)) || 
-                            (area.type === "vaovien" && (C === 1 || C === 2 || C === 4)) || 
-                            (area.type === "chuyenvien" && (C === 1 || C === 2 || C === 5 || C === 7)) || 
-                            (area.type === "ravien" && (C === 1 || C === 2 || C === 5 || C === 7))) { 
-                            style.alignment.horizontal = "left"; 
-                        } else { 
-                            style.alignment.horizontal = "center"; 
-                        } 
-                    } else if (R >= xnCdhaRowIndex && R <= xnCdhaRowIndex + 5) { 
-                        if (C === 0 || C === 3) style.font.bold = true; 
-                        if (R === xnCdhaRowIndex) style.font.color = { rgb: "C00000" }; 
-                    } else if (String(ws[cellRef].v) === "Người làm báo cáo" || String(ws[cellRef].v) === "(ký, ghi rõ họ tên)" || String(ws[cellRef].v) === document.getElementById("nguoiLamBaoCao").value.toUpperCase()) { 
-                        style.alignment.horizontal = "center"; 
-                        if (String(ws[cellRef].v) === "Người làm báo cáo" || String(ws[cellRef].v) === document.getElementById("nguoiLamBaoCao").value.toUpperCase()) style.font.bold = true; 
-                        if (String(ws[cellRef].v) === "(ký, ghi rõ họ tên)") style.font.italic = true; 
+        exportSection("A. Bệnh nhân PTCC", validPTCC, [1, 3, 3, 2, 3, 4, 2, 2], ["STT","Họ tên","Địa chỉ","Giờ vào","Chẩn đoán trước mổ","Chẩn đoán sau mổ & kết quả","Giờ PTCC","Khoa"], (r, i) => [i+1, r.hoTen, r.diaChi, formatDT(r.gioVao), r.chuanDoanTruocMo, r.chuanDoanSauKetQua, formatDT(r.gioPTCC), r.khoa], "PTCC");
+        exportSection("B. Bệnh nhân vào viện", validVaoVien, [1, 4, 4, 2, 6, 3], ["STT","Họ tên","Địa chỉ","Giờ vào","Chẩn đoán lúc vào","Khoa"], (r, i) => [i+1, r.hoTen, r.diaChi, formatDT(r.gioVao), r.chuanDoanVao, r.khoa], "VV");
+        exportSection("C. Bệnh nhân chuyển viện", validChuyenVien, [1, 3, 3, 2, 2, 4, 2, 3], ["STT","Họ tên","Địa chỉ","Giờ vào","Khoa","Chẩn đoán lúc vào","Giờ chuyển","Chẩn đoán lúc chuyển"], (r, i) => [i+1, r.hoTen, r.diaChi, formatDT(r.gioVao), r.khoa, r.chuanDoanVao, formatDT(r.gioChuyen), r.chuanDoanChuyen], "CV");
+        exportSection("D. Bệnh nhân ra viện, xin về", validRaVien, [1, 3, 3, 2, 2, 4, 2, 3], ["STT","Họ tên","Địa chỉ","Giờ vào","Khoa","Chẩn đoán lúc vào","Giờ ra","Chẩn đoán lúc ra"], (r, i) => [i+1, r.hoTen, r.diaChi, formatDT(r.gioVao), r.khoa, r.chuanDoanVao, formatDT(r.gioRa), r.chuanDoanRa], "RV");
+        
+        let dsNguoiLBC = document.getElementById("nguoiLamBaoCao").value || ""; 
+        rows.push([]); 
+        let sigArr1 = Array(20).fill(""); sigArr1[15] = "Người làm báo cáo"; 
+        let sigRow1 = rows.length; rows.push(sigArr1); merges.push({ s: { r: sigRow1, c: 15 }, e: { r: sigRow1, c: 19 } }); 
+        
+        let sigArr2 = Array(20).fill(""); sigArr2[15] = "(ký, ghi rõ họ tên)"; 
+        let sigRow2 = rows.length; rows.push(sigArr2); merges.push({ s: { r: sigRow2, c: 15 }, e: { r: sigRow2, c: 19 } }); 
+        
+        rows.push([]); rows.push([]); rows.push([]); rows.push([]); 
+        
+        let sigArr3 = Array(20).fill(""); sigArr3[15] = dsNguoiLBC; 
+        let sigRow3 = rows.length; rows.push(sigArr3); merges.push({ s: { r: sigRow3, c: 15 }, e: { r: sigRow3, c: 19 } });
+        
+        const ws = XLSX.utils.aoa_to_sheet(rows); 
+        ws['!pageSetup'] = { paperSize: "9", orientation: "landscape", scale: "100" }; 
+        const marginInch = 0.5 / 2.54; 
+        ws['!margins'] = { left: marginInch, right: marginInch, top: marginInch, bottom: marginInch, header: 0.3, footer: 0.3 }; 
+        ws['!views'] = [{ zoom: 82 }]; 
+        
+        const colWidths = [{ wch: 15 }, { wch: 15 }]; 
+        for (let i = 2; i < 20; i++) colWidths.push({ wch: 10 }); 
+        ws['!cols'] = colWidths; 
+        
+        const rowHeights = []; 
+        for (let i = 0; i < rows.length; i++) { 
+            if (rows[i].length === 0) rowHeights.push({ hpt: 8 }); 
+            else if (customRowHeights[i]) rowHeights.push({ hpt: customRowHeights[i] }); 
+            else rowHeights.push({}); 
+        } 
+        ws['!rows'] = rowHeights; 
+        ws['!merges'] = merges; 
+        
+        const range = XLSX.utils.decode_range(ws['!ref'] || 'A1'); 
+        if (range.e.c < 19) range.e.c = 19; 
+        if (range.e.r < rows.length - 1) range.e.r = rows.length - 1; 
+        
+        for (let R = 0; R <= range.e.r; ++R) {
+            for (let C = 0; C <= range.e.c; ++C) {
+                const cellAddress = XLSX.utils.encode_cell({ r: R, c: C }); 
+                if (!ws[cellAddress]) ws[cellAddress] = { t: 's', v: "" }; 
+                const val = ws[cellAddress].v; 
+                
+                let isBold = false, sz = 12, hAlign = "center", fillConfig = null, isItalic = false; 
+                let isTableArea = false; 
+                if (R >= headerBNRowIndex && R <= totalBNRowIndex) isTableArea = true; 
+                
+                let sect3Type = null; 
+                for (let area of section3TableAreas) { 
+                    if (R >= area.start && R <= area.end) { 
+                        isTableArea = true; 
+                        if (R > area.start) sect3Type = area.type; 
                     } 
-                    ws[cellRef].s = style; 
                 } 
-            } 
-            
-            XLSX.utils.book_append_sheet(wb, ws, "BaoCao"); 
-            XLSX.writeFile(wb, `BaoCaoGiaoBan_${dateVal}.xlsx`); 
-            logAction(`Xuất file Excel báo cáo ngày ${dateVal}`);
-        });
+                
+                let isSection3Header = section3Headers.includes(R); 
+                let isXNTable = (R >= xnCdhaRowIndex && R <= xnCdhaRowIndex + 6 && (C === 0 || C === 1)); 
+                let isCDHATable = (R >= xnCdhaRowIndex && R <= xnCdhaRowIndex + 4 && (C >= 3 && C <= 5));
+                
+                if (R === 0) { isBold = true; sz = 16; hAlign = "center"; } 
+                else if (R === 1) { hAlign = "center"; } 
+                else if (val === "I. THÀNH PHẦN TRỰC" || val === "II. TÌNH HÌNH BỆNH NHÂN" || val === "III. TÌNH HÌNH CHUYÊN MÔN" || val === "A. Bệnh nhân PTCC" || val === "B. Bệnh nhân vào viện" || val === "C. Bệnh nhân chuyển viện" || val === "D. Bệnh nhân ra viện, xin về") { isBold = true; hAlign = "left"; } 
+                else if (val === "Tình hình xét nghiệm" || val === "Tình hình chẩn đoán hình ảnh") { isBold = true; hAlign = "center"; fillConfig = { fgColor: { rgb: "DCE6F1" } }; } 
+                else if (R === xnCdhaRowIndex + 6 && C <= 1) { isBold = true; hAlign = "center"; } 
+                else if (R === xnCdhaRowIndex + 4 && C >= 3 && C <= 5) { isBold = true; hAlign = "center"; } 
+                else if (R === headerBNRowIndex || R === headerBNRowIndex + 1 || isSection3Header) { hAlign = "center"; isBold = true; fillConfig = { fgColor: { rgb: "DCE6F1" } }; } 
+                else if (R === totalBNRowIndex) { isBold = true; fillConfig = { fgColor: { rgb: "F2F2F2" } }; hAlign = "center"; } 
+                else if (val === "Không có bệnh nhân phát sinh trong ca trực.") { hAlign = "center"; isItalic = true; } 
+                else if (R === sigRow1 && C === 15) { isBold = true; hAlign = "center"; sz = 13; } 
+                else if (R === sigRow2 && C === 15) { isItalic = true; hAlign = "center"; } 
+                else if (R === sigRow3 && C === 15) { isBold = true; hAlign = "center"; sz = 13; } 
+                else if (typeof val === 'number' || (!isNaN(parseFloat(val)) && isFinite(val) && val !== "")) { hAlign = "center"; }
+                
+                let strVal = val.toString(); 
+                let leftAlignLabels = ["Huyết học", "Hóa sinh", "Vi sinh", "Nước tiểu", "Đông máu", "Xquang", "Siêu âm", "CT-Scanner"];
+                if (strVal.startsWith("Trực Lãnh Đạo:") || strVal.startsWith("Trực Chuyên môn:") || strVal.startsWith("Trực Phòng khám:") || strVal.startsWith("Trực Xét nghiệm:") || strVal.startsWith("Trực CĐHA:") || strVal.startsWith("Trực An ninh, bảo vệ:") || strVal.startsWith("Tình hình trang thiết bị") || strVal.startsWith("* Hiện có =") || strVal.startsWith("* Tỷ lệ =") || leftAlignLabels.includes(strVal)) { hAlign = "left"; } 
+                if (R > headerBNRowIndex + 1 && R < totalBNRowIndex && (C === 0 || C === 1)) { hAlign = "left"; } 
+                
+                if (sect3Type) { 
+                    if (sect3Type === "PTCC" && (C === 1 || C === 4 || C === 9 || C === 12)) hAlign = "left"; 
+                    else if(sect3Type === "VV" && (C === 1 || C === 5 || C === 11)) hAlign = "left"; 
+                    else if (sect3Type === "CV" && (C === 1 || C === 4 || C === 11 || C === 17)) hAlign = "left"; 
+                    else if (sect3Type === "RV" && (C === 1 || C === 4 || C === 11 || C === 17)) hAlign = "left"; 
+                } 
+                
+                let borderStyle = { style: 'thin', color: { rgb: "000000" } }; 
+                let cellStyle = { 
+                    font: { name: "Times New Roman", sz: sz, bold: isBold, italic: isItalic }, 
+                    alignment: { horizontal: hAlign, vertical: "center", wrapText: true } 
+                }; 
+                
+                if (isTableArea || isXNTable || isCDHATable) { 
+                    cellStyle.border = { top: borderStyle, bottom: borderStyle, left: borderStyle, right: borderStyle }; 
+                } 
+                if (fillConfig) cellStyle.fill = fillConfig; 
+                
+                ws[cellAddress].s = cellStyle; 
+            }
+        }
+        
+        const wb = XLSX.utils.book_new(); 
+        XLSX.utils.book_append_sheet(wb, ws, "GiaoBan"); 
+        XLSX.writeFile(wb, `Bao_Cao_Giao_Ban_${ngay}_${thang}_${nam}.xlsx`); 
+        
+        showToast("Đã xuất file Excel thành công!", "success"); 
+        applyLockState(true, true);
+    });
         
         window.trinhDuyetBaoCao = async function() {
         promptPassword(`Xác thực để TRÌNH DUYỆT báo cáo ngày ${activeDate}`, async function(user) { 
@@ -4007,7 +4043,203 @@
         };
 
         checkInitialLogin();
+// ==========================================
+    // 1. HÀM KIỂM TRA TRẠNG THÁI ĐĂNG NHẬP (QUAN TRỌNG)
+    // ==========================================
+    async function checkInitialLogin() {
+        // Kiểm tra xem đã có phiên đăng nhập trong sessionStorage chưa
+        if (currentUserSession && currentUserSession.token) {
+            // Nếu đã đăng nhập: Ẩn màn hình login, hiện App chính
+            document.getElementById("startupLoginScreen").style.display = "none";
+            document.getElementById("mainApp").style.display = "block";
+            
+            await migrateFromLocalStorage(); // Chuyển đổi dữ liệu cũ nếu có
 
+            updateUserInfoBadge();   // Cập nhật tên/ảnh đại diện
+            updateDateDisplay();     // Hiển thị ngày trực hiện tại
+            await loadData();        // Tải dữ liệu báo cáo của ngày đó
+            fetchDanhSachNhanSu();   // Tải danh sách bác sĩ/nhân viên từ Firebase
+            fetchCloudDataBackground(); // Lắng nghe dữ liệu thay đổi realtime
+        } else {
+            // Nếu chưa đăng nhập: Hiện màn hình login, ẩn App chính
+            document.getElementById("startupLoginScreen").style.display = "flex";
+            document.getElementById("mainApp").style.display = "none";
+        }
+    }
+
+    // ==========================================
+    // 2. HÀM XỬ LÝ ĐĂNG NHẬP QUA FIREBASE AUTH
+    // ==========================================
+    window.doStartupLogin = async function() {
+    const userVal = document.getElementById('startupUser').value.trim();
+    const passVal = document.getElementById('startupPass').value.trim();
+    const btn = document.getElementById('btnStartupLogin');
+
+    if (!userVal) return showToast("Vui lòng nhập tên tài khoản!", "error");
+    if (!passVal) return showToast("Vui lòng nhập mật khẩu!", "error");
+
+    btn.innerText = "Đang kiểm tra...";
+    btn.disabled = true;
+
+    const emailVal = userVal + "@baocao.com";
+
+    try {
+        const userCredential = await firebase.auth().signInWithEmailAndPassword(emailVal, passVal);
+        const uid = userCredential.user.uid;
+        const snapshot = await db.ref('users/' + userVal).once('value');
+        
+        btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Đăng Nhập`;
+        btn.disabled = false;
+
+        if (snapshot.exists()) {
+            const userData = snapshot.val();
+            
+            // Lấy roleDisplayName từ Firebase, nếu Firebase không có thì dùng mặc định
+let hienThiChucDanh = userData.roleDisplayName;
+if (!hienThiChucDanh) {
+    if (userData.role === 'admin') hienThiChucDanh = "QUẢN TRỊ HỆ THỐNG";
+    else if (userData.role === 'quantri') hienThiChucDanh = "Lãnh đạo";
+    else hienThiChucDanh = "Bác sĩ";
+}
+            
+currentUserSession = { 
+    token: userCredential.user.uid,
+    username: userVal, 
+    fullname: userData.fullname, 
+    role: userData.role,
+    roleDisplayName: hienThiChucDanh // Đã được gán ở đây
+};
+            
+            sessionStorage.setItem('loggedInUser', JSON.stringify(currentUserSession));
+            showToast(`Xin chào, ${userData.fullname}!`, "success");
+            
+            db.ref('logs').push({
+                thoiGian: new Date().toLocaleString('vi-VN'),
+                taiKhoan: userData.fullname,
+                thaoTac: "Đăng nhập hệ thống (Auth)."
+            });
+
+            await checkInitialLogin(); 
+        } else {
+            showToast("Tài khoản chưa được phân quyền trong hệ thống nội bộ!", "error");
+        }
+    } catch (err) {
+        btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Đăng Nhập`;
+        btn.disabled = false;
+        
+        if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+            showToast("Sai tên đăng nhập hoặc mật khẩu!", "error");
+        } else {
+            showToast("Lỗi đăng nhập: " + err.message, "error");
+        }
+    }
+}
+
+    // ==========================================
+    // 3. LẮNG NGHE PHÍM ENTER TẠI Ô MẬT KHẨU
+    // ==========================================
+    const startupPassInput = document.getElementById('startupPass');
+    if (startupPassInput) {
+        startupPassInput.addEventListener("keypress", function(e) { 
+            if (e.key === "Enter") { 
+                e.preventDefault(); 
+                window.doStartupLogin(); 
+            } 
+        });
+    }
+
+    // Khởi chạy kiểm tra ngay khi trang web tải xong
+    checkInitialLogin();
+	// ==========================================
+// HỆ THỐNG GHI LOG CHI TIẾT TỪNG HÀNH ĐỘNG (REALTIME AUDIT TRAIL)
+// ==========================================
+document.addEventListener('focusin', function(e) {
+    // Khi click vào ô nhập liệu, lưu lại giá trị "nguyên thủy"
+    if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) {
+        e.target.dataset.oldVal = e.target.value || "";
+    }
+});
+
+document.addEventListener('change', function(e) {
+    // Bỏ qua nếu form đang bị khóa hoặc chưa chọn ngày trực
+    if (typeof isFormLocked !== 'undefined' && isFormLocked) return;
+    if (typeof activeDate === 'undefined' || !activeDate) return;
+    
+    let el = e.target;
+    if (!['INPUT', 'SELECT', 'TEXTAREA'].includes(el.tagName)) return;
+
+    let oldVal = el.dataset.oldVal || "";
+    let newVal = el.value || "";
+
+    // Bỏ qua nếu không có sự thay đổi thực sự
+    if (oldVal === newVal) return;
+
+    let printOld = oldVal.trim() === "" ? "(trống)" : oldVal;
+    let printNew = newVal.trim() === "" ? "(trống)" : newVal;
+    
+    // Rút gọn text nếu quá dài (Tránh tràn database)
+    if (printOld.length > 50) printOld = printOld.substring(0, 50) + "...";
+    if (printNew.length > 50) printNew = printNew.substring(0, 50) + "...";
+
+    let fieldDetail = el.id || el.name || "dữ liệu";
+
+    // 1. Map các ID ô nhập liệu tĩnh
+    const mapId = {
+        "trucLanhDao": "Trực Lãnh Đạo", "trucChuyenMon": "Trực Chuyên Môn",
+        "trucPhongKham": "Trực Phòng Khám", "trucXetNghiem": "Trực Xét Nghiệm",
+        "trucCDHA": "Trực CĐHA", "trucAnNinh": "Trực An Ninh",
+        "xnHuyetHoc": "XN Huyết học", "xnHoaSinh": "XN Hóa sinh",
+        "xnViSinh": "XN Vi sinh", "xnNuocTieu": "XN Nước tiểu",
+        "xnDongMau": "XN Đông máu", "cdhaXquang": "CĐHA Xquang",
+        "cdhaSieuAm": "CĐHA Siêu âm", "cdhaCT": "CĐHA CT-Scanner",
+        "tinhTrangThietBi": "Tình trạng thiết bị", "nguoiLamBaoCao": "Người làm báo cáo"
+    };
+
+    if (mapId[el.id]) {
+        fieldDetail = mapId[el.id];
+    } else {
+        // 2. Định vị trí nếu thẻ nằm trong BẢNG
+        let closestTr = el.closest('tr');
+        let closestTable = el.closest('table');
+
+        if (closestTable) {
+            if (closestTable.id === 'bangBenhNhan') {
+                let khoaName = closestTr?.cells[0]?.innerText.replace("⚠️", "").trim() || "Khoa";
+                let colName = "chỉ số";
+                
+                if (el.classList.contains('bs-input')) {
+                    colName = "Bác sĩ trực";
+                } else {
+                    // Bản đồ index cho bảng bệnh nhân
+                    const bnCols = ["Khoa", "Bác sĩ", "Bệnh nhân Cũ", "Vào Hành chính", "Vào Trực", "Vào Sáng", "Ra viện", "Ra Sáng", "Xin về", "Trốn viện", "Chuyển viện", "Chuyển đến", "Chuyển đi", "Tử vong Ngoại trú", "Tử vong Nội trú", "PT Cấp cứu", "Dự kiến ra"];
+                    let cellIdx = el.closest('td').cellIndex;
+                    if (bnCols[cellIdx]) colName = bnCols[cellIdx];
+                }
+                fieldDetail = `[Khoa ${khoaName}] cột ${colName}`;
+            } else {
+                // Định vị trong các bảng danh sách động
+                let tableNames = {
+                    "tablePTCC": "PTCC", "tableVaoVien": "Vào viện",
+                    "tableChuyenVien": "Chuyển viện", "tableRaVien": "Ra viện"
+                };
+                let tName = tableNames[closestTable.id] || "Danh sách";
+                let rowStt = closestTr?.cells[0]?.innerText || "X";
+                let cellIdx = el.closest('td')?.cellIndex;
+                let colName = closestTable.rows[0]?.cells[cellIdx]?.innerText || "dữ liệu";
+                fieldDetail = `[Bảng ${tName}] BN số ${rowStt} - cột ${colName}`;
+            }
+        }
+    }
+
+    // Đẩy thẳng lên Firebase ngay lúc này
+    if (typeof logAction === 'function') {
+        let actDate = activeDate.split('-').reverse().join('/');
+        logAction(`[Ngày ${actDate}] Sửa ${fieldDetail}: "${printOld}" ➡️ "${printNew}"`);
+    }
+    
+    // Gán lại giá trị mới để check cho lần sửa tiếp theo
+    el.dataset.oldVal = newVal; 
+});
     </script>
 </body>
 </html>
