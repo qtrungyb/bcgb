@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Công Cụ Tạo Tài Khoản Hàng Loạt</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
+        .container { max-width: 900px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        h2 { color: #0284c7; margin-top: 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+        .step { background: #f8fafc; border: 1px solid #cbd5e1; padding: 16px; border-radius: 8px; margin-bottom: 20px; }
+        input, textarea { width: 100%; padding: 10px; margin-top: 8px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
+        textarea { height: 180px; font-family: monospace; font-size: 14px; white-space: pre; overflow-wrap: normal; overflow-x: scroll;}
+        button { background: #0284c7; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        button:hover { background: #0369a1; }
+        #log { background: #1e293b; color: #a7f3d0; padding: 15px; border-radius: 8px; height: 250px; overflow-y: auto; font-family: monospace; margin-top: 10px; line-height: 1.5; }
+        .note { font-size: 13px; color: #ef4444; font-style: italic; margin-top: 4px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>⚡ CÔNG CỤ KHỞI TẠO TÀI KHOẢN HÀNG LOẠT</h2>
+    
+    <div class="step">
+        <h3>Bước 1: Đăng nhập quyền Admin</h3>
+        <p style="font-size: 14px; margin-bottom: 5px;">Hệ thống cần xác thực bạn là Admin để có quyền ghi dữ liệu.</p>
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="adminUser" placeholder="Tên đăng nhập Admin (VD: admin)" style="width: 50%;">
+            <input type="password" id="adminPass" placeholder="Mật khẩu" style="width: 50%;">
+        </div>
+        <button onclick="loginAdmin()">Xác thực Admin</button>
+        <span id="loginStatus" style="margin-left: 10px; font-weight: bold; color: #16a34a;"></span>
+    </div>
+
+    <div class="step" style="opacity: 0.5; pointer-events: none;" id="step2">
+        <h3>Bước 2: Nhập danh sách tài khoản</h3>
+        <p style="font-size: 14px; margin-bottom: 5px;">Nhập mỗi người 1 dòng theo đúng thứ tự, cách nhau bởi dấu phẩy (,):<br>
+        <b>tên_đăng_nhập, mật_khẩu, họ_và_tên, quyền_hạn(admin/quantri/editor), chức_danh_hiển_thị</b></p>
+        
+        <textarea id="dataInput" placeholder="Ví dụ:
+dieuduong_hoa, 123456, Lê Thị Hoa, editor, ĐIỀU DƯỠNG TRƯỞNG
+bs_tuan, matkhau123, Nguyễn Văn Tuấn, editor, BÁC SĨ ĐIỀU TRỊ
+gd_minh, admin123, Trần Quang Minh, quantri, PHÓ GIÁM ĐỐC
+"></textarea>
+        
+        <button onclick="startBulkCreate()">BẮT ĐẦU TẠO HÀNG LOẠT</button>
+    </div>
+
+    <h3>Bảng theo dõi tiến trình:</h3>
+    <div id="log">Chưa có hoạt động...</div>
+</div>
+
+<script>
+    // --- BẠN HÃY DÁN CẤU HÌNH FIREBASE CỦA BẠN VÀO ĐÂY ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyA1dJll06zh2TLddgxG4Vpds03CuQ57fsg",
+        authDomain: "baocaogiaoban-156eb.firebaseapp.com",
+        databaseURL: "https://baocaogiaoban-156eb-default-rtdb.firebaseio.com",
+        projectId: "baocaogiaoban-156eb",
+        storageBucket: "baocaogiaoban-156eb.firebasestorage.app",
+        messagingSenderId: "596104466494",
+        appId: "1:596104466494:web:896185eaa62fcd75d4416f"
+    };
+
+    // Khởi tạo App chính (Để Admin đăng nhập và ghi Database)
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    
+    // Khởi tạo App phụ (Chỉ dùng để tạo Auth ngầm, không làm văng Admin ra ngoài)
+    const secondaryApp = firebase.initializeApp(firebaseConfig, "Secondary");
+
+    function ghiLog(text) {
+        const logDiv = document.getElementById("log");
+        logDiv.innerHTML += `<div>> ${text}</div>`;
+        logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    async function loginAdmin() {
+        const user = document.getElementById("adminUser").value.trim();
+        const pass = document.getElementById("adminPass").value.trim();
+        if(!user || !pass) return alert("Vui lòng nhập tài khoản Admin!");
+        
+        const email = user + "@baocao.com";
+        try {
+            ghiLog("Đang xác thực Admin...");
+            await firebase.auth().signInWithEmailAndPassword(email, pass);
+            document.getElementById("loginStatus").innerText = "✅ Đăng nhập thành công!";
+            document.getElementById("step2").style.opacity = "1";
+            document.getElementById("step2").style.pointerEvents = "auto";
+            ghiLog("Mở khóa Bước 2 thành công.");
+        } catch(e) {
+            alert("Sai tài khoản hoặc mật khẩu!");
+            ghiLog("Lỗi đăng nhập: " + e.message);
+        }
+    }
+
+    async function startBulkCreate() {
+        const rawData = document.getElementById("dataInput").value;
+        const lines = rawData.split('\n');
+        
+        if(lines.length === 0 || !lines[0].trim()) return alert("Vui lòng nhập dữ liệu!");
+        
+        ghiLog("=====================================");
+        ghiLog(`Bắt đầu xử lý danh sách (${lines.length} dòng)...`);
+
+        for(let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if(!line) continue;
+
+            const parts = line.split(',');
+            if(parts.length < 5) {
+                ghiLog(`[Dòng ${i+1} LỖI] Thiếu dữ liệu: ${line}`);
+                continue;
+            }
+
+            const username = parts[0].trim();
+            const password = parts[1].trim();
+            const fullname = parts[2].trim();
+            const role = parts[3].trim();
+            const display = parts[4].trim();
+            
+            const email = username + "@baocao.com";
+
+            ghiLog(`⏳ Đang tạo tài khoản: ${username} ...`);
+
+            // 1. Tạo Auth ngầm bằng Secondary App
+            let authSuccess = false;
+            try {
+                await secondaryApp.auth().createUserWithEmailAndPassword(email, password);
+                authSuccess = true;
+            } catch(e) {
+                if(e.code === 'auth/email-already-in-use') {
+                    ghiLog(`  -> [Chú ý] Auth "${username}" đã tồn tại. Sẽ tiếp tục cập nhật Database.`);
+                    authSuccess = true;
+                } else if(e.code === 'auth/weak-password') {
+                    ghiLog(`  -> [Lỗi Auth] Mật khẩu cho ${username} quá yếu (dưới 6 ký tự).`);
+                } else {
+                    ghiLog(`  -> [Lỗi Auth] ${e.message}`);
+                }
+            }
+
+            // 2. Ghi vào Realtime Database nếu Auth tạo/tồn tại thành công
+            if(authSuccess) {
+                try {
+                    await db.ref('users/' + username).set({
+                        fullname: fullname,
+                        role: role,
+                        roleDisplayName: display
+                    });
+                    ghiLog(`  -> ✅ Đã lưu Database thành công: [${role}] ${display}`);
+                    
+                    // Đăng xuất Auth phụ ngay lập tức để trống chỗ cho vòng lặp sau
+                    await secondaryApp.auth().signOut();
+                } catch(e) {
+                    ghiLog(`  -> [Lỗi Database] ${e.message}`);
+                }
+            }
+        }
+        ghiLog("=====================================");
+        ghiLog("🎉 HOÀN TẤT TẠO TÀI KHOẢN HÀNG LOẠT!");
+    }
+</script>
+</body>
+</html>
