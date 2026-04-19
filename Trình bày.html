@@ -1,0 +1,106 @@
+PHẦN 1: GIỚI THIỆU CHUNG (OVERVIEW)
+Tên hệ thống: Hệ thống Quản lý Báo cáo Giao ban Điện tử.
+
+Mục tiêu: Số hóa quy trình báo cáo giao ban hàng ngày tại bệnh viện/cơ sở y tế, thay thế hoàn toàn báo cáo giấy truyền thống.
+
+Công dụng chính: Hỗ trợ các khoa phòng cập nhật số liệu bệnh nhân, tình hình trực, và các ca bệnh tiêu biểu một cách nhanh chóng, chính xác. Đồng thời giúp Ban lãnh đạo nắm bắt tình hình toàn viện theo thời gian thực (Real-time).
+
+PHẦN 2: PHÂN QUYỀN HỆ THỐNG CHẶT CHẼ (RBAC)
+Hệ thống được thiết kế với 4 cấp độ phân quyền bảo mật, đảm bảo tính minh bạch và an toàn dữ liệu:
+
+Quản trị hệ thống (IT Admin):
+
+Toàn quyền kiểm soát hệ thống.
+
+Được phép can thiệp sửa/xóa cứng dữ liệu lỗi.
+
+Có quyền truy cập tab "Lịch sử hệ thống" (Audit Trail) để giám sát mọi hành vi của tất cả tài khoản.
+
+Lãnh đạo (Medical Admin / Quản trị):
+
+Có quyền xem tất cả báo cáo.
+
+Thực hiện các thao tác: Duyệt báo cáo, Từ chối (kèm lý do), hoặc Hủy phê duyệt.
+
+Có quyền xuất báo cáo ra file Excel để lưu trữ hoặc in ấn.
+
+Người lập báo cáo (Bác sĩ / Editor):
+
+Được quyền tạo báo cáo mới (bị giới hạn chỉ được tạo cho ngày Hôm nay hoặc Hôm qua để tránh làm sai lệch dữ liệu cũ).
+
+Chỉ được phép sửa báo cáo do chính mình tạo ra (hoặc khi bị Lãnh đạo từ chối và trả về). Không được sửa báo cáo của bác sĩ khác.
+
+Thực hiện thao tác Trình duyệt lên Ban lãnh đạo.
+
+Người dùng xem (Viewer / Staff):
+
+Quyền hạn cơ bản nhất.
+
+Chỉ được phép xem (Read-only) các báo cáo đã được Lãnh đạo phê duyệt. Không nhìn thấy các bản nháp hay bản đang chờ duyệt.
+
+PHẦN 3: QUY TRÌNH & LUỒNG CÔNG VIỆC (WORKFLOW)
+Hệ thống số hóa quy trình phê duyệt với 4 trạng thái rõ ràng, hiển thị qua các Badge màu sắc:
+
+📝 Bản nháp (Draft): Bác sĩ đang nhập liệu, dữ liệu tự động lưu liên tục.
+
+⏳ Chờ duyệt (Submitted): Bác sĩ nhấn "Trình duyệt". Báo cáo bị khóa (Lock) không cho phép bác sĩ tự ý sửa đổi nữa.
+
+✅ Đã duyệt (Approved): Lãnh đạo kiểm tra và "Duyệt". Báo cáo chính thức được công khai cho toàn viện xem.
+
+❌ Từ chối (Rejected): Lãnh đạo phát hiện sai sót, nhập lý do từ chối và trả về. Báo cáo mở khóa để Bác sĩ tạo ra nó vào sửa lại.
+
+PHẦN 4: CÁC TÍNH NĂNG NỔI BẬT & CÔNG DỤNG (KEY FEATURES)
+1. Quản lý Tổng quan (Dashboard) & Thống kê:
+
+Hiển thị danh sách báo cáo trên Cloud và Local lưu trên máy.
+
+Bộ lọc tìm kiếm thông minh theo tháng và theo từ khóa.
+
+Hệ thống Biểu đồ trực quan:
+
+Biểu đồ đường (Trend Chart): Theo dõi biến động tổng số bệnh nhân trong 15 ngày gần nhất.
+
+Biểu đồ tròn (Doughnut Chart): Tỷ lệ phân bổ bệnh nhân hiện tại giữa 7 khoa (Ngoại, Sản, PT-GM, Mắt-TMH, Nhi, Nội, YHCT).
+
+2. Form Nhập liệu Thông minh & Tự động hóa:
+
+Gợi ý thông minh (Autocomplete): Tự động gợi ý tên nhân sự, tên bác sĩ, chẩn đoán bệnh, địa chỉ... dựa trên dữ liệu cũ và danh bạ có sẵn.
+
+Điền nhanh (Quick Fill): Sử dụng các "Mẫu nhân sự", "Mẫu bác sĩ trực" thiết lập sẵn để điền hàng loạt chỉ với 1 click. Nút điền nhanh tình trạng thiết bị ("Tất cả hoạt động bình thường...").
+
+Tự động tính toán số liệu: Bảng thống kê bệnh nhân tự động tính toán số liệu Hiện có, Tỷ lệ sử dụng giường bệnh (%).
+
+Báo lỗi Logic: Cảnh báo rung (Shake-warning) và viền đỏ ngay lập tức nếu nhập sai số liệu khiến số bệnh nhân hiện có bị âm (<0), hoặc cảnh báo đỏ nếu tỷ lệ quá tải (>100%).
+
+Tự động kéo dữ liệu (Auto-fill): Tính năng tự động lấy số lượng bệnh nhân "Hiện có" của ca trực ngày hôm trước chuyển thành số bệnh nhân "Cũ" của ca trực hôm nay.
+
+3. Quản lý chi tiết lâm sàng (Dynamic Tables):
+
+Các bảng động cho phép thêm/xóa dòng tùy ý cho 4 nhóm: Bệnh nhân PTCC, Vào viện, Chuyển viện, Ra viện/Xin về.
+
+4. Xuất Báo cáo (Export):
+
+Chỉ với 1 click, hệ thống tự động dàn trang, merge cột, tạo file Excel (.xlsx) định dạng cực chuẩn theo đúng biểu mẫu báo cáo giao ban y tế truyền thống để in ấn.
+
+PHẦN 5: CÔNG NGHỆ, BẢO MẬT & CẢI TIẾN VƯỢT TRỘI
+1. An toàn Dữ liệu Cơ chế "Khép kín" (Cloud + Local):
+
+Auto-save (Lưu tự động): Mỗi khi người dùng gõ phím hoặc đổi ô, dữ liệu lập tức được lưu vào bộ nhớ đệm của trình duyệt (IndexedDB). Hoàn toàn không sợ mất dữ liệu khi cúp điện hay rớt mạng.
+
+Đồng bộ Cloud: Sử dụng Firebase Realtime Database giúp dữ liệu đồng bộ ngay lập tức cho toàn bộ người dùng trong hệ thống.
+
+2. Tính năng Audit Trail (Nhật ký giám sát Real-time):
+
+Hệ thống ghi nhận lại từng thay đổi nhỏ nhất (Ví dụ: "Bác sĩ A đã sửa tên bệnh nhân ở dòng 2 từ Nguyễn Văn A thành Nguyễn Văn B", hoặc "Sửa số bệnh nhân vào viện khoa Nội từ 5 thành 8"). Giúp truy vết trách nhiệm tuyệt đối.
+
+3. Cơ chế Khóa chống chạm (Concurrency Lock):
+
+Khi một bác sĩ đang mở và chỉnh sửa báo cáo, hệ thống sẽ phát tín hiệu khóa. Người khác mở lên sẽ thấy cảnh báo "Báo cáo đang được làm bởi Bác sĩ X. Bạn không được phép sửa" để tránh việc lưu đè dữ liệu của nhau.
+
+4. Giao diện (UI/UX) Hiện đại:
+
+Hỗ trợ chế độ Dark Mode / Light Mode bảo vệ mắt cho bác sĩ khi phải làm báo cáo vào ca trực đêm.
+
+Giao diện thân thiện, sử dụng thẻ toast notification (thông báo góc màn hình) mượt mà thay vì các hộp thoại (alert) gây phiền nhiễu.
+
+Lịch chọn ngày (Calendar) được tùy biến tích hợp chấm đỏ nhận diện những ngày đã có dữ liệu báo cáo.

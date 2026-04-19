@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tool Tạo Tài Khoản Firebase Auth</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        :root {
+            --primary: #0ea5e9;
+            --primary-hover: #0284c7;
+            --bg-color: #f1f5f9;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --error: #ef4444;
+            --terminal-bg: #1e293b;
+            --terminal-header: #0f172a;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--bg-color); 
+            padding: 40px 20px; 
+            color: var(--text-main); 
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+            align-items: start;
+        }
+
+        @media (max-width: 900px) {
+            .main-layout { grid-template-columns: 1fr; }
+        }
+
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        h2 { 
+            color: var(--text-main); 
+            margin: 0 0 10px 0; 
+            font-size: 22px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 20px;
+            margin-top: 0;
+        }
+
+        .step-card { 
+            background: var(--card-bg); 
+            padding: 24px 28px; 
+            border-radius: 16px; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            position: relative;
+        }
+
+        .step-card h3 {
+            margin-top: 0;
+            font-size: 16px;
+            color: var(--primary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .step-card p {
+            color: var(--text-muted);
+            font-size: 13.5px;
+            margin-top: 0;
+            margin-bottom: 18px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        input, textarea { 
+            width: 100%; 
+            padding: 12px 16px; 
+            border: 1px solid var(--border); 
+            border-radius: 10px; 
+            box-sizing: border-box; 
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            transition: all 0.2s;
+            background: #f8fafc;
+            color: var(--text-main);
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15);
+        }
+
+        textarea { 
+            height: 220px; 
+            font-family: 'Courier New', Courier, monospace; 
+            font-size: 13.5px; 
+            line-height: 1.6;
+            resize: vertical;
+        }
+
+        button { 
+            background: var(--primary); 
+            color: white; 
+            padding: 12px 24px; 
+            border: none; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            font-size: 14px;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        button:hover:not(:disabled) { 
+            background: var(--primary-hover); 
+            transform: translateY(-1px);
+        }
+
+        button:disabled {
+            background: #cbd5e1;
+            cursor: not-allowed;
+            color: #64748b;
+        }
+
+        .terminal-panel {
+            background: var(--terminal-bg);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            height: 100%;
+            min-height: 550px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+        }
+
+        .terminal-header {
+            background: var(--terminal-header);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .mac-controls { display: flex; gap: 8px; }
+        .mac-btn { width: 12px; height: 12px; border-radius: 50%; }
+        .mac-close { background: #ff5f56; }
+        .mac-min { background: #ffbd2e; }
+        .mac-max { background: #27c93f; }
+
+        #log { 
+            padding: 20px; 
+            color: #e2e8f0; 
+            flex-grow: 1;
+            overflow-y: auto; 
+            font-family: 'Courier New', Courier, monospace; 
+            font-size: 13.5px;
+            line-height: 1.7; 
+        }
+
+        .log-line { margin-bottom: 6px; border-bottom: 1px dashed rgba(255,255,255,0.05); padding-bottom: 6px; }
+        .log-success { color: #34d399; }
+        .log-error { color: #f87171; }
+        .log-warn { color: #fbbf24; }
+        .log-info { color: #38bdf8; }
+
+        .locked { opacity: 0.5; pointer-events: none; }
+        .locked::after {
+            content: "🔒 Xác thực Admin để tiếp tục";
+            position: absolute;
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: #0f172a; color: white; padding: 8px 16px; border-radius: 8px; z-index: 10;
+        }
+
+        #loginStatus { margin-left: 15px; font-weight: 600; font-size: 13.5px; }
+        .status-success { color: var(--success); }
+        .status-error { color: var(--error); }
+    </style>
+</head>
+<body>
+
+<div class="main-layout">
+    <div class="left-panel">
+        <div>
+            <h2>TẠO TÀI KHOẢN FIREBASE AUTH</h2>
+            <p class="subtitle">Quản lý cấp phát tài khoản kíp trực - Hệ thống Báo cáo</p>
+        </div>
+
+        <div class="step-card" id="step1">
+            <h3>Xác thực Quản trị</h3>
+            <div class="input-group">
+                <input type="text" id="adminUser" placeholder="Admin username">
+                <input type="password" id="adminPass" placeholder="Mật khẩu">
+            </div>
+            <div style="display: flex; align-items: center;">
+                <button id="btnLogin" onclick="loginAdmin()">Xác thực Admin</button>
+                <span id="loginStatus"></span>
+            </div>
+        </div>
+
+        <div class="step-card locked" id="step2">
+            <h3>Nạp danh sách tài khoản</h3>
+            <p>Định dạng: <strong style="color: var(--primary);">user, pass, họ_tên, quyền(admin/quantri/editor/viewer), chức_danh</strong></p>
+            <textarea id="dataInput" placeholder="Ví dụ:
+bs_anh, 123456, Nguyễn Thị Ánh, editor, BÁC SĨ ĐIỀU TRỊ
+bs_dung, 123456, Lê Văn Dụng, viewer, BÁC SĨ TRỰC"></textarea>
+            
+            <button id="btnCreate" onclick="startBulkCreate()" style="margin-top: 16px; width: 100%;">
+                BẮT ĐẦU TẠO HÀNG LOẠT
+            </button>
+        </div>
+    </div>
+
+    <div class="terminal-panel">
+        <div class="terminal-header">
+            <div class="mac-controls"><div class="mac-btn mac-close"></div><div class="mac-btn mac-min"></div><div class="mac-btn mac-max"></div></div>
+            <span style="color: #94a3b8; font-size: 12px; font-family: monospace;">auth_process.log</span>
+            <div style="width: 40px;"></div>
+        </div>
+        <div id="log"><span>> Hệ thống sẵn sàng...</span><br></div>
+    </div>
+</div>
+
+<script>
+    // CẤU HÌNH FIREBASE (GIỮ NGUYÊN TỪ BẢN TRƯỚC)
+    const firebaseConfig = {
+        apiKey: "AIzaSyA1dJll06zh2TLddgxG4Vpds03CuQ57fsg",
+        authDomain: "baocaogiaoban-156eb.firebaseapp.com",
+        databaseURL: "https://baocaogiaoban-156eb-default-rtdb.firebaseio.com",
+        projectId: "baocaogiaoban-156eb",
+        storageBucket: "baocaogiaoban-156eb.firebasestorage.app",
+        messagingSenderId: "596104466494",
+        appId: "1:596104466494:web:896185eaa62fcd75d4416f"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const secondaryApp = firebase.initializeApp(firebaseConfig, "Secondary");
+
+    function ghiLog(text) {
+        const logDiv = document.getElementById("log");
+        let className = "";
+        if(text.includes("LỖI")) className = "log-error";
+        else if(text.includes("thành công") || text.includes("✅")) className = "log-success";
+        else if(text.includes("Đang")) className = "log-info";
+
+        logDiv.innerHTML += `<div class="log-line ${className}">> ${text}</div>`;
+        logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    async function loginAdmin() {
+        const user = document.getElementById("adminUser").value.trim();
+        const pass = document.getElementById("adminPass").value.trim();
+        const statusSpan = document.getElementById("loginStatus");
+        if(!user || !pass) return;
+        
+        try {
+            ghiLog(`[Hệ thống] Đang xác thực Admin: ${user}...`);
+            await firebase.auth().signInWithEmailAndPassword(user + "@baocao.com", pass);
+            statusSpan.innerText = "✅ Thành công!";
+            statusSpan.className = "status-success";
+            document.getElementById("step2").classList.remove("locked");
+            ghiLog("✅ Xác thực thành công. Đã mở khóa Bước 2.");
+        } catch(e) {
+            statusSpan.innerText = "❌ Thất bại!";
+            statusSpan.className = "status-error";
+            ghiLog("LỖI: " + e.message);
+        }
+    }
+
+    async function startBulkCreate() {
+        const lines = document.getElementById("dataInput").value.split('\n');
+        const btn = document.getElementById("btnCreate");
+        btn.disabled = true;
+        ghiLog("🚀 Bắt đầu tiến trình tạo tài khoản...");
+
+        for(let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if(!line) continue;
+            const p = line.split(',');
+            if(p.length < 5) {
+                ghiLog(`[Dòng ${i+1}] LỖI: Thiếu dữ liệu.`);
+                continue;
+            }
+
+            const [user, pass, name, role, title] = p.map(s => s.trim());
+            ghiLog(`⏳ Đang xử lý: ${name} (${role})...`);
+
+            let success = false;
+            try {
+                await secondaryApp.auth().createUserWithEmailAndPassword(user + "@baocao.com", pass);
+                success = true;
+            } catch(e) {
+                if(e.code === 'auth/email-already-in-use') success = true;
+                else ghiLog(`  -> Lỗi Auth: ${e.message}`);
+            }
+
+            if(success) {
+                try {
+                    await db.ref('users/' + user).set({
+                        fullname: name,
+                        role: role,
+                        roleDisplayName: title
+                    });
+                    ghiLog(`  -> ✅ Thành công: ${user} [Quyền: ${role}]`);
+                    await secondaryApp.auth().signOut();
+                } catch(e) {
+                    ghiLog(`  -> LỖI Database: ${e.message}`);
+                }
+            }
+        }
+        ghiLog("🎉 TIẾN TRÌNH HOÀN TẤT!");
+        btn.disabled = false;
+    }
+</script>
+</body>
+</html>
