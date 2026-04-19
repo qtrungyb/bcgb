@@ -1450,13 +1450,6 @@
         }
     };
 
-    document.getElementById('startupPass').addEventListener("keypress", function(e) { 
-        if (e.key === "Enter") { 
-            e.preventDefault(); 
-            doStartupLogin(); 
-        } 
-    });
-
     window.logoutUser = async function() {
     logAction("Đăng xuất hệ thống.");
     try {
