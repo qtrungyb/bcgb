@@ -1294,8 +1294,17 @@ const BaoCaoApp = (function() {
         } catch (err) {
             btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Đăng Nhập`;
             btn.disabled = false;
-            if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') showToast("Sai tên đăng nhập hoặc mật khẩu!", "error");
-            else showToast("Lỗi đăng nhập: " + err.message, "error"); 
+            
+            // Đã bổ sung thêm các mã lỗi mới của Firebase để hiển thị thân thiện hơn
+            if (err.code === 'auth/user-not-found' || 
+                err.code === 'auth/wrong-password' || 
+                err.code === 'auth/invalid-credential' ||
+                err.code === 'auth/invalid-login-credentials' ||
+                err.message.includes('INVALID_LOGIN_CREDENTIALS')) {
+                showToast("Sai tên đăng nhập hoặc mật khẩu!", "error");
+            } else {
+                showToast("Lỗi đăng nhập: " + err.message, "error"); 
+            }
         }
     }
 
