@@ -375,20 +375,84 @@
             h1, h2 { -webkit-text-fill-color: #000 !important; color: #000 !important; background: none !important; border: none !important; }
             .title-divider { background: #000 !important; }
         }
+		
+		/* -----------------------------------------
+		HIỆU ỨNG NỀN ĐĂNG NHẬP (SÁNG & TƯƠI MỚI)
+		----------------------------------------- */
+		.login-wrapper {
+			position: fixed; 
+			top: 0; left: 0; width: 100%; height: 100%;
+			background-color: #f0f9ff; /* Nền xanh nhạt rất dịu */
+			background-image:
+				radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.2) 0px, transparent 50%),
+				radial-gradient(at 100% 100%, rgba(129, 140, 248, 0.15) 0px, transparent 50%);
+			z-index: 100000; 
+			display: flex; align-items: center; justify-content: center; flex-direction: column;
+			overflow: hidden;
+		}
+
+		/* Khối sáng 1: Xanh dương & Tím nhẹ */
+		.login-wrapper::before {
+			content: ''; position: absolute; width: 500px; height: 500px;
+			background: linear-gradient(135deg, #7dd3fc, #c4b5fd);
+			border-radius: 50%; filter: blur(80px); opacity: 0.6;
+			top: -150px; left: -100px; 
+			animation: floatBlob 10s infinite alternate ease-in-out;
+		}
+
+		/* Khối sáng 2: Xanh ngọc bích & Xanh da trời */
+		.login-wrapper::after {
+			content: ''; position: absolute; width: 400px; height: 400px;
+			background: linear-gradient(135deg, #6ee7b7, #7dd3fc);
+			border-radius: 50%; filter: blur(70px); opacity: 0.5;
+			bottom: -100px; right: -50px; 
+			animation: floatBlob 12s infinite alternate-reverse ease-in-out;
+		}
+
+		@keyframes floatBlob {
+			0% { transform: translate(0, 0) scale(1); }
+			100% { transform: translate(40px, 60px) scale(1.1); }
+		}
+
+		/* Hộp kính mờ nền sáng */
+		.glass-modal {
+			position: relative; z-index: 1;
+			background: rgba(255, 255, 255, 0.6) !important; /* Trắng trong suốt */
+			backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+			border: 1px solid rgba(255, 255, 255, 0.8) !important;
+			box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+		}
+	
     </style>
 </head>
 <body>
 
-<div id="startupLoginScreen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); z-index: 100000; display: flex; align-items: center; justify-content: center; flex-direction: column;">
-    <div class="modal-box" style="transform: none; display: block; position: static; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); background: var(--bg-card); width: 90%; max-width: 420px; padding: 40px 32px; border-radius: 20px;">
+<div id="startupLoginScreen" class="login-wrapper">
+    <div class="modal-box glass-modal" style="transform: none; display: block; width: 90%; max-width: 420px; padding: 40px 32px; border-radius: 20px;">
+        
         <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="font-size: 26px; margin-bottom: 12px; background: linear-gradient(90deg, #0369a1, #0ea5e9); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">HỆ THỐNG BÁO CÁO</h1>
-            <p style="color: var(--text-muted); font-size: 14px; font-weight: 500;">Vui lòng đăng nhập để truy cập dữ liệu nội bộ</p>
+            <svg style="width: 72px; height: 72px; color: #0284c7; margin-bottom: 12px; filter: drop-shadow(0px 4px 12px rgba(2, 132, 199, 0.25));" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+				<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+				<rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+				<line x1="12" y1="11" x2="12" y2="17"></line>
+				<line x1="9" y1="14" x2="15" y2="14"></line>
+			</svg>
+            <h1 style="font-size: 26px; margin-bottom: 8px; background: linear-gradient(90deg, #0369a1, #4f46e5); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">BÁO CÁO GIAO BAN</h1>
+            <p style="color: #64748b; font-size: 14px; font-weight: 500;">Hệ thống nội bộ</p>
         </div>
-        <input type="text" id="startupUser" class="modal-input" placeholder="Tên đăng nhập" autocomplete="off" style="margin-bottom: 16px; text-align: left; padding: 14px 16px; font-weight: 500;" />
-        <input type="password" id="startupPass" class="modal-input" placeholder="Mật khẩu" autocomplete="off" style="margin-bottom: 24px; text-align: left; padding: 14px 16px; font-weight: 500;" />
-        <button id="btnStartupLogin" class="btn-save-main" style="width: 100%; padding: 14px; font-size: 16px; box-shadow: 0 4px 15px rgba(2, 132, 199, 0.3);" onclick="doStartupLogin()">
-            <svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Đăng Nhập
+
+        <input type="text" id="startupUser" class="modal-input" placeholder="Tên đăng nhập" autocomplete="off" style="margin-bottom: 16px; text-align: left; padding: 14px 16px; font-weight: 600; background: rgba(255, 255, 255, 0.8); color: #334155; border-color: #cbd5e1; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);" />
+        <input type="password" id="startupPass" class="modal-input" placeholder="Mật khẩu" autocomplete="off" style="margin-bottom: 12px; text-align: left; padding: 14px 16px; font-weight: 600; background: rgba(255, 255, 255, 0.8); color: #334155; border-color: #cbd5e1; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);" />
+        
+        <div style="display: flex; align-items: center; justify-content: flex-start; margin-bottom: 24px; padding-left: 4px;">
+            <label style="display: flex; align-items: center; cursor: pointer; color: #475569; font-size: 14px; font-weight: 600; user-select: none;">
+                <input type="checkbox" id="rememberUserCheckbox" style="margin-right: 8px; width: 16px; height: 16px; cursor: pointer; accent-color: #0284c7;">
+                Ghi nhớ tên đăng nhập
+            </label>
+        </div>
+
+        <button id="btnStartupLogin" class="btn-save-main" style="width: 100%; padding: 14px; font-size: 16px; background: linear-gradient(90deg, #0284c7, #0ea5e9); color: white; border: none; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);" onclick="doStartupLogin()">
+            <svg class="svg-icon" viewBox="0 0 24 24" style="stroke: white;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Đăng Nhập
         </button>
     </div>
 </div>
@@ -1206,7 +1270,13 @@ const BaoCaoApp = (function() {
             if (snapshot.exists()) {
                 const userData = snapshot.val();
                 let hienThiChucDanh = userData.roleDisplayName || (userData.role === 'admin' ? "QUẢN TRỊ HỆ THỐNG" : (userData.role === 'quantri' ? "Lãnh đạo" : "Bác sĩ"));
-                
+                const rememberCheckbox = document.getElementById('rememberUserCheckbox');
+                if (rememberCheckbox && rememberCheckbox.checked) {
+                    localStorage.setItem('savedStartupUser', userVal);
+                } else {
+                    localStorage.removeItem('savedStartupUser');
+                }
+				
                 currentUserSession = { 
                     token: userCredential.user.uid, username: userVal, 
                     fullname: userData.fullname, role: userData.role, 
@@ -2291,7 +2361,14 @@ const BaoCaoApp = (function() {
     function bindEvents() {
         const now = new Date(); if (now.getHours() < 8) now.setDate(now.getDate() - 1); 
         activeDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-
+		const savedUser = localStorage.getItem('savedStartupUser');
+        if (savedUser) {
+            const userBox = document.getElementById('startupUser');
+            if (userBox) userBox.value = savedUser;
+            const rememberCheckbox = document.getElementById('rememberUserCheckbox');
+            if (rememberCheckbox) rememberCheckbox.checked = true;
+        }
+		
         initTheme(); checkInitialLogin();
 
         document.getElementById("btnTaoMoi").addEventListener("click", async () => {
