@@ -969,6 +969,9 @@ const BaoCaoApp = (function() {
     let activeDate = ""; 
     let isFormLocked = true;
     let isGiuongKHUnlocked = false;
+	// Thêm 2 biến này vào để quản lý kết nối Realtime
+    let backgroundReportsRef = null;
+    let activeReportListenerRef = null;
 
     // Workflow States
     let currentReportApproved = false;
@@ -1011,6 +1014,19 @@ const BaoCaoApp = (function() {
     // ==========================================
     // 3. UTILITIES
     // ==========================================
+    // Hàm trì hoãn tối ưu hỗ trợ Promise (Nếu cần thiết) và cập nhật UI ngay lập tức
+function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+        // Cập nhật trạng thái UI là "Đang lưu..." ngay khi người dùng bắt đầu gõ
+        updateSyncStatus('pending'); 
+        
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+            func.apply(this, args);
+        }, wait);
+    };
+}
     function showToast(message, type = "success") {
         const container = document.getElementById("toast-container"); 
         const toast = document.createElement("div"); 
@@ -1175,14 +1191,20 @@ const BaoCaoApp = (function() {
         }
     }
 
+    // [DÁN VÀO THAY THẾ Ở PHẦN 4. DATABASE SERVICES]
+
     async function fetchCloudDataBackground() {
         if (!currentUserSession) return;
         try {
-            db.ref('reports').on('value', async (snapshot) => {
+            if (backgroundReportsRef) backgroundReportsRef.off();
+            backgroundReportsRef = db.ref('reports').orderByKey().limitToLast(30);
+            
+            backgroundReportsRef.on('value', async (snapshot) => {
                 let newData = [];
                 if (snapshot.exists()) {
-                    const reportsObj = snapshot.val();
-                    for (let dateKey in reportsObj) newData.push({ ngayTruc: dateKey, jsonData: reportsObj[dateKey] });
+                    snapshot.forEach((childSnapshot) => {
+                        newData.push({ ngayTruc: childSnapshot.key, jsonData: childSnapshot.val() });
+                    });
                 }
                 
                 cloudDataCache = newData;
@@ -1190,17 +1212,20 @@ const BaoCaoApp = (function() {
 
                 for (let row of newData) {
                     try {
-                        let dataObj = row.jsonData; let dateKey = row.ngayTruc;
+                        // CHỐNG LỖI: Tự động chuyển đổi nếu dữ liệu cũ lưu dạng String
+                        let dataObj = typeof row.jsonData === 'string' ? JSON.parse(row.jsonData) : row.jsonData;
+                        let dateKey = row.ngayTruc;
                         let key = getStorageKey(dateKey);
                         let localSaved = await LocalDB.getItem(key);
                         let isDraft = localSaved && localSaved.isSaved === false;
                         let isEditingCurrent = (dateKey === activeDate && !isFormLocked);
                         
                         if (!isDraft && !isEditingCurrent) {
-                            dataObj.isSaved = true; await LocalDB.setItem(key, dataObj);
+                            dataObj.isSaved = true; 
+                            await LocalDB.setItem(key, dataObj);
                             if (dateKey === activeDate && isFormLocked) needReloadCurrent = true;
                         }
-                    } catch(ex) {}
+                    } catch(ex) { console.error("Lỗi đồng bộ ngầm:", ex); }
                 }
 
                 if (needReloadCurrent) await loadData();
@@ -1210,23 +1235,86 @@ const BaoCaoApp = (function() {
         } catch(e) { console.error("Lỗi khi tải dữ liệu nền:", e); }
     }
 
+    // Thêm biến này để theo dõi ngày đang bám sát
+    let currentListenerDate = null; 
+
+    function attachActiveReportListener(dateStr) {
+        if (!currentUserSession) return;
+        
+        // 1. CHỐNG LOOP: Nếu đang lắng nghe đúng ngày này rồi thì không gắn lại listener nữa
+        if (currentListenerDate === dateStr && activeReportListenerRef) {
+            return;
+        }
+
+        if (activeReportListenerRef) activeReportListenerRef.off();
+
+        currentListenerDate = dateStr;
+        activeReportListenerRef = db.ref('reports/' + dateStr);
+        
+        // 2. CHỐNG LOOP: Cờ đánh dấu lần đầu Firebase kích hoạt
+        let isFirstTrigger = true; 
+
+        activeReportListenerRef.on('value', async (snapshot) => {
+            // Bỏ qua lần chạy đầu tiên lúc vừa gắn listener
+            if (isFirstTrigger) {
+                isFirstTrigger = false;
+                return;
+            }
+
+            if (snapshot.exists()) {
+                const cloudData = snapshot.val();
+                
+                // Nếu form đang khóa (chỉ xem) và có người khác vừa lưu
+                if (isFormLocked && cloudData.nguoiSua && cloudData.nguoiSua !== currentUserSession.fullname) {
+                    showToast(`Dữ liệu vừa được cập nhật bởi ${cloudData.nguoiSua}. Đang đồng bộ...`, "info");
+                    
+                    // 3. Phải cập nhật LocalDB trước thì loadData mới lấy được dữ liệu mới
+                    cloudData.isSaved = true;
+                    await LocalDB.setItem(getStorageKey(dateStr), cloudData);
+                    
+                    // Tải lại giao diện
+                    await loadData(); 
+                }
+                
+                // Cập nhật trạng thái khóa nếu có người khác đang sửa
+                if (cloudData.lockedBy && cloudData.lockedBy !== currentUserSession.fullname) {
+                    applyLockState(true, true, cloudData.lockedBy);
+                }
+            }
+        });
+    }
+
     async function fetchFromCloudAndRefreshUI(isManual = false) {
         if (!currentUserSession) return;
         try {
             const subtitleEl = document.getElementById("dashboardSubtitle");
-            if(subtitleEl) subtitleEl.innerText = "Đang tải dữ liệu từ Cloud...";
+            if(subtitleEl) subtitleEl.innerText = "Đang tải dữ liệu từ máy chủ...";
             
-            const snapshot = await db.ref('reports').once('value');
+            const monthVal = document.getElementById("monthFilter").value;
+            let queryRef = db.ref('reports');
+
+            if (monthVal !== "all") {
+                const startAt = `${monthVal}-01`;
+                const endAt = `${monthVal}-31`;
+                queryRef = queryRef.orderByKey().startAt(startAt).endAt(endAt);
+            } else {
+                queryRef = queryRef.orderByKey().limitToLast(100);
+            }
+            
+            const snapshot = await queryRef.once('value');
             let newData = [];
             
             if (snapshot.exists()) {
-                const reportsObj = snapshot.val();
-                for (let dateKey in reportsObj) newData.push({ ngayTruc: dateKey, jsonData: reportsObj[dateKey] });
+                snapshot.forEach((child) => {
+                    newData.push({ ngayTruc: child.key, jsonData: child.val() });
+                });
             }
             
-            cloudDataCache = newData;
+            const newKeys = newData.map(r => r.ngayTruc);
+            cloudDataCache = cloudDataCache.filter(r => !newKeys.includes(r.ngayTruc)).concat(newData);
+            
             await renderDashboard();
-            if (isManual) showToast("Đã làm mới danh sách dữ liệu từ Cloud!", "success");
+            if (isManual) showToast("Đã lấy dữ liệu thành công!", "success");
         } catch(e) { showToast("Lỗi khi kết nối Cloud: " + e.message, "error"); }
     }
 
@@ -1519,36 +1607,77 @@ const BaoCaoApp = (function() {
         return true;
     }
 
-    async function saveData(isExplicit = false, forceSave = false) {
+    async function saveDataCore(isExplicit = false, forceSave = false) {
         if (!activeDate) return; 
-        if (isFormLocked && !forceSave) return;
+        if (isFormLocked && !forceSave) return; 
+
         const key = getStorageKey(activeDate);
-        
         let oldData = await LocalDB.getItem(key) || {};
-        let isSavedStatus = oldData.isSaved || false; if (isExplicit === true) { isSavedStatus = true; }
+        let isSavedStatus = false;
+        if (isExplicit === true) {
+			isSavedStatus = true; // Chỉ khi bấm nút "Lưu Báo Cáo" mới thành true
+        }
         
-        let nguoiTaoToSave = oldData.nguoiTao; let thoiGianTaoToSave = oldData.thoiGianTao; let nguoiSuaToSave = oldData.nguoiSua; let thoiGianSuaToSave = oldData.thoiGianSua;
+        let nguoiTaoToSave = oldData.nguoiTao; let thoiGianTaoToSave = oldData.thoiGianTao; 
+        let nguoiSuaToSave = oldData.nguoiSua; let thoiGianSuaToSave = oldData.thoiGianSua;
         let nowStr = new Date().toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'}) + ' ' + new Date().toLocaleDateString('vi-VN');
 
-        if (!nguoiTaoToSave && currentUserSession) { nguoiTaoToSave = currentUserSession.fullname; thoiGianTaoToSave = nowStr; } 
-        else if (nguoiTaoToSave && currentUserSession && isExplicit) { nguoiSuaToSave = currentUserSession.fullname; thoiGianSuaToSave = nowStr; }
+        if (!nguoiTaoToSave && currentUserSession) { 
+            nguoiTaoToSave = currentUserSession.fullname; thoiGianTaoToSave = nowStr; 
+        } else if (currentUserSession && isExplicit) { 
+            nguoiSuaToSave = currentUserSession.fullname; thoiGianSuaToSave = nowStr; 
+        }
 
         const data = { 
-            ngayTruc: activeDate, isSaved: isSavedStatus, isApproved: currentReportApproved, nguoiDuyet: currentApprovalInfo.nguoiDuyet, thoiGianDuyet: currentApprovalInfo.thoiGianDuyet, isSubmitted: currentReportSubmitted, rejectMessage: currentRejectMessage, nguoiTao: nguoiTaoToSave, thoiGianTao: thoiGianTaoToSave, nguoiSua: nguoiSuaToSave, thoiGianSua: thoiGianSuaToSave,
-            trucLanhDao: document.getElementById("trucLanhDao").value || "", trucChuyenMon: document.getElementById("trucChuyenMon").value || "", trucPhongKham: document.getElementById("trucPhongKham").value || "", trucXetNghiem: document.getElementById("trucXetNghiem").value || "", trucCDHA: document.getElementById("trucCDHA").value || "", trucAnNinh: document.getElementById("trucAnNinh").value || "", nguoiLamBaoCao: document.getElementById("nguoiLamBaoCao").value, 
-            xnHuyetHoc: document.getElementById("xnHuyetHoc").value, xnHoaSinh: document.getElementById("xnHoaSinh").value, xnViSinh: document.getElementById("xnViSinh").value, xnNuocTieu: document.getElementById("xnNuocTieu").value, xnDongMau: document.getElementById("xnDongMau").value, cdhaXquang: document.getElementById("cdhaXquang").value, cdhaSieuAm: document.getElementById("cdhaSieuAm").value, cdhaCT: document.getElementById("cdhaCT").value, tinhTrangThietBi: document.getElementById("tinhTrangThietBi").value, 
-            benhNhanData: benhNhanData, ptccRows: ptccRows, vaoVienRows: vaoVienRows, chuyenVienRows: chuyenVienRows, raVienRows: raVienRows 
+            ngayTruc: activeDate, isSaved: isSavedStatus, isApproved: currentReportApproved, 
+            nguoiDuyet: currentApprovalInfo.nguoiDuyet, thoiGianDuyet: currentApprovalInfo.thoiGianDuyet, 
+            isSubmitted: currentReportSubmitted, rejectMessage: currentRejectMessage, 
+            nguoiTao: nguoiTaoToSave, thoiGianTao: thoiGianTaoToSave, 
+            nguoiSua: nguoiSuaToSave, thoiGianSua: thoiGianSuaToSave,
+            trucLanhDao: document.getElementById("trucLanhDao").value || "", 
+            trucChuyenMon: document.getElementById("trucChuyenMon").value || "", 
+            trucPhongKham: document.getElementById("trucPhongKham").value || "", 
+            trucXetNghiem: document.getElementById("trucXetNghiem").value || "", 
+            trucCDHA: document.getElementById("trucCDHA").value || "", 
+            trucAnNinh: document.getElementById("trucAnNinh").value || "", 
+            nguoiLamBaoCao: document.getElementById("nguoiLamBaoCao").value, 
+            xnHuyetHoc: document.getElementById("xnHuyetHoc").value, 
+            xnHoaSinh: document.getElementById("xnHoaSinh").value, 
+            xnViSinh: document.getElementById("xnViSinh").value, 
+            xnNuocTieu: document.getElementById("xnNuocTieu").value, 
+            xnDongMau: document.getElementById("xnDongMau").value, 
+            cdhaXquang: document.getElementById("cdhaXquang").value, 
+            cdhaSieuAm: document.getElementById("cdhaSieuAm").value, 
+            cdhaCT: document.getElementById("cdhaCT").value, 
+            tinhTrangThietBi: document.getElementById("tinhTrangThietBi").value, 
+            benhNhanData: benhNhanData, ptccRows: ptccRows, vaoVienRows: vaoVienRows, 
+            chuyenVienRows: chuyenVienRows, raVienRows: raVienRows 
         };
         await LocalDB.setItem(key, data);
     }
 
-    async function getRecordForDate(dateStr) {
-        let key = getStorageKey(dateStr); let saved = await LocalDB.getItem(key); if (saved) return saved;
-        if (cloudDataCache && cloudDataCache.length > 0) {
-            let row = cloudDataCache.find(r => { let dField = r.ngayTruc || r.date || r.NgayTruc || r.Date; if (!dField && r.jsonData) { try { let p = JSON.parse(r.jsonData); dField = p.ngayTruc; } catch(e){} } return dField && String(dField).indexOf(dateStr) > -1; });
-            if (row) { let dataStr = row.jsonData || row.data || row.JsonData; return typeof dataStr === 'string' ? JSON.parse(dataStr) : dataStr; }
+    // 2. Bộ đếm thời gian Debounce (Gom các lần gõ phím lại)
+    // Tăng thời gian chờ lên 600ms - Mức lý tưởng nhất giữa trải nghiệm mượt mà và bảo toàn dữ liệu
+    const debouncedAutoSave = debounce(async () => {
+        if (!isFormLocked) {
+            try {
+                await saveDataCore(false); 
+                // updateSyncStatus('saved'); // Có thể bật dòng này nếu muốn đổi trạng thái UI sau khi lưu xong
+            } catch (error) {
+                console.error("Lỗi Auto-save ngầm:", error);
+            }
         }
-        return null;
+    }, 600);
+
+    // 3. Hàm Proxy "Cửa khẩu": Tự động nắn luồng dữ liệu mà không cần sửa Event Listener cũ
+    async function saveData(isExplicit = false, forceSave = false) {
+        if (isExplicit === true || forceSave === true) {
+            // Nếu người dùng bấm nút "Lưu Báo Cáo" -> Gọi hàm gốc để lưu ngay lập tức
+            return await saveDataCore(true, forceSave);
+        } else {
+            // Nếu hàm được gọi từ các thao tác gõ phím (isExplicit = false) -> Bắt nó đi qua hàng đợi
+            debouncedAutoSave();
+        }
     }
 
     async function getCombinedRecords() {
@@ -1825,13 +1954,37 @@ const BaoCaoApp = (function() {
         const tbodyLocal = document.getElementById("dashboardBodyLocal"); tbodyLocal.innerHTML = "";
         const tbodyCloud = document.getElementById("dashboardBodyCloud"); tbodyCloud.innerHTML = "";
         
-        const isITAdmin = (currentUserSession && currentUserSession.role === 'admin'); const isViewer = currentUserSession && !["admin", "quantri", "editor"].includes(currentUserSession.role);
-        const subtitleEl = document.getElementById("dashboardSubtitle"); const toggleBtnEl = document.getElementById("btnToggleLocalMemory"); const tabCloudBtnEl = document.getElementById("btnTabCloud"); const tabLocalBtnEl = document.getElementById("btnTabLocal"); const tabHistoryBtnEl = document.getElementById("btnTabHistory"); const monthFilterEl = document.getElementById("monthFilter"); const searchReportEl = document.getElementById("searchReport");
+        const isITAdmin = (currentUserSession && currentUserSession.role === 'admin'); 
+        const isViewer = currentUserSession && !["admin", "quantri", "editor"].includes(currentUserSession.role);
+        const subtitleEl = document.getElementById("dashboardSubtitle"); 
+        const toggleBtnEl = document.getElementById("btnToggleLocalMemory"); 
+        const tabCloudBtnEl = document.getElementById("btnTabCloud"); 
+        const tabLocalBtnEl = document.getElementById("btnTabLocal"); 
+        const tabHistoryBtnEl = document.getElementById("btnTabHistory"); 
+        const monthFilterEl = document.getElementById("monthFilter"); 
+        const searchReportEl = document.getElementById("searchReport");
         
-        if (subtitleEl) subtitleEl.style.display = isITAdmin ? "block" : "none"; if (toggleBtnEl) toggleBtnEl.style.display = isITAdmin ? "inline-flex" : "none"; if (tabHistoryBtnEl) tabHistoryBtnEl.style.display = isITAdmin ? "inline-flex" : "none"; if (!isITAdmin && tabLocalBtnEl) { tabLocalBtnEl.style.display = "none"; if(tabLocalBtnEl.classList.contains('active') && !isViewer) switchTab('cloud'); }
+        if (subtitleEl) subtitleEl.style.display = isITAdmin ? "block" : "none"; 
+        if (toggleBtnEl) toggleBtnEl.style.display = isITAdmin ? "inline-flex" : "none"; 
+        if (tabHistoryBtnEl) tabHistoryBtnEl.style.display = isITAdmin ? "inline-flex" : "none"; 
+        if (!isITAdmin && tabLocalBtnEl) { tabLocalBtnEl.style.display = "none"; if(tabLocalBtnEl.classList.contains('active') && !isViewer) switchTab('cloud'); }
         const btnRefresh = document.querySelector("button[onclick='fetchFromCloudAndRefreshUI(true)']");
-        if (isViewer) { if (tabCloudBtnEl) tabCloudBtnEl.style.display = "none"; if (monthFilterEl) monthFilterEl.style.display = "none"; if (searchReportEl) searchReportEl.style.display = "none"; if (btnRefresh) btnRefresh.style.display = "none"; let trendChartBox = document.getElementById("trendChart")?.closest('.chart-container-box'); if (trendChartBox) trendChartBox.style.display = "none"; let doughnutChartBox = document.getElementById("doughnutChart")?.closest('.chart-container-box'); if (doughnutChartBox) doughnutChartBox.style.gridColumn = "1 / -1"; } 
-        else { if (tabCloudBtnEl) tabCloudBtnEl.style.display = "inline-flex"; if (monthFilterEl) monthFilterEl.style.display = "inline-block"; if (searchReportEl) searchReportEl.style.display = "inline-block"; if (btnRefresh) btnRefresh.style.display = "inline-flex"; let trendChartBox = document.getElementById("trendChart")?.closest('.chart-container-box'); if (trendChartBox) trendChartBox.style.display = "block"; let doughnutChartBox = document.getElementById("doughnutChart")?.closest('.chart-container-box'); if (doughnutChartBox) doughnutChartBox.style.gridColumn = "auto"; }
+        
+        if (isViewer) { 
+            if (tabCloudBtnEl) tabCloudBtnEl.style.display = "none"; 
+            if (monthFilterEl) monthFilterEl.style.display = "none"; 
+            if (searchReportEl) searchReportEl.style.display = "none"; 
+            if (btnRefresh) btnRefresh.style.display = "none"; 
+            let trendChartBox = document.getElementById("trendChart")?.closest('.chart-container-box'); if (trendChartBox) trendChartBox.style.display = "none"; 
+            let doughnutChartBox = document.getElementById("doughnutChart")?.closest('.chart-container-box'); if (doughnutChartBox) doughnutChartBox.style.gridColumn = "1 / -1"; 
+        } else { 
+            if (tabCloudBtnEl) tabCloudBtnEl.style.display = "inline-flex"; 
+            if (monthFilterEl) monthFilterEl.style.display = "inline-block"; 
+            if (searchReportEl) searchReportEl.style.display = "inline-block"; 
+            if (btnRefresh) btnRefresh.style.display = "inline-flex"; 
+            let trendChartBox = document.getElementById("trendChart")?.closest('.chart-container-box'); if (trendChartBox) trendChartBox.style.display = "block"; 
+            let doughnutChartBox = document.getElementById("doughnutChart")?.closest('.chart-container-box'); if (doughnutChartBox) doughnutChartBox.style.gridColumn = "auto"; 
+        }
 
         const monthFilter = document.getElementById("monthFilter"); const currentMonthVal = monthFilter.value;
         let uniqueMonths = new Set(); allRecords.forEach(r => { let [y, m] = r.date.split('-'); uniqueMonths.add(`${y}-${m}`); });
@@ -1857,8 +2010,24 @@ const BaoCaoApp = (function() {
             tr.innerHTML = `<td><div class="true-date-text" style="font-weight: 800; font-size: 14px; color: var(--primary);">${trueDateFormatted}</div>${metaHtml}</td><td><span style="font-weight: 600;">${r.lanhDao}</span></td><td><span style="font-weight: 900; color: var(--text-main); font-size: 15px;">${r.hienCo}</span></td><td>${statusBadge}</td><td style="text-align: center; min-width: 150px;">${actionBtns}</td>`; return tr;
         };
         
-        if(localRecords.length === 0) tbodyLocal.innerHTML = "<tr><td colspan='5' style='color:#64748b; padding:30px; text-align:center;'>Chưa có dữ liệu nào đã lưu trên máy.</td></tr>"; else localRecords.forEach(r => tbodyLocal.appendChild(formatRow(r, false))); 
-        if(cloudRecords.length === 0) tbodyCloud.innerHTML = "<tr><td colspan='5' style='color:#64748b; padding:30px; text-align:center;'>Chưa có dữ liệu nào lưu trên hệ thống.</td></tr>"; else cloudRecords.forEach(r => tbodyCloud.appendChild(formatRow(r, true))); 
+        // Ứng dụng DocumentFragment
+        const localFragment = document.createDocumentFragment();
+        const cloudFragment = document.createDocumentFragment();
+
+        if(localRecords.length === 0) {
+            tbodyLocal.innerHTML = "<tr><td colspan='5' style='color:#64748b; padding:30px; text-align:center;'>Chưa có dữ liệu nào đã lưu trên máy.</td></tr>"; 
+        } else {
+            localRecords.forEach(r => localFragment.appendChild(formatRow(r, false)));
+            tbodyLocal.appendChild(localFragment);
+        }
+
+        if(cloudRecords.length === 0) {
+            tbodyCloud.innerHTML = "<tr><td colspan='5' style='color:#64748b; padding:30px; text-align:center;'>Chưa có dữ liệu nào lưu trên hệ thống.</td></tr>"; 
+        } else {
+            cloudRecords.forEach(r => cloudFragment.appendChild(formatRow(r, true)));
+            tbodyCloud.appendChild(cloudFragment);
+        }
+
         await filterReports(); 
     }
 
@@ -1888,17 +2057,51 @@ const BaoCaoApp = (function() {
         const thGiuongKH = document.getElementById("thGiuongKH");
         if (thGiuongKH) { thGiuongKH.innerHTML = (isGiuongKHUnlocked && !isFormLocked) ? "Giường KH 🔓" : "Giường KH 🔒"; thGiuongKH.style.color = (isGiuongKHUnlocked && !isFormLocked) ? "var(--danger)" : "var(--primary)"; }	
         
+        const fragment = document.createDocumentFragment();
         benhNhanData.forEach((row, idx) => {
             const { hienCo, tyLe } = tinhHienCoVaTyLe(row); 
             const tr = document.createElement("tr"); if (tyLe > 100) tr.classList.add("row-overload");
             
             const inputBs = document.createElement("input"); inputBs.type = "text"; inputBs.className = "table-input-compact bs-input"; inputBs.setAttribute("list", "bacSiList"); inputBs.disabled = isFormLocked; inputBs.value = row.bs || "";
-            inputBs.addEventListener("change", (e) => { if(isFormLocked) return; let val = e.target.value.trim(); val = val.replace(/(?:^|\s)\S/g, function(a) { return a.toUpperCase(); }); e.target.value = val; e.target.classList.remove('error-highlight'); row.bs = val; updateSyncStatus('pending'); saveData(false); });
+            
+            // [SỬA LỖI]: Bắt sự kiện 'input' để cập nhật dữ liệu ngầm cho Auto-save ngay lập tức
+            inputBs.addEventListener("input", (e) => { 
+                if(isFormLocked) return; 
+                row.bs = e.target.value; 
+            });
+            // Giữ lại 'change' để format viết hoa chữ cái đầu
+            inputBs.addEventListener("change", (e) => { 
+                if(isFormLocked) return; 
+                let val = e.target.value.trim(); 
+                val = val.replace(/(?:^|\s)\S/g, function(a) { return a.toUpperCase(); }); 
+                e.target.value = val; e.target.classList.remove('error-highlight'); 
+                row.bs = val; 
+            });
             inputBs.addEventListener("focus", function() { if(!isFormLocked) this.select(); });
 
             const createNumInput = (field, value) => { 
                 const input = document.createElement("input"); input.type = "number"; input.className = "table-input-compact"; input.setAttribute("list", "numberOptions"); input.value = f0(value); input.disabled = isFormLocked; 
-                input.addEventListener("change", function() { if(isFormLocked) return; let newVal = this.value === "" ? 0 : parseFloat(this.value); if (isNaN(newVal) || newVal < 0) newVal = 0; row[field] = newVal; let testHienCo = (row.cu + row.vaoHC + row.vaoTruc + row.vaoSang + row.chuyenDen) - (row.ra + row.raSang + row.xinVe + row.tronVien + row.chuyenVien + row.chuyenDi); if (testHienCo < 0) { this.classList.add("shake-warning"); setTimeout(() => this.classList.remove("shake-warning"), 500); showToast(`Lỗi logic: Khoa ${row.khoa} đang bị âm bệnh nhân!`, "error"); } this.value = f0(newVal); renderBangBenhNhan(); updateSyncStatus('pending'); saveData(false); }); 
+                
+                // [SỬA LỖI]: Bắt sự kiện 'input' để đẩy số liệu vào mảng và lưu ngay khi gõ phím
+                input.addEventListener("input", function() {
+                    if(isFormLocked) return;
+                    let newVal = this.value === "" ? 0 : parseFloat(this.value); 
+                    if (isNaN(newVal) || newVal < 0) newVal = 0; 
+                    row[field] = newVal;
+                    updateSyncStatus('pending'); saveData(false);
+                });
+
+                // Chuyển việc tính toán Hữu cơ và Re-render sang sự kiện 'change' (khi click ra ngoài)
+                input.addEventListener("change", function() { 
+                    if(isFormLocked) return; 
+                    let testHienCo = (row.cu + row.vaoHC + row.vaoTruc + row.vaoSang + row.chuyenDen) - (row.ra + row.raSang + row.xinVe + row.tronVien + row.chuyenVien + row.chuyenDi); 
+                    if (testHienCo < 0) { 
+                        this.classList.add("shake-warning"); setTimeout(() => this.classList.remove("shake-warning"), 500); 
+                        showToast(`Lỗi logic: Khoa ${row.khoa} đang bị âm bệnh nhân!`, "error"); 
+                    } 
+                    this.value = f0(row[field]); 
+                    renderBangBenhNhan(); 
+                }); 
                 return input; 
             };
             
@@ -1924,19 +2127,31 @@ const BaoCaoApp = (function() {
             const tdGiuongKH = document.createElement("td"); 
             if (isGiuongKHUnlocked && !isFormLocked) {
                 const inputGKH = document.createElement("input"); inputGKH.type = "number"; inputGKH.className = "table-input-compact"; inputGKH.value = f0(row.giuongKH); inputGKH.min = 0; inputGKH.style.color = "var(--danger)";
+                
+                // [SỬA LỖI TƯƠNG TỰ]: Cho trường Giường KH
+                inputGKH.addEventListener("input", function() {
+                    if(isFormLocked) return;
+                    let newVal = this.value === "" ? 0 : parseFloat(this.value); 
+                    if (isNaN(newVal) || newVal < 0) newVal = 0;
+                    row.giuongKH = newVal; giuongKHMau[idx] = newVal; 
+                    updateSyncStatus('pending'); saveData(false);
+                });
                 inputGKH.addEventListener("change", function() {
-                    let newVal = this.value === "" ? 0 : parseFloat(this.value); if (isNaN(newVal) || newVal < 0) newVal = 0;
-                    let oldVal = row.giuongKH; row.giuongKH = newVal; giuongKHMau[idx] = newVal; db.ref('settings/giuongKH/' + idx).set(newVal);
-                    if(oldVal !== newVal) logAction(`[Cài đặt] Thay đổi Giường KH khoa ${row.khoa} thành ${newVal}`);
-                    renderBangBenhNhan(); saveData(false);
+                    db.ref('settings/giuongKH/' + idx).set(row.giuongKH);
+                    logAction(`[Cài đặt] Thay đổi Giường KH khoa ${row.khoa} thành ${row.giuongKH}`);
+                    renderBangBenhNhan(); 
                 });
                 tdGiuongKH.appendChild(inputGKH);
             } else { tdGiuongKH.textContent = f0(row.giuongKH); }
             const tdTyLe = document.createElement("td"); tdTyLe.textContent = f0(tyLe > 0 ? tyLe.toFixed(1) + "%" : 0); if (tyLe > 100) tdTyLe.classList.add("text-overload"); 
             
-            tr.append(tdKhoa, tdBs, tdCu, tdVaoHC, tdVaoTruc, tdVaoSang, tdRa, tdRaSang, tdXinVe, tdTronVien, tdChuyenVien, tdChuyenDen, tdChuyenDi, tdTuVongNT, tdTuVongNTr, tdPtCapCuu, tdDuKienRa, tdHienCo, tdGiuongKH, tdTyLe); tbody.appendChild(tr);
+            tr.append(tdKhoa, tdBs, tdCu, tdVaoHC, tdVaoTruc, tdVaoSang, tdRa, tdRaSang, tdXinVe, tdTronVien, tdChuyenVien, tdChuyenDen, tdChuyenDi, tdTuVongNT, tdTuVongNTr, tdPtCapCuu, tdDuKienRa, tdHienCo, tdGiuongKH, tdTyLe); 
+            
+            fragment.appendChild(tr); 
         });
         
+        tbody.appendChild(fragment);
+
         let tong = {cu:0, vaoHC:0, vaoTruc:0, ra:0, chuyenDi:0, chuyenDen:0, chuyenVien:0, xinVe:0, tronVien:0, tuVongNgoaiTru:0, tuVongNoiTru:0, ptCapCuu:0, vaoSang:0, raSang:0, hienCo:0, duKienRa:0, giuongKH:0}; 
         benhNhanData.forEach(r => { const { hienCo } = tinhHienCoVaTyLe(r); tong.cu += r.cu; tong.vaoHC += r.vaoHC; tong.vaoTruc += r.vaoTruc; tong.ra += r.ra; tong.chuyenDi += r.chuyenDi; tong.chuyenDen += r.chuyenDen; tong.chuyenVien += r.chuyenVien; tong.xinVe += r.xinVe; tong.tronVien += r.tronVien; tong.tuVongNgoaiTru += r.tuVongNgoaiTru; tong.tuVongNoiTru += r.tuVongNoiTru; tong.ptCapCuu += r.ptCapCuu; tong.vaoSang += r.vaoSang; tong.raSang += r.raSang; tong.hienCo += hienCo; tong.duKienRa += r.duKienRa; tong.giuongKH += r.giuongKH; }); 
         const tyTong = tong.giuongKH > 0 ? (tong.hienCo / tong.giuongKH)*100 : 0;
@@ -2075,55 +2290,58 @@ const BaoCaoApp = (function() {
         currentReportSubmitted = false; currentRejectMessage = "";
     }
 
-    async function loadData() {
+    // [DÁN ĐÈ TOÀN BỘ HÀM LOADDATA DƯỚI ĐÂY]
+    async function loadData(forceCloud = false) {
         clearFormToDefault(); const key = getStorageKey(activeDate); 
-        let lockedBySomeoneElse = null; let lockedByCreator = null; 
-        if (cloudDataCache && cloudDataCache.length > 0) {
-            let cloudRecord = cloudDataCache.find(r => { let dStr = r.jsonData || r.data || r.JsonData; let p = {}; try { p = typeof dStr === 'string' ? JSON.parse(dStr) : dStr; } catch(e){} return (r.ngayTruc === activeDate || r.date === activeDate || p.ngayTruc === activeDate); });
-            if (cloudRecord && currentUserSession) {
-                if (cloudRecord.lockedBy && cloudRecord.lockedBy !== currentUserSession.fullname && cloudRecord.lockedBy !== currentUserSession.username) lockedBySomeoneElse = cloudRecord.lockedBy;
-                let dStr = cloudRecord.jsonData || cloudRecord.data || cloudRecord.JsonData; let p = {}; try { p = typeof dStr === 'string' ? JSON.parse(dStr) : dStr; } catch(e){}
-                let isDraft = !p.isApproved && !p.isSubmitted && !p.rejectMessage;
-                if (isDraft && p.nguoiTao && p.nguoiTao !== currentUserSession.fullname && p.nguoiTao !== currentUserSession.username) lockedByCreator = p.nguoiTao;
+        
+        // Ưu tiên lấy từ bộ nhớ máy (LocalDB)
+        let data = await LocalDB.getItem(key);
+        
+        // Nếu máy không có hoặc được lệnh ép buộc tải từ Cloud
+        if (!data || forceCloud) {
+            const snap = await db.ref('reports/' + activeDate).once('value');
+            if (snap.exists()) {
+                data = snap.val();
+                if (typeof data === 'string') data = JSON.parse(data);
+                data.isSaved = true;
+                await LocalDB.setItem(key, data);
             }
         }
 
-        const data = await LocalDB.getItem(key); let hasData = false; currentReportApproved = false; currentApprovalInfo = {};
+        let hasData = false; currentReportApproved = false; currentApprovalInfo = {};
         if (data) {
-            try { 
-                originalData = JSON.parse(JSON.stringify(data)); hasData = true; 
-                if (data.isApproved) { currentReportApproved = true; currentApprovalInfo = { nguoiDuyet: data.nguoiDuyet, thoiGianDuyet: data.thoiGianDuyet }; }
-                currentReportSubmitted = data.isSubmitted || false; currentRejectMessage = data.rejectMessage || "";
+            originalData = JSON.parse(JSON.stringify(data)); hasData = true;
+            if (data.isSaved === false && !isFormLocked) showToast("Đang hiển thị bản nháp chưa lưu.", "warning");
+            
+            if (data.isApproved) { 
+                currentReportApproved = true; 
+                currentApprovalInfo = { nguoiDuyet: data.nguoiDuyet, thoiGianDuyet: data.thoiGianDuyet }; 
+            }
+            currentReportSubmitted = data.isSubmitted || false;
+            currentRejectMessage = data.rejectMessage || "";
 
-                let isDraftLocal = !currentReportApproved && !currentReportSubmitted && !currentRejectMessage;
-                if (isDraftLocal && data.nguoiTao && currentUserSession && data.nguoiTao !== currentUserSession.fullname && data.nguoiTao !== currentUserSession.username) lockedByCreator = data.nguoiTao;
-
-                const isViewer = currentUserSession && !["admin", "quantri", "editor"].includes(currentUserSession.role);
-                if (isViewer && !currentReportApproved) { showToast("Bạn chỉ có quyền xem các báo cáo đã được PHÊ DUYỆT!", "error"); clearFormToDefault(); applyLockState(true, false); return; }
-
-                if (data.trucLanhDao) { document.getElementById("trucLanhDao").value = data.trucLanhDao; document.getElementById("trucLanhDao").dataset.prevValue = data.trucLanhDao; }
-                if (data.trucChuyenMon) { document.getElementById("trucChuyenMon").value = data.trucChuyenMon; document.getElementById("trucChuyenMon").dataset.prevValue = data.trucChuyenMon; }
-                if (data.trucPhongKham) { document.getElementById("trucPhongKham").value = data.trucPhongKham; document.getElementById("trucPhongKham").dataset.prevValue = data.trucPhongKham; }
-                if (data.trucXetNghiem) { document.getElementById("trucXetNghiem").value = data.trucXetNghiem; document.getElementById("trucXetNghiem").dataset.prevValue = data.trucXetNghiem; }
-                if (data.trucCDHA) { document.getElementById("trucCDHA").value = data.trucCDHA; document.getElementById("trucCDHA").dataset.prevValue = data.trucCDHA; }
-                if (data.trucAnNinh) { document.getElementById("trucAnNinh").value = data.trucAnNinh; document.getElementById("trucAnNinh").dataset.prevValue = data.trucAnNinh; }
-                
-                if (data.nguoiLamBaoCao !== undefined) document.getElementById("nguoiLamBaoCao").value = data.nguoiLamBaoCao; 
-                ["xnHuyetHoc","xnHoaSinh","xnViSinh","xnNuocTieu","xnDongMau","cdhaXquang","cdhaSieuAm","cdhaCT"].forEach(id => { if(data[id] !== undefined) document.getElementById(id).value = data[id]; }); 
-                if (data.tinhTrangThietBi !== undefined) document.getElementById("tinhTrangThietBi").value = data.tinhTrangThietBi; 
-                if (data.benhNhanData) benhNhanData = data.benhNhanData; if (data.ptccRows) ptccRows = data.ptccRows; if (data.vaoVienRows) vaoVienRows = data.vaoVienRows; if (data.chuyenVienRows) chuyenVienRows = data.chuyenVienRows; if (data.raVienRows) raVienRows = data.raVienRows; 
-            } catch (e) {}
+            // Đổ dữ liệu vào UI (Các dòng code đổ dữ liệu cũ của anh giữ nguyên)
+            if (data.trucLanhDao) document.getElementById("trucLanhDao").value = data.trucLanhDao;
+            if (data.trucChuyenMon) document.getElementById("trucChuyenMon").value = data.trucChuyenMon;
+            if (data.trucPhongKham) document.getElementById("trucPhongKham").value = data.trucPhongKham;
+            if (data.trucXetNghiem) document.getElementById("trucXetNghiem").value = data.trucXetNghiem;
+            if (data.trucCDHA) document.getElementById("trucCDHA").value = data.trucCDHA;
+            if (data.trucAnNinh) document.getElementById("trucAnNinh").value = data.trucAnNinh;
+            if (data.nguoiLamBaoCao !== undefined) document.getElementById("nguoiLamBaoCao").value = data.nguoiLamBaoCao; 
+            ["xnHuyetHoc","xnHoaSinh","xnViSinh","xnNuocTieu","xnDongMau","cdhaXquang","cdhaSieuAm","cdhaCT"].forEach(id => { if(data[id] !== undefined) document.getElementById(id).value = data[id]; }); 
+            if (data.tinhTrangThietBi !== undefined) document.getElementById("tinhTrangThietBi").value = data.tinhTrangThietBi; 
+            if (data.benhNhanData) benhNhanData = data.benhNhanData; if (data.ptccRows) ptccRows = data.ptccRows; if (data.vaoVienRows) vaoVienRows = data.vaoVienRows; if (data.chuyenVienRows) chuyenVienRows = data.chuyenVienRows; if (data.raVienRows) raVienRows = data.raVienRows; 
         } else { originalData = null; }
         
-        applyLockState(true, hasData, lockedBySomeoneElse, lockedByCreator);
-        
+        applyLockState(true, hasData);
         initMultiSelect("trucLanhDao", lanhDaoOptions); initMultiSelect("trucChuyenMon", chuyenMonOptions); initMultiSelect("trucPhongKham", chuyenMonOptions); initMultiSelect("trucXetNghiem", xetNghiemOptions); initMultiSelect("trucCDHA", cdhaOptions); initMultiSelect("trucAnNinh", anNinhOptions); 
         tinhTongXetNghiem(); tinhTongCDHA(); renderBangBenhNhan();
-        
         initDynamicTable("tablePTCC", ptccRows, ["hoTen","diaChi","gioVao","chuanDoanTruocMo","chuanDoanSauKetQua","gioPTCC","khoa","actions"], ["gioVao","gioPTCC"], ["khoa"]); 
         initDynamicTable("tableVaoVien", vaoVienRows, ["hoTen","diaChi","gioVao","chuanDoanVao","khoa","actions"], ["gioVao"], ["khoa"]); 
         initDynamicTable("tableChuyenVien", chuyenVienRows, ["hoTen","diaChi","gioVao","khoa","chuanDoanVao","gioChuyen","chuanDoanChuyen","actions"], ["gioVao","gioChuyen"], ["khoa"]); 
         initDynamicTable("tableRaVien", raVienRows, ["hoTen","diaChi","gioVao","khoa","chuanDoanVao","gioRa","chuanDoanRa","actions"], ["gioVao","gioRa"], ["khoa"]);
+
+        if (typeof attachActiveReportListener === "function") attachActiveReportListener(activeDate);
     }
 
     async function loadToView(dateStr) { let cleanD = dateStr.trim().substring(0, 10); activeDate = cleanD; updateDateDisplay(); closeDashboard(); await loadData(); showToast("Đã tải dữ liệu thành công", "success"); }
