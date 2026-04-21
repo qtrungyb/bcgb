@@ -246,7 +246,7 @@
         /* -----------------------------------------
            8. MODALS & POPUPS & TOASTS
         ----------------------------------------- */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.6); display: none; align-items: center; justify-content: center; z-index: 9999; opacity: 0; transition: opacity .2s; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.5);/* Hiệu ứng làm mờ nền đằng sau */ backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 9999; opacity: 0; transition: 0.3s ease; }
         .modal-overlay.show { opacity: 1; }
         
         .modal-box { background: var(--bg-card); padding: 24px; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,.2); transform: translateY(20px); transition: transform .2s; max-height: 90vh; display: flex; flex-direction: column; border: 2px dashed var(--border-color); color: var(--text-main); overflow-y: auto; position: relative; }
@@ -1240,8 +1240,8 @@ function debounce(func, wait) {
 
     function attachActiveReportListener(dateStr) {
         if (!currentUserSession) return;
-        
-        // 1. CHỐNG LOOP: Nếu đang lắng nghe đúng ngày này rồi thì không gắn lại listener nữa
+
+        // CHỐNG LOOP: Nếu đang lắng nghe đúng ngày này rồi thì không gắn lại listener nữa
         if (currentListenerDate === dateStr && activeReportListenerRef) {
             return;
         }
@@ -1250,38 +1250,71 @@ function debounce(func, wait) {
 
         currentListenerDate = dateStr;
         activeReportListenerRef = db.ref('reports/' + dateStr);
-        
-        // 2. CHỐNG LOOP: Cờ đánh dấu lần đầu Firebase kích hoạt
-        let isFirstTrigger = true; 
 
         activeReportListenerRef.on('value', async (snapshot) => {
-            // Bỏ qua lần chạy đầu tiên lúc vừa gắn listener
-            if (isFirstTrigger) {
-                isFirstTrigger = false;
-                return;
+            if (!snapshot.exists()) return;
+
+            const cloudData = snapshot.val();
+
+            // 1. Kiểm tra trạng thái Lock Realtime
+            let lockedBySomeoneElse = null;
+            if (cloudData.lockedBy && cloudData.lockedBy !== currentUserSession.fullname) {
+                lockedBySomeoneElse = cloudData.lockedBy;
             }
 
-            if (snapshot.exists()) {
-                const cloudData = snapshot.val();
-                
-                // Nếu form đang khóa (chỉ xem) và có người khác vừa lưu
-                if (isFormLocked && cloudData.nguoiSua && cloudData.nguoiSua !== currentUserSession.fullname) {
-                    showToast(`Dữ liệu vừa được cập nhật bởi ${cloudData.nguoiSua}. Đang đồng bộ...`, "info");
-                    
-                    // 3. Phải cập nhật LocalDB trước thì loadData mới lấy được dữ liệu mới
+            if (lockedBySomeoneElse) {
+                // Khóa form ngay lập tức nếu có người bắt đầu sửa
+                applyLockState(true, true, lockedBySomeoneElse);
+            } else {
+                // Nếu form đang bị khóa bởi người khác, mà giờ Firebase báo đã mất Lock (Người đó đã Lưu xong)
+                let banner = document.getElementById('statusBanner');
+                let sTitle = document.getElementById('statusTitle');
+                if (banner && banner.style.display === 'flex' && sTitle && sTitle.innerText.includes("ĐANG LÀM")) {
+                    showToast("Báo cáo đã được cập nhật và mở khóa. Đang tải lại...", "info");
+                    // Xóa lock ảo và lưu bản cập nhật vào máy
                     cloudData.isSaved = true;
+                    if(cloudData.lockedBy) delete cloudData.lockedBy;
                     await LocalDB.setItem(getStorageKey(dateStr), cloudData);
-                    
-                    // Tải lại giao diện
-                    await loadData(); 
+                    await loadData(false); // Render lại dữ liệu mới
+                    return; // Đã load lại thì không cần chạy tiếp bên dưới
                 }
-                
-                // Cập nhật trạng thái khóa nếu có người khác đang sửa
-                if (cloudData.lockedBy && cloudData.lockedBy !== currentUserSession.fullname) {
-                    applyLockState(true, true, cloudData.lockedBy);
+            }
+
+            // 2. Cập nhật dữ liệu nếu đang ở chế độ xem và có thay đổi
+            if (isFormLocked && cloudData.nguoiSua && cloudData.nguoiSua !== currentUserSession.fullname && !lockedBySomeoneElse) {
+                let key = getStorageKey(dateStr);
+                let localData = await LocalDB.getItem(key);
+                if (!localData || localData.thoiGianSua !== cloudData.thoiGianSua) {
+                    showToast(`Dữ liệu vừa được cập nhật bởi ${cloudData.nguoiSua}. Đang đồng bộ...`, "info");
+                    cloudData.isSaved = true;
+                    if(cloudData.lockedBy) delete cloudData.lockedBy;
+                    await LocalDB.setItem(key, cloudData);
+                    await loadData();
                 }
             }
         });
+    }
+	async function getRecordForDate(dateStr) {
+        let key = getStorageKey(dateStr);
+        
+        // 1. Ưu tiên lấy từ LocalDB trước để tăng tốc độ
+        let localData = await LocalDB.getItem(key);
+        if (localData && localData.isSaved !== false) {
+            return localData;
+        }
+        
+        // 2. Nếu không có ở máy, fallback tìm trên Firebase Cloud
+        try {
+            const snapshot = await db.ref('reports/' + dateStr).once('value');
+            if (snapshot.exists()) {
+                let cloudData = snapshot.val();
+                return typeof cloudData === 'string' ? JSON.parse(cloudData) : cloudData;
+            }
+        } catch (error) {
+            console.error("Lỗi khi lấy dữ liệu báo cáo cũ:", error);
+        }
+        
+        return null;
     }
 
     async function fetchFromCloudAndRefreshUI(isManual = false) {
@@ -2294,6 +2327,11 @@ function debounce(func, wait) {
     async function loadData(forceCloud = false) {
         clearFormToDefault(); const key = getStorageKey(activeDate); 
         
+        // [SỬA LỖI] 1. Lấy trạng thái khóa (Lock) trực tiếp từ Firebase
+        let liveLockSnap = await db.ref('reports/' + activeDate + '/lockedBy').once('value');
+        let liveLockedBy = liveLockSnap.val();
+        let lockedBySomeoneElse = (liveLockedBy && currentUserSession && liveLockedBy !== currentUserSession.fullname) ? liveLockedBy : null;
+
         // Ưu tiên lấy từ bộ nhớ máy (LocalDB)
         let data = await LocalDB.getItem(key);
         
@@ -2304,6 +2342,8 @@ function debounce(func, wait) {
                 data = snap.val();
                 if (typeof data === 'string') data = JSON.parse(data);
                 data.isSaved = true;
+                // Không lưu lockedBy vào LocalDB để tránh lỗi khóa giả khi mất mạng
+                if (data.lockedBy) delete data.lockedBy;
                 await LocalDB.setItem(key, data);
             }
         }
@@ -2320,7 +2360,6 @@ function debounce(func, wait) {
             currentReportSubmitted = data.isSubmitted || false;
             currentRejectMessage = data.rejectMessage || "";
 
-            // Đổ dữ liệu vào UI (Các dòng code đổ dữ liệu cũ của anh giữ nguyên)
             if (data.trucLanhDao) document.getElementById("trucLanhDao").value = data.trucLanhDao;
             if (data.trucChuyenMon) document.getElementById("trucChuyenMon").value = data.trucChuyenMon;
             if (data.trucPhongKham) document.getElementById("trucPhongKham").value = data.trucPhongKham;
@@ -2333,7 +2372,9 @@ function debounce(func, wait) {
             if (data.benhNhanData) benhNhanData = data.benhNhanData; if (data.ptccRows) ptccRows = data.ptccRows; if (data.vaoVienRows) vaoVienRows = data.vaoVienRows; if (data.chuyenVienRows) chuyenVienRows = data.chuyenVienRows; if (data.raVienRows) raVienRows = data.raVienRows; 
         } else { originalData = null; }
         
-        applyLockState(true, hasData);
+        // [SỬA LỖI] 2. Truyền biến báo khóa vào applyLockState
+        applyLockState(true, hasData, lockedBySomeoneElse);
+        
         initMultiSelect("trucLanhDao", lanhDaoOptions); initMultiSelect("trucChuyenMon", chuyenMonOptions); initMultiSelect("trucPhongKham", chuyenMonOptions); initMultiSelect("trucXetNghiem", xetNghiemOptions); initMultiSelect("trucCDHA", cdhaOptions); initMultiSelect("trucAnNinh", anNinhOptions); 
         tinhTongXetNghiem(); tinhTongCDHA(); renderBangBenhNhan();
         initDynamicTable("tablePTCC", ptccRows, ["hoTen","diaChi","gioVao","chuanDoanTruocMo","chuanDoanSauKetQua","gioPTCC","khoa","actions"], ["gioVao","gioPTCC"], ["khoa"]); 
@@ -2613,7 +2654,35 @@ function debounce(func, wait) {
             }
         });
 
-        document.getElementById("xoaDuLieuBtn").addEventListener("click", () => { promptPassword(`Xác thực để XÓA dữ liệu đang soạn của ngày ${activeDate}`, async function(user) { if (user && ["admin", "quantri", "editor"].includes(user.role)) { const isConfirmed = await openDeleteConfirm(activeDate); if (isConfirmed) { await LocalDB.removeItem(getStorageKey(activeDate)); await loadData(); showToast(`Đã xóa sạch dữ liệu soạn thảo ngày ${activeDate}`, "success"); } } else if (user) { showToast("Tài khoản không có quyền XÓA!", "error"); } }); });
+        document.getElementById("xoaDuLieuBtn").addEventListener("click", () => { 
+            promptPassword(`Xác thực để XÓA TOÀN BỘ dữ liệu của ngày ${activeDate}`, async function(user) { 
+                if (user && ["admin", "quantri", "editor"].includes(user.role)) { 
+                    const isConfirmed = await openDeleteConfirm(activeDate); 
+                    if (isConfirmed) { 
+                        try {
+                            // 1. Xóa hoàn toàn bản ghi và trạng thái khóa trên Firebase (Cloud)
+                            await db.ref('reports/' + activeDate).remove(); 
+                            
+                            // 2. Xóa dữ liệu lưu tạm trên máy (Local)
+                            await LocalDB.removeItem(getStorageKey(activeDate)); 
+                            
+                            // 3. Ghi log hệ thống
+                            logAction(`Đã HỦY/XÓA TOÀN BỘ dữ liệu báo cáo ngày ${activeDate} để làm mới.`);
+                            
+                            // 4. Xóa trắng Form và tải lại trạng thái rỗng
+                            clearFormToDefault();
+                            await loadData(true); 
+                            
+                            showToast(`Đã xóa sạch báo cáo ngày ${activeDate} trên hệ thống. Người khác đã có thể tạo mới!`, "success"); 
+                        } catch (error) {
+                            showToast("Lỗi khi xóa trên hệ thống: " + error.message, "error");
+                        }
+                    } 
+                } else if (user) { 
+                    showToast("Tài khoản không có quyền XÓA!", "error"); 
+                } 
+            }); 
+        });
 
         document.getElementById("chonMauNhanSu").addEventListener("change", function(e) { if (isFormLocked) return; let idx = this.value; if (idx === "") return; let mau = mauNhanSuData[idx]; if (mau) { ["trucLanhDao", "trucChuyenMon", "trucPhongKham", "trucXetNghiem", "trucCDHA", "trucAnNinh"].forEach(id => { let el = document.getElementById(id); let val = ""; if(id === "trucLanhDao") val = mau.lanhDao || ""; if(id === "trucChuyenMon") val = mau.chuyenMon || ""; if(id === "trucPhongKham") val = mau.phongKham || ""; if(id === "trucXetNghiem") val = mau.xetNghiem || mau.chuyenMon || ""; if(id === "trucCDHA") val = mau.cdha || mau.chuyenMon || ""; if(id === "trucAnNinh") val = mau.anNinh || ""; if(el) { el.value = val; el.dataset.prevValue = val; } }); updateSyncStatus('pending'); saveData(false); showToast(`Đã điền nhanh: ${mau.tenMau}`, "success"); } this.value = ""; });
         document.getElementById("chonMauBacSi").addEventListener("change", function(e) { if (isFormLocked) return; let idx = this.value; if (idx === "") return; let mau = mauBacSiData[idx]; if (mau && benhNhanData.length === 7) { if(benhNhanData[0]) benhNhanData[0].bs = mau.ngoai; if(benhNhanData[1]) benhNhanData[1].bs = mau.san; if(benhNhanData[2]) benhNhanData[2].bs = mau.ptgm; if(benhNhanData[3]) benhNhanData[3].bs = mau.mattmh; if(benhNhanData[4]) benhNhanData[4].bs = mau.nhi; if(benhNhanData[5]) benhNhanData[5].bs = mau.noi; if(benhNhanData[6]) benhNhanData[6].bs = mau.yhct; renderBangBenhNhan(); updateSyncStatus('pending'); saveData(false); showToast(`Đã điền nhanh bác sĩ trực: ${mau.tenMau}`, "success"); } this.value = ""; });
