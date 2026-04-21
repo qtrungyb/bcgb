@@ -1646,9 +1646,10 @@ function debounce(func, wait) {
 
         const key = getStorageKey(activeDate);
         let oldData = await LocalDB.getItem(key) || {};
-        let isSavedStatus = false;
+        // Kế thừa trạng thái cũ, tránh bị đè thành false khi đang gõ chữ
+        let isSavedStatus = oldData.isSaved || false; 
         if (isExplicit === true) {
-			isSavedStatus = true; // Chỉ khi bấm nút "Lưu Báo Cáo" mới thành true
+            isSavedStatus = true; // Chỉ khi bấm nút "Lưu Báo Cáo" mới thành true
         }
         
         let nguoiTaoToSave = oldData.nguoiTao; let thoiGianTaoToSave = oldData.thoiGianTao; 
@@ -2267,19 +2268,55 @@ function debounce(func, wait) {
         if (currentReportApproved) { banner.style.display = 'flex'; banner.style.backgroundColor = '#dcfce7'; banner.style.borderColor = '#22c55e'; sTitle.style.color = '#166534'; sInfo.style.color = '#15803d'; sTitle.innerText = "✅ BÁO CÁO ĐÃ ĐƯỢC PHÊ DUYỆT"; sInfo.innerText = `Duyệt bởi: ${currentApprovalInfo.nguoiDuyet || ''} - Lúc: ${currentApprovalInfo.thoiGianDuyet || ''}`; } 
         else if (currentReportSubmitted) { banner.style.display = 'flex'; banner.style.backgroundColor = '#f3e8ff'; banner.style.borderColor = '#a855f7'; sTitle.style.color = '#7e22ce'; sInfo.style.color = '#6b21a8'; sTitle.innerText = "⏳ BÁO CÁO ĐANG CHỜ PHÊ DUYỆT"; sInfo.innerText = "Đã trình duyệt, chờ Lãnh đạo kiểm tra."; } 
         else if (currentRejectMessage) { banner.style.display = 'flex'; banner.style.backgroundColor = '#fee2e2'; banner.style.borderColor = '#ef4444'; sTitle.style.color = '#b91c1c'; sInfo.style.color = '#991b1b'; sTitle.innerText = "❌ BÁO CÁO BỊ TỪ CHỐI PHÊ DUYỆT"; sInfo.innerText = `Lý do: ${currentRejectMessage}`; } 
-        else if (lockedBySomeoneElse || lockedByCreator) { let nguoiKhoa = lockedBySomeoneElse || lockedByCreator; banner.style.display = 'flex'; banner.style.backgroundColor = '#fee2e2'; banner.style.borderColor = '#ef4444'; sTitle.style.color = '#b91c1c'; sInfo.style.color = '#991b1b'; sTitle.innerText = "⚠️ BÁO CÁO ĐANG LÀM"; sInfo.innerText = `Báo cáo đang được làm bởi ${nguoiKhoa}. Bạn không được phép sửa.`; } 
+        else if (lockedBySomeoneElse || lockedByCreator) { 
+            let nguoiKhoa = lockedBySomeoneElse || lockedByCreator; 
+            banner.style.display = 'flex'; banner.style.backgroundColor = '#fee2e2'; banner.style.borderColor = '#ef4444'; sTitle.style.color = '#b91c1c'; sInfo.style.color = '#991b1b'; 
+            sTitle.innerText = "⚠️ BÁO CÁO ĐANG ĐƯỢC LÀM"; 
+            sInfo.innerText = `Báo cáo đang được soạn thảo trực tiếp bởi ${nguoiKhoa}. Bạn chỉ có thể xem.`; 
+        } 
+        else if (!finalLock) {
+            // Hiển thị thông báo ĐANG SOẠN THẢO cho chính người đang làm
+            banner.style.display = 'flex'; banner.style.backgroundColor = '#f0f9ff'; banner.style.borderColor = '#38bdf8'; sTitle.style.color = '#0284c7'; sInfo.style.color = '#0369a1'; 
+            sTitle.innerText = "✏️ ĐANG SOẠN THẢO BẢN NHÁP"; 
+            sInfo.innerText = "Hệ thống đang tự động lưu ngầm. Vui lòng bấm 'Lưu Báo Cáo' khi hoàn tất.";
+        }
+        else if (originalData && originalData.isSaved === false) {
+            // Phân biệt: Người tạo thì thấy Bản nháp, Người khác thì thấy Báo cáo đang làm
+            let isCreatorCheck = (currentUserSession && (originalData.nguoiTao === currentUserSession.fullname || originalData.nguoiTao === currentUserSession.username));
+            
+            if (isCreatorCheck) {
+                banner.style.display = 'flex'; banner.style.backgroundColor = '#f8fafc'; banner.style.borderColor = '#94a3b8'; sTitle.style.color = '#475569'; sInfo.style.color = '#64748b'; 
+                sTitle.innerText = "📝 BẢN NHÁP ĐANG KHÓA"; 
+                sInfo.innerText = "Báo cáo bị khóa để tránh sửa nhầm. Bấm nút 'Sửa báo cáo' ở góc trên bên trái để tiếp tục.";
+            } else {
+                banner.style.display = 'flex'; banner.style.backgroundColor = '#fee2e2'; banner.style.borderColor = '#ef4444'; sTitle.style.color = '#b91c1c'; sInfo.style.color = '#991b1b'; 
+                sTitle.innerText = "⚠️ BÁO CÁO ĐANG ĐƯỢC LÀM"; 
+                sInfo.innerText = `Báo cáo này đang được lập bởi BS. ${originalData.nguoiTao || 'khác'}. Bạn chỉ có thể xem.`;
+            }
+        }
         else { banner.style.display = 'none'; }
 
-        document.getElementById('xoaDuLieuBtn').style.display = (finalLock || currentReportSubmitted) ? 'none' : 'inline-flex'; document.getElementById('luuBtn').style.display = finalLock ? 'none' : 'inline-flex'; document.getElementById('btnTaoMoi').style.display = (finalLock && !hasData && !lockedBySomeoneElse && !lockedByCreator && !isViewer) ? 'inline-flex' : 'none'; 
+        // Hiển thị các nút bấm dựa trên trạng thái
+        document.getElementById('xoaDuLieuBtn').style.display = (finalLock || currentReportSubmitted) ? 'none' : 'inline-flex'; 
+        document.getElementById('luuBtn').style.display = finalLock ? 'none' : 'inline-flex'; 
+        document.getElementById('btnTaoMoi').style.display = (finalLock && !hasData && !lockedBySomeoneElse && !lockedByCreator && !isViewer) ? 'inline-flex' : 'none'; 
         
         let showEditBtn = false;
-        if (hasData) { let isCreator = (originalData && currentUserSession && originalData.nguoiTao === currentUserSession.fullname); let isAdmin = (currentUserSession && currentUserSession.role === 'admin'); if (!currentReportApproved && !currentReportSubmitted && !lockedBySomeoneElse) { if (isCreator || isAdmin) showEditBtn = finalLock; } }
+        if (hasData) { 
+            let isCreator = (originalData && currentUserSession && originalData.nguoiTao === currentUserSession.fullname); 
+            let isAdmin = (currentUserSession && currentUserSession.role === 'admin'); 
+            if (!currentReportApproved && !currentReportSubmitted && !lockedBySomeoneElse) { 
+                if (isCreator || isAdmin) showEditBtn = finalLock; 
+            } 
+        }
         document.getElementById('btnSuaNhanh').style.display = showEditBtn ? 'inline-flex' : 'none';
 
-        const btnExcel = document.getElementById('xuatExcelBtn'); if (btnExcel) btnExcel.style.display = (isMedicalAdmin || isITAdmin) ? 'inline-flex' : 'none';
+        const btnExcel = document.getElementById('xuatExcelBtn'); 
+        if (btnExcel) btnExcel.style.display = (isMedicalAdmin || isITAdmin) ? 'inline-flex' : 'none';
         
         let isOwner = (originalData && currentUserSession && originalData.nguoiTao === currentUserSession.fullname);
-        let btnTrinhDuyet = document.getElementById('btnTrinhDuyet'); if(btnTrinhDuyet) btnTrinhDuyet.style.display = (hasData && !currentReportSubmitted && !currentReportApproved && (!isEditor || !isTimeLocked) && !lockedBySomeoneElse && !lockedByCreator && !isViewer && (isOwner || isITAdmin)) ? 'inline-flex' : 'none';
+        let btnTrinhDuyet = document.getElementById('btnTrinhDuyet'); 
+        if(btnTrinhDuyet) btnTrinhDuyet.style.display = (hasData && !currentReportSubmitted && !currentReportApproved && (!isEditor || !isTimeLocked) && !lockedBySomeoneElse && !lockedByCreator && !isViewer && (isOwner || isITAdmin)) ? 'inline-flex' : 'none';
         
         let btnDuyet = document.getElementById('btnDuyet'); if(btnDuyet) btnDuyet.style.display = (isMedicalAdmin && hasData && currentReportSubmitted && !currentReportApproved) ? 'inline-flex' : 'none';
         let btnTuChoi = document.getElementById('btnTuChoi'); if(btnTuChoi) btnTuChoi.style.display = (isMedicalAdmin && hasData && currentReportSubmitted && !currentReportApproved) ? 'inline-flex' : 'none';
@@ -2372,7 +2409,6 @@ function debounce(func, wait) {
             if (data.benhNhanData) benhNhanData = data.benhNhanData; if (data.ptccRows) ptccRows = data.ptccRows; if (data.vaoVienRows) vaoVienRows = data.vaoVienRows; if (data.chuyenVienRows) chuyenVienRows = data.chuyenVienRows; if (data.raVienRows) raVienRows = data.raVienRows; 
         } else { originalData = null; }
         
-        // [SỬA LỖI] 2. Truyền biến báo khóa vào applyLockState
         applyLockState(true, hasData, lockedBySomeoneElse);
         
         initMultiSelect("trucLanhDao", lanhDaoOptions); initMultiSelect("trucChuyenMon", chuyenMonOptions); initMultiSelect("trucPhongKham", chuyenMonOptions); initMultiSelect("trucXetNghiem", xetNghiemOptions); initMultiSelect("trucCDHA", cdhaOptions); initMultiSelect("trucAnNinh", anNinhOptions); 
@@ -2648,7 +2684,11 @@ function debounce(func, wait) {
                         if (user.role === "editor") { const today = new Date(); today.setHours(0,0,0,0); const targetDate = new Date(activeDate); targetDate.setHours(0,0,0,0); const diffDays = Math.ceil((today - targetDate) / (1000 * 60 * 60 * 24)); if (diffDays > 1 || diffDays < 0) return showToast("Bạn chỉ được tạo báo cáo của Hôm nay hoặc Hôm qua.", "error"); }
                         applyLockState(false, false); thongBaoDangSoan(activeDate, true);
                         let nguoiLamBaoCaoInput = document.getElementById("nguoiLamBaoCao"); if (!nguoiLamBaoCaoInput.value) nguoiLamBaoCaoInput.value = user.fullname;
-                        showToast("Đã tạo mới! Hãy bắt đầu nhập dữ liệu.", "success"); setTimeout(autoFillCus, 500); saveData(false);
+                        showToast("Đã tạo mới! Hãy bắt đầu nhập dữ liệu.", "success");
+                        // Ép lưu ngay lập tức (bỏ qua debounce) để không bị mất khi load lại trang
+                        saveDataCore(false, true).then(() => {
+                            setTimeout(autoFillCus, 500);
+                        });
                     } else if (user) { showToast("Tài khoản không có quyền tạo mới!", "error"); }
                 });
             }
