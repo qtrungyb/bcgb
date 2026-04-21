@@ -800,6 +800,16 @@
         </div>
 		
 		<div id="tab-history" class="tab-content">
+    <div style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: rgba(2, 132, 199, 0.05); padding: 12px; border-radius: 8px; border: 1px dashed var(--primary);">
+        <div style="font-size: 13px; font-weight: 700; color: var(--primary);">
+            <svg class="svg-icon" style="margin-right:5px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg> BỘ LỌC NHẬT KÝ
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <input type="date" id="historyFilterDate" style="padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 13px; outline: none; background: var(--bg-card); color: var(--text-main);">
+            <button class="btn-save-main" style="padding: 6px 16px; font-size: 12px; min-width: auto; margin:0;" onclick="BaoCaoApp.loadHistoryLogs(document.getElementById('historyFilterDate').value)">Xem kết quả</button>
+        </div>
+    </div>
+
     <div id="adminLogControls" style="display:none; margin-bottom: 15px; background: rgba(239, 68, 68, 0.05); padding: 12px; border-radius: 8px; border: 1px dashed var(--danger); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
         <div style="font-size: 13px; font-weight: 700; color: var(--danger);">
             <svg class="svg-icon" style="margin-right:5px;"><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> DỌN DẸP NHẬT KÝ
@@ -809,7 +819,6 @@
                 <option value="1h">1 giờ trước</option>
                 <option value="24h">24 giờ trước</option>
                 <option value="7d">7 ngày trước</option>
-                <option value="4w">4 tuần trước</option>
                 <option value="all">Mọi lúc (Xóa hết)</option>
             </select>
             <button class="btn-clear" style="padding: 6px 12px; font-size: 12px; margin:0;" onclick="handleDeleteLogs()">Xác nhận xóa</button>
@@ -1880,22 +1889,59 @@ function debounce(func, wait) {
         }
     }
 
-    async function loadHistoryLogs() {
-        const tbody = document.getElementById("historyTableBody"); if (!tbody) return;
-        tbody.innerHTML = "<tr><td colspan='3' style='text-align:center; padding: 20px; font-weight: 500;'>Đang tải dữ liệu lịch sử...</td></tr>";
+    async function loadHistoryLogs(filterDate = null) {
+        const tbody = document.getElementById("historyTableBody"); 
+        if (!tbody) return;
+        
+        tbody.innerHTML = "<tr><td colspan='3' style='text-align:center; padding: 20px; font-weight: 500;'>Đang truy xuất nhật ký...</td></tr>";
+        
         try {
-            const snapshot = await db.ref('logs').orderByKey().limitToLast(100).once('value');
+            let query = db.ref('logs').orderByChild('timestamp');
+            let subtitle = "";
+
+            if (filterDate) {
+                // Lọc theo một ngày cụ thể (từ 00:00 đến 23:59)
+                const startOfDay = new Date(filterDate);
+                startOfDay.setHours(0, 0, 0, 0);
+                const endOfDay = new Date(filterDate);
+                endOfDay.setHours(23, 59, 59, 999);
+                
+                query = query.startAt(startOfDay.getTime()).endAt(endOfDay.getTime());
+                subtitle = `Kết quả cho ngày ${filterDate.split('-').reverse().join('/')}`;
+            } else {
+                // Mặc định: Lấy dữ liệu 24 giờ gần đây nhất
+                const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
+                query = query.startAt(oneDayAgo);
+                subtitle = "Hiển thị lịch sử 24 giờ gần đây";
+            }
+
+            const snapshot = await query.once('value');
             if (snapshot.exists()) {
-                const logsObj = snapshot.val(); let logsArr = [];
+                const logsObj = snapshot.val(); 
+                let logsArr = [];
                 for (let key in logsObj) { logsArr.push(logsObj[key]); }
+                
+                // Sắp xếp mới nhất lên đầu
+                logsArr.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                
                 tbody.innerHTML = "";
-                logsArr.reverse().forEach(log => {
+                logsArr.forEach(log => {
                     let tr = document.createElement("tr");
-                    tr.innerHTML = `<td style="white-space: nowrap; font-size: 12px; color: var(--text-muted); text-align: center;">${log.thoiGian || ""}</td><td style="font-weight: 600; color: var(--primary); text-align: left; padding-left: 16px;">${log.taiKhoan || ""}</td><td style="font-size: 13px; line-height: 1.5; text-align: left; padding-left: 16px;">${log.thaoTac || ""}</td>`;
+                    tr.innerHTML = `
+                        <td style="white-space: nowrap; font-size: 12px; color: var(--text-muted); text-align: center;">${log.thoiGian || ""}</td>
+                        <td style="font-weight: 600; color: var(--primary); text-align: left; padding-left: 16px;">${log.taiKhoan || ""}</td>
+                        <td style="font-size: 13px; line-height: 1.5; text-align: left; padding-left: 16px;">${log.thaoTac || ""}</td>
+                    `;
                     tbody.appendChild(tr);
                 });
-            } else { tbody.innerHTML = "<tr><td colspan='3' style='text-align:center; color: var(--text-muted); padding: 20px;'>Chưa có dữ liệu lịch sử.</td></tr>"; }
-        } catch (e) { tbody.innerHTML = "<tr><td colspan='3' style='text-align:center; color: var(--danger); padding: 20px;'>Lỗi tải lịch sử từ Firebase!</td></tr>"; }
+                showToast(subtitle, "info");
+            } else { 
+                tbody.innerHTML = "<tr><td colspan='3' style='text-align:center; color: var(--text-muted); padding: 20px;'>Không tìm thấy nhật ký trong khoảng thời gian này.</td></tr>"; 
+            }
+        } catch (e) { 
+            console.error(e);
+            tbody.innerHTML = "<tr><td colspan='3' style='text-align:center; color: var(--danger); padding: 20px;'>Lỗi tải dữ liệu. Hãy đảm bảo bạn đã đăng nhập quyền Admin!</td></tr>"; 
+        }
     }
 
     function handleDeleteLogs() {
