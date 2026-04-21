@@ -1256,7 +1256,7 @@ function debounce(func, wait) {
 
             const cloudData = snapshot.val();
 
-            // 1. Kiểm tra trạng thái Lock Realtime
+            // 1. Kiểm tra trạng thái Lock Realtime (Có ai đang sửa/lưu không)
             let lockedBySomeoneElse = null;
             if (cloudData.lockedBy && cloudData.lockedBy !== currentUserSession.fullname) {
                 lockedBySomeoneElse = cloudData.lockedBy;
@@ -1265,27 +1265,37 @@ function debounce(func, wait) {
             if (lockedBySomeoneElse) {
                 // Khóa form ngay lập tức nếu có người bắt đầu sửa
                 applyLockState(true, true, lockedBySomeoneElse);
+                
+                // HIỆN THÔNG BÁO (TOAST) CHO TÀI KHOẢN KHÁC
+                if (window.lastLockedUser !== lockedBySomeoneElse) {
+                    showToast(`Báo cáo đang được thao tác/lưu bởi ${lockedBySomeoneElse}`, "warning");
+                    window.lastLockedUser = lockedBySomeoneElse; // Nhớ trạng thái để không bị hiện thông báo liên tục khi họ gõ phím
+                }
             } else {
-                // Nếu form đang bị khóa bởi người khác, mà giờ Firebase báo đã mất Lock (Người đó đã Lưu xong)
+                window.lastLockedUser = null; // Reset trạng thái khi người kia nhả khóa (đã lưu xong)
+
+                // Nếu form đang bị khóa bởi người khác, mà giờ Firebase báo đã mất Lock (Người đó đã bấm Lưu Báo Cáo xong)
                 let banner = document.getElementById('statusBanner');
                 let sTitle = document.getElementById('statusTitle');
                 if (banner && banner.style.display === 'flex' && sTitle && sTitle.innerText.includes("ĐANG LÀM")) {
-                    showToast("Báo cáo đã được cập nhật và mở khóa. Đang tải lại...", "info");
+                    let nguoiSuaCuoi = cloudData.nguoiSua || cloudData.nguoiTao || "Bác sĩ khác";
+                    showToast(`BS. ${nguoiSuaCuoi} vừa lưu xong báo cáo. Đang tải lại dữ liệu mới...`, "success");
+                    
                     // Xóa lock ảo và lưu bản cập nhật vào máy
                     cloudData.isSaved = true;
                     if(cloudData.lockedBy) delete cloudData.lockedBy;
                     await LocalDB.setItem(getStorageKey(dateStr), cloudData);
-                    await loadData(false); // Render lại dữ liệu mới
-                    return; // Đã load lại thì không cần chạy tiếp bên dưới
+                    await loadData(false); // Render lại dữ liệu mới cho người đang xem
+                    return; 
                 }
             }
 
-            // 2. Cập nhật dữ liệu nếu đang ở chế độ xem và có thay đổi
+            // 2. Cập nhật dữ liệu nếu đang ở chế độ xem và có thay đổi mới được lưu
             if (isFormLocked && cloudData.nguoiSua && cloudData.nguoiSua !== currentUserSession.fullname && !lockedBySomeoneElse) {
                 let key = getStorageKey(dateStr);
                 let localData = await LocalDB.getItem(key);
                 if (!localData || localData.thoiGianSua !== cloudData.thoiGianSua) {
-                    showToast(`Dữ liệu vừa được cập nhật bởi ${cloudData.nguoiSua}. Đang đồng bộ...`, "info");
+                    showToast(`Báo cáo vừa được lưu cập nhật bởi BS. ${cloudData.nguoiSua}`, "info");
                     cloudData.isSaved = true;
                     if(cloudData.lockedBy) delete cloudData.lockedBy;
                     await LocalDB.setItem(key, cloudData);
@@ -1787,7 +1797,21 @@ function debounce(func, wait) {
                     if (lyDo) {
                         try {
                             let btn = document.getElementById('btnTuChoi'); if(btn) { btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg> Đang xử lý...`; btn.disabled = true; }
-                            currentReportApproved = false; currentReportSubmitted = false; currentRejectMessage = lyDo; currentApprovalInfo = {}; await saveReportAll(true, true); logAction(`Đã TỪ CHỐI báo cáo ngày ${activeDate}. Lý do: ${lyDo}`); showToast("❌ Đã trả lại báo cáo cho người lập!", "success");
+                            
+                            // Xử lý viết hoa chữ cái đầu câu cho lý do từ chối
+                            let formattedLyDo = lyDo.trim();
+                            formattedLyDo = formattedLyDo.charAt(0).toUpperCase() + formattedLyDo.slice(1);
+                            
+                            currentReportApproved = false; 
+                            currentReportSubmitted = false; 
+                            currentRejectMessage = formattedLyDo; 
+                            currentApprovalInfo = {}; 
+                            
+                            // Việc gọi saveReportAll(true, true) sẽ tự động cập nhật nguoiSua và thoiGianSua là người vừa từ chối
+                            await saveReportAll(true, true); 
+                            
+                            logAction(`Đã TỪ CHỐI báo cáo ngày ${activeDate}. Lý do: ${formattedLyDo}`); 
+                            showToast("❌ Đã trả lại báo cáo cho người lập!", "success");
                         } catch(e) { showToast("Lỗi khi từ chối: " + e.message, "error"); } finally { let btn = document.getElementById('btnTuChoi'); if(btn) { btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Từ Chối`; btn.disabled = false; } }
                     }
                 });
@@ -2264,37 +2288,92 @@ function debounce(func, wait) {
         document.querySelectorAll('.report-card input:not(#searchReport), .report-card select, .report-card textarea').forEach(el => el.disabled = finalLock);
         document.querySelectorAll('.add-row-btn:not([onclick^="fetchFrom"]), .remove-row-btn, .quick-fill-btn').forEach(btn => btn.style.display = finalLock ? 'none' : 'inline-flex');
         
-        const banner = document.getElementById('statusBanner'); const sTitle = document.getElementById('statusTitle'); const sInfo = document.getElementById('statusInfo');
-        if (currentReportApproved) { banner.style.display = 'flex'; banner.style.backgroundColor = '#dcfce7'; banner.style.borderColor = '#22c55e'; sTitle.style.color = '#166534'; sInfo.style.color = '#15803d'; sTitle.innerText = "✅ BÁO CÁO ĐÃ ĐƯỢC PHÊ DUYỆT"; sInfo.innerText = `Duyệt bởi: ${currentApprovalInfo.nguoiDuyet || ''} - Lúc: ${currentApprovalInfo.thoiGianDuyet || ''}`; } 
-        else if (currentReportSubmitted) { banner.style.display = 'flex'; banner.style.backgroundColor = '#f3e8ff'; banner.style.borderColor = '#a855f7'; sTitle.style.color = '#7e22ce'; sInfo.style.color = '#6b21a8'; sTitle.innerText = "⏳ BÁO CÁO ĐANG CHỜ PHÊ DUYỆT"; sInfo.innerText = "Đã trình duyệt, chờ Lãnh đạo kiểm tra."; } 
-        else if (currentRejectMessage) { banner.style.display = 'flex'; banner.style.backgroundColor = '#fee2e2'; banner.style.borderColor = '#ef4444'; sTitle.style.color = '#b91c1c'; sInfo.style.color = '#991b1b'; sTitle.innerText = "❌ BÁO CÁO BỊ TỪ CHỐI PHÊ DUYỆT"; sInfo.innerText = `Lý do: ${currentRejectMessage}`; } 
-        else if (lockedBySomeoneElse || lockedByCreator) { 
-            let nguoiKhoa = lockedBySomeoneElse || lockedByCreator; 
+        const banner = document.getElementById('statusBanner'); 
+        const sTitle = document.getElementById('statusTitle'); 
+        const sInfo = document.getElementById('statusInfo');
+        
+        if (currentReportApproved) { 
+            banner.style.display = 'flex'; banner.style.backgroundColor = '#dcfce7'; banner.style.borderColor = '#22c55e'; sTitle.style.color = '#166534'; sInfo.style.color = '#15803d'; 
+            sTitle.innerText = "✅ BÁO CÁO ĐÃ ĐƯỢC PHÊ DUYỆT"; 
+            sInfo.innerText = `Duyệt bởi: ${currentApprovalInfo.nguoiDuyet || ''} - Lúc: ${currentApprovalInfo.thoiGianDuyet || ''}`; 
+        } 
+        else if (currentReportSubmitted) { 
+            // Banner màu Tím: BÁO CÁO ĐANG CHỜ PHÊ DUYỆT
+            banner.style.display = 'flex'; banner.style.backgroundColor = '#f3e8ff'; banner.style.borderColor = '#a855f7'; sTitle.style.color = '#7e22ce'; sInfo.style.color = '#6b21a8'; 
+            sTitle.innerText = "⏳ BÁO CÁO ĐANG CHỜ PHÊ DUYỆT"; 
+            
+            // Lấy tên người trình duyệt và thời gian từ dữ liệu chỉnh sửa mới nhất
+            const submitter = originalData?.nguoiSua || originalData?.nguoiTao || "Bác sĩ";
+            const submitTime = originalData?.thoiGianSua || originalData?.thoiGianTao || "";
+            
+            sInfo.innerHTML = `Báo cáo đã được ${submitter} trình duyệt lúc ${submitTime}`; 
+        } 
+        else if (currentRejectMessage) { 
+            // Banner màu Đỏ: BÁO CÁO BỊ TỪ CHỐI PHÊ DUYỆT
             banner.style.display = 'flex'; banner.style.backgroundColor = '#fee2e2'; banner.style.borderColor = '#ef4444'; sTitle.style.color = '#b91c1c'; sInfo.style.color = '#991b1b'; 
-            sTitle.innerText = "⚠️ BÁO CÁO ĐANG ĐƯỢC LÀM"; 
-            sInfo.innerText = `Báo cáo đang được soạn thảo trực tiếp bởi ${nguoiKhoa}. Bạn chỉ có thể xem.`; 
+            sTitle.innerText = "❌ BÁO CÁO BỊ TỪ CHỐI PHÊ DUYỆT"; 
+            
+            // Tự động viết hoa chữ cái đầu cho lý do khi hiển thị
+            let formattedReason = currentRejectMessage.charAt(0).toUpperCase() + currentRejectMessage.slice(1);
+            const rejecter = originalData?.nguoiSua || "Lãnh đạo";
+            const rejectTime = originalData?.thoiGianSua || "";
+            
+            sInfo.innerHTML = `Lý do: ${formattedReason}<br>Từ chối bởi: ${rejecter} - Lúc: ${rejectTime}`; 
+        }
+        else if (lockedBySomeoneElse) { 
+            // [TÍNH NĂNG MỚI] Banner màu Cam/Vàng nổi bật khi có người khác đang sửa hoặc lưu
+            banner.style.display = 'flex'; banner.style.backgroundColor = '#fffbeb'; banner.style.borderColor = '#f59e0b'; sTitle.style.color = '#d97706'; sInfo.style.color = '#b45309'; 
+            sTitle.innerText = "ĐANG THAO TÁC"; 
+            sInfo.innerText = `Báo cáo đang được ${lockedBySomeoneElse} cập nhật. Bạn tạm thời chỉ có thể xem.`; 
+        } 
+        else if (lockedByCreator) { 
+            banner.style.display = 'flex'; banner.style.backgroundColor = '#fee2e2'; banner.style.borderColor = '#ef4444'; sTitle.style.color = '#b91c1c'; sInfo.style.color = '#991b1b'; 
+            sTitle.innerText = "BÁO CÁO ĐANG ĐƯỢC LÀM"; 
+            sInfo.innerText = `Báo cáo đang được soạn thảo bởi ${lockedByCreator}. Bạn chỉ có thể xem.`; 
         } 
         else if (!finalLock) {
-            // Hiển thị thông báo ĐANG SOẠN THẢO cho chính người đang làm
             banner.style.display = 'flex'; banner.style.backgroundColor = '#f0f9ff'; banner.style.borderColor = '#38bdf8'; sTitle.style.color = '#0284c7'; sInfo.style.color = '#0369a1'; 
-            sTitle.innerText = "✏️ ĐANG SOẠN THẢO BẢN NHÁP"; 
-            sInfo.innerText = "Hệ thống đang tự động lưu ngầm. Vui lòng bấm 'Lưu Báo Cáo' khi hoàn tất.";
+            sTitle.innerText = "ĐANG SOẠN THẢO BẢN NHÁP"; 
+            sInfo.innerText = "Vui lòng bấm 'Lưu Báo Cáo' khi hoàn tất.";
         }
         else if (originalData && originalData.isSaved === false) {
-            // Phân biệt: Người tạo thì thấy Bản nháp, Người khác thì thấy Báo cáo đang làm
             let isCreatorCheck = (currentUserSession && (originalData.nguoiTao === currentUserSession.fullname || originalData.nguoiTao === currentUserSession.username));
-            
             if (isCreatorCheck) {
                 banner.style.display = 'flex'; banner.style.backgroundColor = '#f8fafc'; banner.style.borderColor = '#94a3b8'; sTitle.style.color = '#475569'; sInfo.style.color = '#64748b'; 
-                sTitle.innerText = "📝 BẢN NHÁP ĐANG KHÓA"; 
-                sInfo.innerText = "Báo cáo bị khóa để tránh sửa nhầm. Bấm nút 'Sửa báo cáo' ở góc trên bên trái để tiếp tục.";
+                sTitle.innerText = "ĐANG KHÓA BÁO CÁO"; 
+                sInfo.innerText = "Bấm 'Sửa báo cáo' để tiếp tục.";
             } else {
-                banner.style.display = 'flex'; banner.style.backgroundColor = '#fee2e2'; banner.style.borderColor = '#ef4444'; sTitle.style.color = '#b91c1c'; sInfo.style.color = '#991b1b'; 
-                sTitle.innerText = "⚠️ BÁO CÁO ĐANG ĐƯỢC LÀM"; 
-                sInfo.innerText = `Báo cáo này đang được lập bởi BS. ${originalData.nguoiTao || 'khác'}. Bạn chỉ có thể xem.`;
+                banner.style.display = 'flex'; banner.style.backgroundColor = '#fffbeb'; banner.style.borderColor = '#f59e0b'; sTitle.style.color = '#d97706'; sInfo.style.color = '#b45309'; 
+                sTitle.innerText = "BÁO CÁO ĐANG ĐƯỢC LÀM"; 
+                sInfo.innerText = `Báo cáo đang được lập bởi ${originalData.nguoiTao || 'khác'}. Bạn chỉ có thể xem.`;
             }
         }
-        else { banner.style.display = 'none'; }
+        else if (originalData && originalData.isSaved === true) {
+            // Xác định xem người đang xem có phải là người tạo/sửa báo cáo hay không
+            const session = currentUserSession || {};
+            const isOwner = (originalData.nguoiTao === session.fullname || originalData.nguoiTao === session.username);
+            const editorName = originalData.nguoiSua || originalData.nguoiTao || "Bác sĩ khác";
+
+            if (isOwner) {
+                // HIỂN THỊ CHO BS A (NGƯỜI LẬP): Banner màu xanh dương
+                banner.style.display = 'flex'; 
+                banner.style.backgroundColor = '#e0f2fe'; 
+                banner.style.borderColor = '#38bdf8'; 
+                sTitle.style.color = '#0284c7'; 
+                sInfo.style.color = '#0369a1'; 
+                sTitle.innerText = "📋 ĐÃ LƯU THÀNH CÔNG"; 
+                sInfo.innerText = "Báo cáo đã được lưu. Vui lòng kiểm tra lại và Trình duyệt.";
+            } else {
+                // HIỂN THỊ CHO BS B (NGƯỜI XEM): Banner màu xanh lá dịu
+                banner.style.display = 'flex'; 
+                banner.style.backgroundColor = '#e0f2fe'; 
+                banner.style.borderColor = '#38bdf8'; 
+                sTitle.style.color = '#0284c7'; 
+                sInfo.style.color = '#0369a1'; 
+                sTitle.innerText = "📋 BÁO CÁO ĐÃ ĐƯỢC LƯU"; 
+                sInfo.innerText = `Báo cáo này đã được lưu/cập nhật bởi BS. ${editorName}.`;
+            }
+        }
 
         // Hiển thị các nút bấm dựa trên trạng thái
         document.getElementById('xoaDuLieuBtn').style.display = (finalLock || currentReportSubmitted) ? 'none' : 'inline-flex'; 
@@ -2361,33 +2440,31 @@ function debounce(func, wait) {
     }
 
     // [DÁN ĐÈ TOÀN BỘ HÀM LOADDATA DƯỚI ĐÂY]
+    // [ĐÃ TỐI ƯU TỐC ĐỘ] Tách luồng mạng (Network) ra khỏi luồng vẽ giao diện (UI)
     async function loadData(forceCloud = false) {
-        clearFormToDefault(); const key = getStorageKey(activeDate); 
-        
-        // [SỬA LỖI] 1. Lấy trạng thái khóa (Lock) trực tiếp từ Firebase
-        let liveLockSnap = await db.ref('reports/' + activeDate + '/lockedBy').once('value');
-        let liveLockedBy = liveLockSnap.val();
-        let lockedBySomeoneElse = (liveLockedBy && currentUserSession && liveLockedBy !== currentUserSession.fullname) ? liveLockedBy : null;
+        clearFormToDefault(); 
+        const key = getStorageKey(activeDate); 
 
-        // Ưu tiên lấy từ bộ nhớ máy (LocalDB)
+        // 1. Lấy dữ liệu ngay lập tức từ ổ cứng (LocalDB) - Cực nhanh
         let data = await LocalDB.getItem(key);
         
-        // Nếu máy không có hoặc được lệnh ép buộc tải từ Cloud
-        if (!data || forceCloud) {
-            const snap = await db.ref('reports/' + activeDate).once('value');
-            if (snap.exists()) {
-                data = snap.val();
-                if (typeof data === 'string') data = JSON.parse(data);
-                data.isSaved = true;
-                // Không lưu lockedBy vào LocalDB để tránh lỗi khóa giả khi mất mạng
-                if (data.lockedBy) delete data.lockedBy;
-                await LocalDB.setItem(key, data);
+        // 2. Nếu máy chưa có, tìm nhanh trên bộ nhớ RAM (cloudDataCache)
+        if (!data && !forceCloud && cloudDataCache && cloudDataCache.length > 0) {
+            const cached = cloudDataCache.find(r => r.ngayTruc === activeDate);
+            if (cached) {
+                let dStr = cached.jsonData || cached.data;
+                data = typeof dStr === 'string' ? JSON.parse(dStr) : dStr;
             }
         }
 
-        let hasData = false; currentReportApproved = false; currentApprovalInfo = {};
+        // --- RENDER GIAO DIỆN NGAY LẬP TỨC (OPTIMISTIC RENDER) ---
+        let hasData = false; 
+        currentReportApproved = false; 
+        currentApprovalInfo = {};
+
         if (data) {
-            originalData = JSON.parse(JSON.stringify(data)); hasData = true;
+            originalData = JSON.parse(JSON.stringify(data)); 
+            hasData = true;
             if (data.isSaved === false && !isFormLocked) showToast("Đang hiển thị bản nháp chưa lưu.", "warning");
             
             if (data.isApproved) { 
@@ -2406,10 +2483,17 @@ function debounce(func, wait) {
             if (data.nguoiLamBaoCao !== undefined) document.getElementById("nguoiLamBaoCao").value = data.nguoiLamBaoCao; 
             ["xnHuyetHoc","xnHoaSinh","xnViSinh","xnNuocTieu","xnDongMau","cdhaXquang","cdhaSieuAm","cdhaCT"].forEach(id => { if(data[id] !== undefined) document.getElementById(id).value = data[id]; }); 
             if (data.tinhTrangThietBi !== undefined) document.getElementById("tinhTrangThietBi").value = data.tinhTrangThietBi; 
-            if (data.benhNhanData) benhNhanData = data.benhNhanData; if (data.ptccRows) ptccRows = data.ptccRows; if (data.vaoVienRows) vaoVienRows = data.vaoVienRows; if (data.chuyenVienRows) chuyenVienRows = data.chuyenVienRows; if (data.raVienRows) raVienRows = data.raVienRows; 
-        } else { originalData = null; }
+            if (data.benhNhanData) benhNhanData = data.benhNhanData; 
+            if (data.ptccRows) ptccRows = data.ptccRows; 
+            if (data.vaoVienRows) vaoVienRows = data.vaoVienRows; 
+            if (data.chuyenVienRows) chuyenVienRows = data.chuyenVienRows; 
+            if (data.raVienRows) raVienRows = data.raVienRows; 
+        } else { 
+            originalData = null; 
+        }
         
-        applyLockState(true, hasData, lockedBySomeoneElse);
+        // Tạm thời áp dụng Lock dựa trên dữ liệu local
+        applyLockState(true, hasData, null);
         
         initMultiSelect("trucLanhDao", lanhDaoOptions); initMultiSelect("trucChuyenMon", chuyenMonOptions); initMultiSelect("trucPhongKham", chuyenMonOptions); initMultiSelect("trucXetNghiem", xetNghiemOptions); initMultiSelect("trucCDHA", cdhaOptions); initMultiSelect("trucAnNinh", anNinhOptions); 
         tinhTongXetNghiem(); tinhTongCDHA(); renderBangBenhNhan();
@@ -2418,23 +2502,43 @@ function debounce(func, wait) {
         initDynamicTable("tableChuyenVien", chuyenVienRows, ["hoTen","diaChi","gioVao","khoa","chuanDoanVao","gioChuyen","chuanDoanChuyen","actions"], ["gioVao","gioChuyen"], ["khoa"]); 
         initDynamicTable("tableRaVien", raVienRows, ["hoTen","diaChi","gioVao","khoa","chuanDoanVao","gioRa","chuanDoanRa","actions"], ["gioVao","gioRa"], ["khoa"]);
 
+        // --- CHẠY NGẦM (BACKGROUND): KHÔNG CHẶN GIAO DIỆN MƯỢT MÀ ---
+        
+        // Kích hoạt Realtime Listener ngay (nó sẽ tự xử lý Lock nếu có người khác đang sửa)
         if (typeof attachActiveReportListener === "function") attachActiveReportListener(activeDate);
-    }
 
-    async function loadToView(dateStr) { let cleanD = dateStr.trim().substring(0, 10); activeDate = cleanD; updateDateDisplay(); closeDashboard(); await loadData(); showToast("Đã tải dữ liệu thành công", "success"); }
-    
-    async function loadToEdit(dateStr) { 
-        let cleanD = dateStr.trim().substring(0, 10); activeDate = cleanD; updateDateDisplay(); closeDashboard(); await loadData(); 
-        setTimeout(() => { 
-            let isOwner = (originalData && currentUserSession && (originalData.nguoiTao === currentUserSession.fullname || originalData.nguoiTao === currentUserSession.username)); let isAdmin = (currentUserSession && currentUserSession.role === 'admin'); let isRejected = originalData && !!originalData.rejectMessage;
-            if (currentReportApproved) { showToast("Báo cáo đã phê duyệt. Không thể sửa!", "error"); applyLockState(true, true); } 
-            else if (currentReportSubmitted) { showToast("Báo cáo đang chờ duyệt. Không thể sửa!", "error"); applyLockState(true, true); } 
-            else if (!isOwner && !isAdmin) {
-                if (isRejected) showToast(`Bảo mật: Báo cáo bị từ chối. Chỉ người tạo (BS. ${originalData.nguoiTao || 'khác'}) mới có quyền sửa!`, "error");
-                else showToast("Bảo mật: Bạn không phải người tạo báo cáo này. Từ chối quyền sửa!", "error");
-                applyLockState(true, true); 
-            } else { applyLockState(false, true); }
-        }, 150); 
+        if (!data || forceCloud) {
+            // Nếu không có dữ liệu local hoặc bị ép tải, fetch ngầm từ Firebase
+            db.ref('reports/' + activeDate).once('value').then(async (snap) => {
+                if (snap.exists()) {
+                    let cloudData = snap.val();
+                    if (typeof cloudData === 'string') cloudData = JSON.parse(cloudData);
+                    cloudData.isSaved = true;
+                    
+                    let lockedBySomeoneElse = (cloudData.lockedBy && currentUserSession && cloudData.lockedBy !== currentUserSession.fullname) ? cloudData.lockedBy : null;
+                    if (cloudData.lockedBy) delete cloudData.lockedBy; // Xóa trước khi lưu Local
+                    
+                    await LocalDB.setItem(key, cloudData);
+                    
+                    // Nếu lúc này giao diện đang trống, render lại chính thức
+                    if (!data || forceCloud) {
+                        await loadData(false); 
+                    } else {
+                        // Cập nhật lại UI thông báo nếu có người đang khóa
+                        applyLockState(isFormLocked, true, lockedBySomeoneElse);
+                    }
+                }
+            }).catch(e => console.error("Lỗi đồng bộ ngầm: ", e));
+        } else {
+            // Check ngầm riêng lẻ trường hợp có người đang Lock
+            db.ref('reports/' + activeDate + '/lockedBy').once('value').then(liveLockSnap => {
+                let liveLockedBy = liveLockSnap.val();
+                let lockedBySomeoneElse = (liveLockedBy && currentUserSession && liveLockedBy !== currentUserSession.fullname) ? liveLockedBy : null;
+                if (lockedBySomeoneElse) {
+                    applyLockState(true, true, lockedBySomeoneElse);
+                }
+            });
+        }
     }
 
     async function loadFromCloudToView(trueDate) { 
