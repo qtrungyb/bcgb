@@ -422,7 +422,16 @@
 			border: 1px solid rgba(255, 255, 255, 0.8) !important;
 			box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05) !important;
 		}
-	
+		.status-banner {
+    display: none; flex-direction: column; align-items: center; justify-content: center; 
+    gap: 6px; padding: 16px; border-radius: 8px; border: 2px dashed; 
+    margin-bottom: 32px; max-width: 600px; margin-left: auto; margin-right: auto;
+}
+.banner-approved { background-color: #dcfce7; border-color: #22c55e; color: #166534; }
+.banner-submitted { background-color: #f3e8ff; border-color: #a855f7; color: #7e22ce; }
+.banner-rejected { background-color: #fee2e2; border-color: #ef4444; color: #b91c1c; }
+.banner-editing { background-color: #fffbeb; border-color: #f59e0b; color: #d97706; }
+.banner-draft { background-color: #f0f9ff; border-color: #38bdf8; color: #0284c7; }
     </style>
 </head>
 <body>
@@ -1203,46 +1212,64 @@ function debounce(func, wait) {
     // [DÁN VÀO THAY THẾ Ở PHẦN 4. DATABASE SERVICES]
 
     async function fetchCloudDataBackground() {
-        if (!currentUserSession) return;
-        try {
-            if (backgroundReportsRef) backgroundReportsRef.off();
-            backgroundReportsRef = db.ref('reports').orderByKey().limitToLast(30);
+    if (!currentUserSession) return;
+    try {
+        if (backgroundReportsRef) backgroundReportsRef.off();
+        backgroundReportsRef = db.ref('reports').orderByKey().limitToLast(30);
+        
+        // Chỉ nhận đúng bản ghi có sự thay đổi
+        backgroundReportsRef.on('child_added', processCloudNode);
+        backgroundReportsRef.on('child_changed', processCloudNode);
+        backgroundReportsRef.on('child_removed', (snapshot) => {
+            cloudDataCache = cloudDataCache.filter(r => r.ngayTruc !== snapshot.key);
+            if (document.getElementById('dashboardModal').classList.contains('show')) renderDashboard();
+            updateCalendarCache();
+        });
+    } catch(e) { console.error("Lỗi khi tải dữ liệu nền:", e); }
+}
+
+// Tách logic xử lý riêng cho từng Node
+async function processCloudNode(snapshot) {
+    if (!snapshot.exists()) return;
+    
+    let row = { ngayTruc: snapshot.key, jsonData: snapshot.val() };
+    
+    // 1. Cập nhật vào Cache bộ nhớ tạm
+    let cacheIndex = cloudDataCache.findIndex(r => r.ngayTruc === row.ngayTruc);
+    if (cacheIndex > -1) cloudDataCache[cacheIndex] = row;
+    else cloudDataCache.push(row);
+
+    // 2. Đồng bộ xuống IndexedDB (Local)
+    try {
+        let dataObj = typeof row.jsonData === 'string' ? JSON.parse(row.jsonData) : row.jsonData;
+        let dateKey = row.ngayTruc;
+        let key = getStorageKey(dateKey);
+        let localSaved = await LocalDB.getItem(key);
+        let isDraft = localSaved && localSaved.isSaved === false;
+        let isEditingCurrent = (dateKey === activeDate && !isFormLocked);
+        
+        if (!isDraft && !isEditingCurrent) {
+            dataObj.isSaved = true; 
+            // Xóa khóa ảo trước khi lưu vào local để không bị kẹt UI
+            if(dataObj.lockedBy) delete dataObj.lockedBy;
+            await LocalDB.setItem(key, dataObj);
             
-            backgroundReportsRef.on('value', async (snapshot) => {
-                let newData = [];
-                if (snapshot.exists()) {
-                    snapshot.forEach((childSnapshot) => {
-                        newData.push({ ngayTruc: childSnapshot.key, jsonData: childSnapshot.val() });
-                    });
-                }
-                
-                cloudDataCache = newData;
-                let needReloadCurrent = false;
+            // Nếu người dùng đang mở đúng ngày này ở chế độ XEM, render lại ngay
+            if (dateKey === activeDate && isFormLocked) {
+                await loadData(false);
+            }
+        }
+    } catch(ex) { console.error("Lỗi đồng bộ ngầm node:", ex); }
 
-                for (let row of newData) {
-                    try {
-                        // CHỐNG LỖI: Tự động chuyển đổi nếu dữ liệu cũ lưu dạng String
-                        let dataObj = typeof row.jsonData === 'string' ? JSON.parse(row.jsonData) : row.jsonData;
-                        let dateKey = row.ngayTruc;
-                        let key = getStorageKey(dateKey);
-                        let localSaved = await LocalDB.getItem(key);
-                        let isDraft = localSaved && localSaved.isSaved === false;
-                        let isEditingCurrent = (dateKey === activeDate && !isFormLocked);
-                        
-                        if (!isDraft && !isEditingCurrent) {
-                            dataObj.isSaved = true; 
-                            await LocalDB.setItem(key, dataObj);
-                            if (dateKey === activeDate && isFormLocked) needReloadCurrent = true;
-                        }
-                    } catch(ex) { console.error("Lỗi đồng bộ ngầm:", ex); }
-                }
-
-                if (needReloadCurrent) await loadData();
-                if (document.getElementById('dashboardModal').classList.contains('show')) await renderDashboard(); 
-                await renderCalendar(); 
-            });
-        } catch(e) { console.error("Lỗi khi tải dữ liệu nền:", e); }
+    // 3. Cập nhật giao diện nếu đang mở Dashboard
+    if (document.getElementById('dashboardModal').classList.contains('show')) {
+        renderDashboard();
     }
+    // Cập nhật dấu chấm đỏ (có dữ liệu) trên Lịch
+    await updateCalendarCache();
+    const cal = document.getElementById("customCalendar");
+    if (cal && cal.style.display !== "none") renderCalendar();
+}
 
     // Thêm biến này để theo dõi ngày đang bám sát
     let currentListenerDate = null; 
@@ -2271,10 +2298,39 @@ function debounce(func, wait) {
                 let tr = document.createElement("tr"); let sttTd = document.createElement("td"); sttTd.textContent = idx+1; sttTd.style.textAlign = "center"; tr.appendChild(sttTd);
                 columnsConfig.forEach(col => {
                     if (col === "actions") {
-                        let td = document.createElement("td"); let btn = document.createElement("button"); btn.innerHTML = `<svg class="svg-icon"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Xóa`; btn.className = "remove-row-btn"; btn.style.display = isFormLocked ? 'none' : 'inline-flex';
-                        btn.addEventListener("click", () => { if(isFormLocked) return; let tenBN = defaultRows[idx].hoTen || "Chưa có tên"; logAction(`Xóa bệnh nhân "${tenBN}" khỏi danh sách ${tableId}`); defaultRows.splice(idx, 1); renderRows(); updateSyncStatus('pending'); saveData(false); });
-                        td.appendChild(btn); tr.appendChild(td);
-                    } else {
+    let td = document.createElement("td"); let btn = document.createElement("button"); btn.innerHTML = `<svg class="svg-icon"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Xóa`; btn.className = "remove-row-btn"; btn.style.display = isFormLocked ? 'none' : 'inline-flex';
+    
+    btn.addEventListener("click", function(e) { 
+        if(isFormLocked) return; 
+        
+        const rowToRemove = e.currentTarget.closest('tr');
+        if (!rowToRemove) return;
+        
+        // Xác định vị trí index thực tế hiện tại của thẻ tr trong bảng 
+        // (để tránh lỗi tham chiếu chéo khi không render lại toàn bộ bảng)
+        const currentIdx = Array.from(tbody.children).indexOf(rowToRemove);
+        
+        let tenBN = defaultRows[currentIdx].hoTen || "Chưa có tên"; 
+        logAction(`Xóa bệnh nhân "${tenBN}" khỏi danh sách ${tableId}`); 
+        
+        // Xóa khỏi data array
+        defaultRows.splice(currentIdx, 1); 
+        
+        // Cập nhật DOM: Xóa node hiện tại
+        rowToRemove.remove();
+        
+        // Cập nhật lại cột STT cho các dòng còn lại
+        const rows = tbody.querySelectorAll('tr');
+        rows.forEach((row, i) => {
+            row.cells[0].textContent = i + 1;
+        });
+
+        updateSyncStatus('pending'); 
+        saveData(false); 
+    });
+    
+    td.appendChild(btn); tr.appendChild(td);
+} else {
                         let td = document.createElement("td");
                         if (selectColumns.includes(col)) {
                             let input = document.createElement("select"); input.className = "table-select"; input.disabled = isFormLocked; const options = col === "khoa" ? khoaOptions : []; 
@@ -2335,6 +2391,16 @@ function debounce(func, wait) {
         document.querySelectorAll('.add-row-btn:not([onclick^="fetchFrom"]), .remove-row-btn, .quick-fill-btn').forEach(btn => btn.style.display = finalLock ? 'none' : 'inline-flex');
         
         const banner = document.getElementById('statusBanner'); 
+		banner.className = 'status-banner'; // Reset class
+		if (currentReportApproved) { 
+    banner.classList.add('banner-approved');
+    banner.style.display = 'flex';
+    // ... set text ...
+} else if (currentReportSubmitted) {
+    banner.classList.add('banner-submitted');
+    banner.style.display = 'flex';
+    // ... set text ...
+}
         const sTitle = document.getElementById('statusTitle'); 
         const sInfo = document.getElementById('statusInfo');
         
@@ -2419,6 +2485,10 @@ function debounce(func, wait) {
                 sTitle.innerText = "📋 BÁO CÁO ĐÃ ĐƯỢC LƯU"; 
                 sInfo.innerText = `Báo cáo này đã được lưu/cập nhật bởi BS. ${editorName}.`;
             }
+        }
+        // 👇 THÊM ĐOẠN ELSE NÀY VÀO 👇
+        else {
+            banner.style.display = 'none';
         }
 
         // Hiển thị các nút bấm dựa trên trạng thái
