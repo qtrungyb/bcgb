@@ -1207,6 +1207,17 @@ body.dark-mode #bangBenhNhan td:first-child {
                     </div>
                 </div>
                 <div class="chart-container-box" style="grid-column: 1 / -1;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px dashed var(--border-color);">
+                        <div style="font-size: 13px; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 6px;">
+                            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M18 20V10"></path><path d="M12 20V4"></path><path d="M6 20v-6"></path></svg>
+                            TÌNH HÌNH BỆNH NHÂN VÀO / RA
+                        </div>
+                        <select id="barChartRange" onchange="BaoCaoApp.switchTab('chart')" style="padding: 6px 12px; border: 1px dashed rgba(100,116,139,.35); border-radius: 6px; font-size: 13px; font-weight: 600; background: transparent; color: var(--text-main); outline: none; cursor: pointer; transition: all .2s;">
+                            <option value="7">7 ngày gần nhất</option>
+                            <option value="15">15 ngày gần nhất</option>
+                            <option value="30">30 ngày gần nhất</option>
+                        </select>
+                    </div>
                     <div style="position: relative; height: 250px; width: 100%;">
                         <canvas id="barChart"></canvas>
                     </div>
@@ -2408,101 +2419,95 @@ const BaoCaoApp = (function() {
     function updateDateDisplay() { let parts = activeDate.split("-"); document.getElementById("ngayTrucDisplay").textContent = `${parts[2]}/${parts[1]}/${parts[0]}`; }
 
     async function renderChart() {
-    const allRecords = await getCombinedRecords(); 
-    const uniqueMap = new Map(); 
-    allRecords.forEach(r => uniqueMap.set(r.date, r));
-    let records = Array.from(uniqueMap.values()).sort((a, b) => new Date(a.date) - new Date(b.date));
-    let monthVal = document.getElementById("monthFilter") ? document.getElementById("monthFilter").value : "all";
-    
-    if(monthVal !== "all") records = records.filter(r => r.date.startsWith(monthVal)); else records = records.slice(-15);
-    if(records.length === 0) return;
-    
-    const labels = records.map(r => r.date.split('-').reverse().slice(0,2).join('/')); 
-    const dataHienCo = records.map(r => r.hienCo);
-    const isDark = document.body.classList.contains('dark-mode'); 
-    const textColor = isDark ? '#e2e8f0' : '#334155'; 
-    const gridColor = isDark ? '#334155' : '#e2e8f0';
-    
-    // XÓA ĐOẠN NÀY:
-    // if(trendChartInstance) trendChartInstance.destroy(); if(doughnutChartInstance) doughnutChartInstance.destroy(); if(barChartInstance) barChartInstance.destroy();
-    
-    // ==========================================
-    // 1. TỐI ƯU TREND CHART (Biểu đồ đường)
-    // ==========================================
-    if (trendChartInstance) {
-        // Chỉ cập nhật dữ liệu nếu biểu đồ đã tồn tại
-        trendChartInstance.data.labels = labels;
-        trendChartInstance.data.datasets[0].data = dataHienCo;
-        trendChartInstance.options.scales.x.grid.color = gridColor;
-        trendChartInstance.options.scales.x.ticks.color = textColor;
-        trendChartInstance.options.scales.y.grid.color = gridColor;
-        trendChartInstance.options.scales.y.ticks.color = textColor;
-        trendChartInstance.options.plugins.title.color = textColor;
-        trendChartInstance.options.plugins.datalabels.color = textColor;
-        trendChartInstance.update();
-    } else {
-        // Khởi tạo lần đầu
-        trendChartInstance = new Chart(document.getElementById('trendChart').getContext('2d'), { 
-            type: 'line', 
-            data: { labels: labels, datasets: [{ data: dataHienCo, borderColor: '#0284c7', backgroundColor: 'rgba(2, 132, 199, 0.2)', borderWidth: 3, fill: true, tension: 0.3 }] }, plugins: [ChartDataLabels],
-            options: { responsive: true, maintainAspectRatio: false, layout: { padding: { top: 25, bottom: 10 } }, plugins: { datalabels: { align: 'top', color: textColor, font: { weight: 'bold', family: "'Inter', sans-serif", size: 12 }, formatter: (value) => value > 0 ? value : '' }, title: { display: true, text: 'Tổng bệnh nhân trong 15 ngày', position: 'bottom', color: textColor, font: {family: "'Inter', sans-serif", size: 14}, padding: { top: 10 } }, legend: { display: false }, tooltip: { displayColors: false, callbacks: { label: function(context) { return context.parsed.y; } } } }, scales: { x: { grid: { color: gridColor }, ticks: { color: textColor } }, y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor } } } } 
-        });
-    }
-
-    // ==========================================
-    // 2. TỐI ƯU DOUGHNUT CHART (Biểu đồ tròn)
-    // ==========================================
-    const latestRecord = records[records.length - 1];
-    if(latestRecord && latestRecord.khoaStats) {
-        const dLabels = Object.keys(latestRecord.khoaStats);
-        const dData = Object.values(latestRecord.khoaStats);
-
-        if (doughnutChartInstance) {
-            doughnutChartInstance.data.labels = dLabels;
-            doughnutChartInstance.data.datasets[0].data = dData;
-            doughnutChartInstance.options.plugins.title.color = textColor;
-            doughnutChartInstance.options.plugins.legend.labels.color = textColor;
-            doughnutChartInstance.update();
+        const allRecords = await getCombinedRecords(); 
+        const uniqueMap = new Map(); 
+        allRecords.forEach(r => uniqueMap.set(r.date, r));
+        let records = Array.from(uniqueMap.values()).sort((a, b) => new Date(a.date) - new Date(b.date));
+        let monthVal = document.getElementById("monthFilter") ? document.getElementById("monthFilter").value : "all";
+        
+        if(monthVal !== "all") records = records.filter(r => r.date.startsWith(monthVal)); else records = records.slice(-15);
+        if(records.length === 0) return;
+        
+        const labels = records.map(r => r.date.split('-').reverse().slice(0,2).join('/')); 
+        const dataHienCo = records.map(r => r.hienCo);
+        const isDark = document.body.classList.contains('dark-mode'); 
+        const textColor = isDark ? '#e2e8f0' : '#334155'; 
+        const gridColor = isDark ? '#334155' : '#e2e8f0';
+        
+        // 1. TỐI ƯU TREND CHART (Biểu đồ đường)
+        if (trendChartInstance) {
+            trendChartInstance.data.labels = labels;
+            trendChartInstance.data.datasets[0].data = dataHienCo;
+            trendChartInstance.options.scales.x.grid.color = gridColor;
+            trendChartInstance.options.scales.x.ticks.color = textColor;
+            trendChartInstance.options.scales.y.grid.color = gridColor;
+            trendChartInstance.options.scales.y.ticks.color = textColor;
+            trendChartInstance.options.plugins.title.color = textColor;
+            trendChartInstance.options.plugins.datalabels.color = textColor;
+            trendChartInstance.update();
         } else {
-            doughnutChartInstance = new Chart(document.getElementById('doughnutChart').getContext('2d'), { 
-                type: 'doughnut', 
-                data: { labels: dLabels, datasets: [{ data: dData, backgroundColor: ['#0284c7', '#16a34a', '#eab308', '#ef4444', '#8b5cf6', '#f97316', '#06b6d4'] }] }, plugins: [ChartDataLabels],
-                options: { responsive: true, maintainAspectRatio: false, layout: { padding: { bottom: 10 } }, plugins: { datalabels: { color: '#fff', font: { weight: 'bold', family: "'Inter', sans-serif", size: 12 }, formatter: (value) => value > 0 ? value : '' }, title: { display: true, text: 'Tỷ lệ hiện có tại các khoa', position: 'bottom', color: textColor, font: {family: "'Inter', sans-serif", size: 14}, padding: { top: 10 } }, legend: { position: 'right', labels: { color: textColor, font: {family: "'Inter', sans-serif"} } } } } 
+            trendChartInstance = new Chart(document.getElementById('trendChart').getContext('2d'), { 
+                type: 'line', 
+                data: { labels: labels, datasets: [{ data: dataHienCo, borderColor: '#0284c7', backgroundColor: 'rgba(2, 132, 199, 0.2)', borderWidth: 3, fill: true, tension: 0.3 }] }, plugins: [ChartDataLabels],
+                options: { responsive: true, maintainAspectRatio: false, layout: { padding: { top: 25, bottom: 10 } }, plugins: { datalabels: { align: 'top', color: textColor, font: { weight: 'bold', family: "'Inter', sans-serif", size: 12 }, formatter: (value) => value > 0 ? value : '' }, title: { display: true, text: 'Tổng bệnh nhân trong 15 ngày', position: 'bottom', color: textColor, font: {family: "'Inter', sans-serif", size: 14}, padding: { top: 10 } }, legend: { display: false }, tooltip: { displayColors: false, callbacks: { label: function(context) { return context.parsed.y; } } } }, scales: { x: { grid: { color: gridColor }, ticks: { color: textColor } }, y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor } } } } 
             });
         }
-    }
 
-    // ==========================================
-    // 3. TỐI ƯU BAR CHART (Biểu đồ cột)
-    // ==========================================
-    let last7Records = Array.from(uniqueMap.values()).sort((a, b) => new Date(a.date) - new Date(b.date)).slice(-7);
-    const labels7 = last7Records.map(r => r.date.split('-').reverse().slice(0,2).join('/')); 
-    const dataVao = last7Records.map(r => r.tongVao); 
-    const dataRa = last7Records.map(r => r.tongRa);
-    const barChartCanvas = document.getElementById('barChart');
-    
-    if (barChartCanvas) {
-        if (barChartInstance) {
-            barChartInstance.data.labels = labels7;
-            barChartInstance.data.datasets[0].data = dataVao;
-            barChartInstance.data.datasets[1].data = dataRa;
-            barChartInstance.options.scales.x.grid.color = gridColor;
-            barChartInstance.options.scales.x.ticks.color = textColor;
-            barChartInstance.options.scales.y.grid.color = gridColor;
-            barChartInstance.options.scales.y.ticks.color = textColor;
-            barChartInstance.options.plugins.title.color = textColor;
-            barChartInstance.options.plugins.legend.labels.color = textColor;
-            barChartInstance.options.plugins.datalabels.color = textColor;
-            barChartInstance.update();
-        } else {
-            barChartInstance = new Chart(barChartCanvas.getContext('2d'), {
-                type: 'bar', 
-                data: { labels: labels7, datasets: [{ label: 'Vào viện', data: dataVao, backgroundColor: '#16a34a', borderRadius: 4 }, { label: 'Ra viện', data: dataRa, backgroundColor: '#ef4444', borderRadius: 4 }] }, plugins: [ChartDataLabels],
-                options: { responsive: true, maintainAspectRatio: false, layout: { padding: { top: 25, bottom: 10 } }, plugins: { datalabels: { anchor: 'end', align: 'top', color: textColor, font: { weight: 'bold', family: "'Inter', sans-serif", size: 11 }, formatter: (value) => value > 0 ? value : '' }, title: { display: true, text: 'Bệnh nhân vào/ra trong 7 ngày', position: 'bottom', color: textColor, font: {family: "'Inter', sans-serif", size: 14}, padding: { top: 10 } }, legend: { position: 'top', labels: { color: textColor, font: {family: "'Inter', sans-serif"} } } }, scales: { x: { grid: { color: gridColor }, ticks: { color: textColor } }, y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor } } } }
-            });
+        // 2. TỐI ƯU DOUGHNUT CHART (Biểu đồ tròn)
+        const latestRecord = records[records.length - 1];
+        if(latestRecord && latestRecord.khoaStats) {
+            const dLabels = Object.keys(latestRecord.khoaStats);
+            const dData = Object.values(latestRecord.khoaStats);
+
+            if (doughnutChartInstance) {
+                doughnutChartInstance.data.labels = dLabels;
+                doughnutChartInstance.data.datasets[0].data = dData;
+                doughnutChartInstance.options.plugins.title.color = textColor;
+                doughnutChartInstance.options.plugins.legend.labels.color = textColor;
+                doughnutChartInstance.update();
+            } else {
+                doughnutChartInstance = new Chart(document.getElementById('doughnutChart').getContext('2d'), { 
+                    type: 'doughnut', 
+                    data: { labels: dLabels, datasets: [{ data: dData, backgroundColor: ['#0284c7', '#16a34a', '#eab308', '#ef4444', '#8b5cf6', '#f97316', '#06b6d4'] }] }, plugins: [ChartDataLabels],
+                    options: { responsive: true, maintainAspectRatio: false, layout: { padding: { bottom: 10 } }, plugins: { datalabels: { color: '#fff', font: { weight: 'bold', family: "'Inter', sans-serif", size: 12 }, formatter: (value) => value > 0 ? value : '' }, title: { display: true, text: 'Tỷ lệ hiện có tại các khoa', position: 'bottom', color: textColor, font: {family: "'Inter', sans-serif", size: 14}, padding: { top: 10 } }, legend: { position: 'right', labels: { color: textColor, font: {family: "'Inter', sans-serif"} } } } } 
+                });
+            }
+        }
+
+        // 3. TỐI ƯU BAR CHART (Biểu đồ cột)
+        const barRangeSelect = document.getElementById('barChartRange');
+        const barRange = barRangeSelect ? parseInt(barRangeSelect.value) : 7; // Lấy giá trị filter, mặc định 7
+        
+        let lastRecords = Array.from(uniqueMap.values()).sort((a, b) => new Date(a.date) - new Date(b.date)).slice(-barRange);
+        const labelsBar = lastRecords.map(r => r.date.split('-').reverse().slice(0,2).join('/')); 
+        const dataVao = lastRecords.map(r => r.tongVao); 
+        const dataRa = lastRecords.map(r => r.tongRa);
+        const barChartCanvas = document.getElementById('barChart');
+        const barChartTitle = `Bệnh nhân vào/ra trong ${barRange} ngày`;
+        
+        if (barChartCanvas) {
+            if (barChartInstance) {
+                barChartInstance.data.labels = labelsBar;
+                barChartInstance.data.datasets[0].data = dataVao;
+                barChartInstance.data.datasets[1].data = dataRa;
+                barChartInstance.options.scales.x.grid.color = gridColor;
+                barChartInstance.options.scales.x.ticks.color = textColor;
+                barChartInstance.options.scales.y.grid.color = gridColor;
+                barChartInstance.options.scales.y.ticks.color = textColor;
+                barChartInstance.options.plugins.title.color = textColor;
+                barChartInstance.options.plugins.title.text = barChartTitle;
+                barChartInstance.options.plugins.legend.labels.color = textColor;
+                barChartInstance.options.plugins.datalabels.color = textColor;
+                barChartInstance.update();
+            } else {
+                barChartInstance = new Chart(barChartCanvas.getContext('2d'), {
+                    type: 'bar', 
+                    data: { labels: labelsBar, datasets: [{ label: 'Vào viện', data: dataVao, backgroundColor: '#16a34a', borderRadius: 4 }, { label: 'Ra viện', data: dataRa, backgroundColor: '#ef4444', borderRadius: 4 }] }, plugins: [ChartDataLabels],
+                    options: { responsive: true, maintainAspectRatio: false, layout: { padding: { top: 25, bottom: 10 } }, plugins: { datalabels: { anchor: 'end', align: 'top', color: textColor, font: { weight: 'bold', family: "'Inter', sans-serif", size: 11 }, formatter: (value) => value > 0 ? value : '' }, title: { display: true, text: barChartTitle, position: 'bottom', color: textColor, font: {family: "'Inter', sans-serif", size: 14}, padding: { top: 10 } }, legend: { position: 'top', labels: { color: textColor, font: {family: "'Inter', sans-serif"} } } }, scales: { x: { grid: { color: gridColor }, ticks: { color: textColor } }, y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor } } } }
+                });
+            }
         }
     }
-}
 
     async function renderDashboard() {
         const allRecords = await getCombinedRecords();
@@ -2622,6 +2627,9 @@ const BaoCaoApp = (function() {
         let html = "";
         let tong = { cu:0, vaoHC:0, vaoTruc:0, ra:0, chuyenDi:0, chuyenDen:0, chuyenVien:0, xinVe:0, tronVien:0, tuVongNgoaiTru:0, tuVongNoiTru:0, ptCapCuu:0, vaoSang:0, raSang:0, hienCo:0, duKienRa:0, giuongKH:0 };
 
+        // Thêm object map tên cột để ghi log đẹp hơn
+        const bnColNames = { cu: "Bệnh nhân Cũ", vaoHC: "Vào Hành chính", vaoTruc: "Vào Trực", vaoSang: "Vào Sáng", ra: "Ra viện", raSang: "Ra Sáng", xinVe: "Xin về", tronVien: "Trốn viện", chuyenVien: "Chuyển viện", chuyenDen: "Chuyển đến", chuyenDi: "Chuyển đi", tuVongNgoaiTru: "Tử vong Ngoại trú", tuVongNoiTru: "Tử vong Nội trú", ptCapCuu: "PT Cấp cứu", duKienRa: "Dự kiến ra" };
+
         benhNhanData.forEach((row, idx) => {
             const { hienCo, tyLe } = tinhHienCoVaTyLe(row);
             
@@ -2638,17 +2646,21 @@ const BaoCaoApp = (function() {
             const hienCoStyle = hienCo < 0 ? `color:var(--danger);font-weight:bold;` : `color:var(--primary);font-weight:bold;`;
             const hienCoText = hienCo < 0 ? `⚠ ${f0(hienCo)}` : f0(hienCo);
 
-            const getNumInput = (field, val) => `<input type="number" class="table-input-compact num-input" data-idx="${idx}" data-field="${field}" list="numberOptions" value="${f0(val)}" ${isFormLocked ? 'disabled' : ''}>`;
+            // Gắn thêm data-audit vào input số
+            const getNumInput = (field, val) => `<input type="number" class="table-input-compact num-input" data-idx="${idx}" data-field="${field}" data-audit="[Khoa ${row.khoa}] cột ${bnColNames[field] || field}" list="numberOptions" value="${f0(val)}" ${isFormLocked ? 'disabled' : ''}>`;
 
+            // Tách ô BS ra biến riêng và gắn data-audit
+            const bsInput = `<input type="text" class="table-input-compact bs-input" list="bacSiList" data-idx="${idx}" data-audit="[Khoa ${row.khoa}] Bác sĩ trực" value="${row.bs || ''}" ${isFormLocked ? 'disabled' : ''}>`;
+
+            // Gắn thêm data-audit vào ô Giường Kế hoạch
             const giuongKHCell = (isGiuongKHUnlocked && !isFormLocked)
-                ? `<input type="number" class="table-input-compact gkh-input" data-idx="${idx}" value="${f0(row.giuongKH)}" min="0" style="color:var(--danger);">`
+                ? `<input type="number" class="table-input-compact gkh-input" data-idx="${idx}" data-audit="[Khoa ${row.khoa}] Giường Kế hoạch" value="${f0(row.giuongKH)}" min="0" style="color:var(--danger);">`
                 : f0(row.giuongKH);
 
+            // Render HTML đã thay thế chuỗi cứng bằng biến bsInput
             html += `<tr class="${rowClass}">
                 <td>${khoaText}</td>
-                <td class="group-divider">
-                    <input type="text" class="table-input-compact bs-input" list="bacSiList" data-idx="${idx}" value="${row.bs || ''}" ${isFormLocked ? 'disabled' : ''}>
-                </td>
+                <td class="group-divider">${bsInput}</td>
                 <td class="group-divider">${getNumInput('cu', row.cu)}</td>
                 <td>${getNumInput('vaoHC', row.vaoHC)}</td>
                 <td>${getNumInput('vaoTruc', row.vaoTruc)}</td>
@@ -2701,6 +2713,12 @@ const BaoCaoApp = (function() {
 
         window[`render_${tableId}`] = function() {
             let html = "";
+            
+            // --- THÊM PHẦN NÀY: Khởi tạo Map để dịch tên bảng và tên cột sang tiếng Việt cho Log ---
+            let tNameMap = { "tablePTCC": "PTCC", "tableVaoVien": "Vào viện", "tableChuyenVien": "Chuyển viện", "tableRaVien": "Ra viện" };
+            let colMap = { "hoTen": "Họ tên", "diaChi": "Địa chỉ", "gioVao": "Giờ vào", "chuanDoanTruocMo": "CĐ trước mổ", "chuanDoanSauKetQua": "CĐ sau mổ & KQ", "gioPTCC": "Giờ PTCC", "khoa": "Khoa", "chuanDoanVao": "Chẩn đoán lúc vào", "gioChuyen": "Giờ chuyển", "chuanDoanChuyen": "Chẩn đoán lúc chuyển", "gioRa": "Giờ ra", "chuanDoanRa": "Chẩn đoán lúc ra" };
+            // ----------------------------------------------------------------------------------------
+
             defaultRows.forEach((row, idx) => {
                 html += `<tr><td style="text-align:center;">${idx + 1}</td>`;
                 columnsConfig.forEach(col => {
@@ -2712,13 +2730,21 @@ const BaoCaoApp = (function() {
                         </td>`;
                     } else {
                         html += `<td>`;
+                        
+                        // --- TẠO SẴN CHUỖI AUDIT ---
+                        let auditName = `[Bảng ${tNameMap[tableId] || tableId}] BN số ${idx + 1} - cột ${colMap[col] || col}`;
+                        // ---------------------------
+
                         if (selectColumns.includes(col)) {
                             let optionsHtml = (col === "khoa" ? khoaOptions : []).map(opt => {
                                 let val = opt === "-- Chọn --" ? "" : opt;
                                 let selected = row[col] === val ? "selected" : "";
                                 return `<option value="${val}" ${selected}>${opt}</option>`;
                             }).join("");
-                            html += `<select class="table-select dyn-select" data-table="${tableId}" data-idx="${idx}" data-col="${col}" ${isFormLocked ? 'disabled' : ''}>${optionsHtml}</select>`;
+                            
+                            // Gắn data-audit vào thẻ <select>
+                            html += `<select class="table-select dyn-select" data-table="${tableId}" data-idx="${idx}" data-col="${col}" data-audit="${auditName}" ${isFormLocked ? 'disabled' : ''}>${optionsHtml}</select>`;
+                        
                         } else if (datetimeColumns.includes(col)) {
                             let timeVal = "", dateVal = activeDate;
                             if (!row[col]) {
@@ -2729,13 +2755,18 @@ const BaoCaoApp = (function() {
                                 let parts = row[col].split(" ");
                                 if (parts.length === 2) { timeVal = parts[0]; dateVal = parts[1]; }
                             }
+                            
+                            // Gắn data-audit vào thẻ <input> time và date
                             html += `<div class="datetime-container">
-                                <input type="time" class="dyn-time" data-table="${tableId}" data-idx="${idx}" data-col="${col}" value="${timeVal}" ${isFormLocked ? 'disabled' : ''}>
-                                <input type="date" class="dyn-date" data-table="${tableId}" data-idx="${idx}" data-col="${col}" value="${dateVal}" ${isFormLocked ? 'disabled' : ''}>
+                                <input type="time" class="dyn-time" data-table="${tableId}" data-idx="${idx}" data-col="${col}" data-audit="${auditName}" value="${timeVal}" ${isFormLocked ? 'disabled' : ''}>
+                                <input type="date" class="dyn-date" data-table="${tableId}" data-idx="${idx}" data-col="${col}" data-audit="${auditName}" value="${dateVal}" ${isFormLocked ? 'disabled' : ''}>
                             </div>`;
+                        
                         } else {
                             let textAlign = leftAlignCols.includes(col) ? "left" : "center";
-                            html += `<textarea class="clean-input dyn-textarea" rows="1" data-table="${tableId}" data-idx="${idx}" data-col="${col}" style="text-align:${textAlign};" ${isFormLocked ? 'disabled' : ''}>${row[col] || ""}</textarea>`;
+                            
+                            // Gắn data-audit vào thẻ <textarea>
+                            html += `<textarea class="clean-input dyn-textarea" rows="1" data-table="${tableId}" data-idx="${idx}" data-col="${col}" data-audit="${auditName}" style="text-align:${textAlign};" ${isFormLocked ? 'disabled' : ''}>${row[col] || ""}</textarea>`;
                         }
                         html += `</td>`;
                     }
@@ -3399,6 +3430,12 @@ const BaoCaoApp = (function() {
         document.getElementById('passwordInput').addEventListener("keypress", function(e) { if (e.key === "Enter") { e.preventDefault(); closePasswordModal(true); } });
         document.getElementById('modalInput').addEventListener("keypress", function(e) { if (e.key === "Enter") { e.preventDefault(); closeModal(true); } });
         document.getElementById("searchReport").addEventListener("input", filterReports);
+		const barChartRangeEl = document.getElementById("barChartRange");
+        if (barChartRangeEl) {
+            barChartRangeEl.addEventListener("change", async () => {
+                await renderChart();
+            });
+        }
 
         const nguoiLamBaoCaoInput = document.getElementById("nguoiLamBaoCao"); 
         if (nguoiLamBaoCaoInput) { 
@@ -3423,13 +3460,16 @@ const BaoCaoApp = (function() {
         const datalist = document.getElementById('numberOptions'); 
         for (let i = 0; i <= 100; i++) { let opt = document.createElement('option'); opt.value = i; datalist.appendChild(opt); }
         
-        // 1. Tự động tính tổng và LƯU cho các ô Cận lâm sàng
+        // 1. Tự động tính tổng cho các ô Cận lâm sàng (Chỉ tính toán, KHÔNG LƯU khi đang gõ)
         ["xnHuyetHoc","xnHoaSinh","xnViSinh","xnNuocTieu","xnDongMau","cdhaXquang","cdhaSieuAm","cdhaCT"].forEach(id => {
             const el = document.getElementById(id);
             if (el) {
                 el.addEventListener("input", () => {
                     tinhTongXetNghiem(); 
                     tinhTongCDHA();
+                });
+                // CHỈ LƯU khi đã gõ xong và chuyển sang ô khác (change)
+                el.addEventListener("change", () => {
                     if (!isFormLocked) { updateSyncStatus('pending'); saveData(false); }
                 });
             }
@@ -3438,7 +3478,8 @@ const BaoCaoApp = (function() {
         // 2. Tự động LƯU cho ô Ghi chú Trang thiết bị
         const txtThietBi = document.getElementById("tinhTrangThietBi");
         if (txtThietBi) {
-            txtThietBi.addEventListener("input", () => {
+            // Khi đang gõ: không làm gì ngoài việc co giãn chiều cao (đã làm ở Bước 1)
+            txtThietBi.addEventListener("change", () => {
                 if (!isFormLocked) { updateSyncStatus('pending'); saveData(false); }
             });
         }
@@ -3459,10 +3500,8 @@ const BaoCaoApp = (function() {
                     let newVal = target.value === "" ? 0 : parseFloat(target.value);
                     if (isNaN(newVal) || newVal < 0) newVal = 0;
                     row[field] = newVal;
-                    updateSyncStatus('pending');
-                    saveData(false);
+                    // ĐÃ XÓA saveData ở đây
                 } else if (target.classList.contains('bs-input')) {
-                    // Tự động viết hoa Bác sĩ trực ngay khi gõ
                     let val = target.value;
                     let start = target.selectionStart;
                     val = val.replace(/(?:^|\s)\S/g, a => a.toUpperCase());
@@ -3473,15 +3512,13 @@ const BaoCaoApp = (function() {
                     }
                     row.bs = target.value;
                     target.classList.remove('error-highlight');
-                    updateSyncStatus('pending');
-                    saveData(false);
+                    // ĐÃ XÓA saveData ở đây
                 } else if (target.classList.contains('gkh-input')) {
                     let newVal = target.value === "" ? 0 : parseFloat(target.value);
                     if (isNaN(newVal) || newVal < 0) newVal = 0;
                     row.giuongKH = newVal;
                     giuongKHMau[idx] = newVal;
-                    updateSyncStatus('pending');
-                    saveData(false);
+                    // ĐÃ XÓA saveData ở đây
                 }
             });
             // ... (Phần change bên dưới giữ nguyên) ...
@@ -3612,7 +3649,6 @@ document.getElementById("footBenhNhan").innerHTML = `<tr>
                     let val = target.value;
                     let start = target.selectionStart;
                     
-                    // Xử lý viết hoa tức thì
                     if (val.length > 0) {
                         if (col === 'hoTen') {
                             val = val.replace(/(?:^|\s)\S/g, a => a.toUpperCase());
@@ -3621,19 +3657,19 @@ document.getElementById("footBenhNhan").innerHTML = `<tr>
                         }
                     }
                     
-                    // Cập nhật lại giá trị và giữ nguyên con trỏ chuột
                     if (target.value !== val) {
                         target.value = val;
                         target.setSelectionRange(start, start);
                     }
 
                     dataArray[idx][col] = target.value;
+                    
                     requestAnimationFrame(() => {
-						target.style.height = 'auto';
-						target.style.height = target.scrollHeight + 'px';
-					});
-                    updateSyncStatus('pending');
-                    saveData(false);
+                        target.style.height = 'auto';
+                        target.style.height = target.scrollHeight + 'px';
+                    });
+                    
+                    // ĐÃ XÓA saveData ở đây
                     
                     if (diagnosisCols.includes(col)) showAutocomplete(target, commonDiagnoses, dataArray[idx], col);
                     if (col === "diaChi") showAutocomplete(target, commonAddresses, dataArray[idx], col);
@@ -3698,42 +3734,41 @@ document.getElementById("footBenhNhan").innerHTML = `<tr>
         }
 
         // Realtime Audit Trail
-        document.addEventListener('focusin', function(e) { if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) e.target.dataset.oldVal = e.target.value || ""; });
+        // Realtime Audit Trail (Đã tối ưu O(1) Access)
+        document.addEventListener('focusin', function(e) { 
+            if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) {
+                e.target.dataset.oldVal = e.target.value || ""; 
+            }
+        });
+
         document.addEventListener('change', function(e) {
             if (isFormLocked || !activeDate) return;
             let el = e.target; 
             if (!['INPUT', 'SELECT', 'TEXTAREA'].includes(el.tagName)) return;
             
-            // Đẩy tác vụ quét DOM và ghi log xuống cuối hàng đợi
-            setTimeout(() => {
-                let oldVal = el.dataset.oldVal || ""; 
-                let newVal = el.value || ""; 
-                if (oldVal === newVal) return;
-                
-                let printOld = oldVal.trim() === "" ? "(trống)" : oldVal; 
-                let printNew = newVal.trim() === "" ? "(trống)" : newVal;
-                if (printOld.length > 50) printOld = printOld.substring(0, 50) + "..."; 
-                if (printNew.length > 50) printNew = printNew.substring(0, 50) + "...";
-                
-                let fieldDetail = el.id || el.name || "dữ liệu";
+            let oldVal = el.dataset.oldVal || ""; 
+            let newVal = el.value || ""; 
+            if (oldVal === newVal) return;
+            
+            let printOld = oldVal.trim() === "" ? "(trống)" : oldVal; 
+            let printNew = newVal.trim() === "" ? "(trống)" : newVal;
+            if (printOld.length > 50) printOld = printOld.substring(0, 50) + "..."; 
+            if (printNew.length > 50) printNew = printNew.substring(0, 50) + "...";
+            
+            // Đọc trực tiếp ngữ cảnh đã được nhúng sẵn (Không cần DOM Traversal)
+            let fieldDetail = el.getAttribute('data-audit');
+            
+            // Fallback cho các input độc lập nằm ngoài bảng (Trực lãnh đạo, Tình trạng thiết bị...)
+            if (!fieldDetail) {
                 const mapId = { "trucLanhDao": "Trực Lãnh Đạo", "trucChuyenMon": "Trực Chuyên Môn", "trucPhongKham": "Trực Phòng Khám", "trucXetNghiem": "Trực Xét Nghiệm", "trucCDHA": "Trực CĐHA", "trucAnNinh": "Trực An Ninh", "xnHuyetHoc": "XN Huyết học", "xnHoaSinh": "XN Hóa sinh", "xnViSinh": "XN Vi sinh", "xnNuocTieu": "XN Nước tiểu", "xnDongMau": "XN Đông máu", "cdhaXquang": "CĐHA Xquang", "cdhaSieuAm": "CĐHA Siêu âm", "cdhaCT": "CĐHA CT-Scanner", "tinhTrangThietBi": "Tình trạng thiết bị", "nguoiLamBaoCao": "Người làm báo cáo" };
-                if (mapId[el.id]) fieldDetail = mapId[el.id];
-                else {
-                    let closestTr = el.closest('tr'); let closestTable = el.closest('table');
-                    if (closestTable) {
-                        if (closestTable.id === 'bangBenhNhan') {
-                            let khoaName = closestTr?.cells[0]?.innerText.replace("⚠️", "").trim() || "Khoa"; let colName = "chỉ số";
-                            if (el.classList.contains('bs-input')) colName = "Bác sĩ trực"; else { const bnCols = ["Khoa", "Bác sĩ", "Bệnh nhân Cũ", "Vào Hành chính", "Vào Trực", "Vào Sáng", "Ra viện", "Ra Sáng", "Xin về", "Trốn viện", "Chuyển viện", "Chuyển đến", "Chuyển đi", "Tử vong Ngoại trú", "Tử vong Nội trú", "PT Cấp cứu", "Dự kiến ra"]; let cellIdx = el.closest('td').cellIndex; if (bnCols[cellIdx]) colName = bnCols[cellIdx]; }
-                            fieldDetail = `[Khoa ${khoaName}] cột ${colName}`;
-                        } else {
-                            let tableNames = { "tablePTCC": "PTCC", "tableVaoVien": "Vào viện", "tableChuyenVien": "Chuyển viện", "tableRaVien": "Ra viện" }; let tName = tableNames[closestTable.id] || "Danh sách"; let rowStt = closestTr?.cells[0]?.innerText || "X"; let cellIdx = el.closest('td')?.cellIndex; let colName = closestTable.rows[0]?.cells[cellIdx]?.innerText || "dữ liệu";
-                            fieldDetail = `[Bảng ${tName}] BN số ${rowStt} - cột ${colName}`;
-                        }
-                    }
-                }
-                let actDate = activeDate.split('-').reverse().join('/'); logAction(`[Ngày ${actDate}] Sửa ${fieldDetail}: "${printOld}" ➡️ "${printNew}"`);
-                el.dataset.oldVal = newVal; 
-            }, 10);
+                fieldDetail = mapId[el.id] || el.id || el.name || "dữ liệu";
+            }
+            
+            let actDate = activeDate.split('-').reverse().join('/'); 
+            logAction(`[Ngày ${actDate}] Sửa ${fieldDetail}: "${printOld}" ➡️ "${printNew}"`);
+            
+            // Cập nhật lại giá trị cũ
+            el.dataset.oldVal = newVal; 
         });
     }
 
