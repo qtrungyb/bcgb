@@ -18,6 +18,157 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     
     <style>
+	/* --- CẢI TIẾN MỤC I --- */
+.input-icon-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.input-icon-wrapper .svg-icon {
+    position: absolute;
+    left: 12px;
+    color: var(--text-muted);
+    width: 16px;
+    height: 16px;
+    pointer-events: none;
+    transition: color 0.3s;
+}
+.input-icon-wrapper input.staff-input {
+    padding-left: 36px !important; /* Tạo không gian cho icon */
+}
+.input-icon-wrapper input.staff-input:focus + .svg-icon,
+.input-icon-wrapper input.staff-input:not(:placeholder-shown) + .svg-icon {
+    color: var(--primary);
+}
+
+/* Thẻ bấm nhanh cho Trang thiết bị */
+.quick-chips-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+.quick-chip {
+    background: var(--bg-body);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.quick-chip:hover {
+    background: rgba(2, 132, 199, 0.1);
+    color: var(--primary);
+    border-color: var(--primary);
+}
+
+/* Tối ưu nhóm Cận lâm sàng */
+.cls-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+@media (max-width: 768px) {
+    .cls-grid { grid-template-columns: 1fr; }
+}
+
+
+/* --- CẢI TIẾN MỤC II --- */
+.info-callout {
+    background: #f0f9ff;
+    border-left: 4px solid #0ea5e9;
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin-top: 16px;
+    font-size: 13px;
+    color: #0369a1;
+    line-height: 1.6;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+}
+body.dark-mode .info-callout {
+    background: rgba(2, 132, 199, 0.1);
+    border-left-color: #38bdf8;
+    color: #bae6fd;
+}
+.info-callout b {
+    color: var(--primary-hover);
+}
+body.dark-mode .info-callout b {
+    color: #38bdf8;
+}
+
+
+
+/* =========================================
+   CẢI TIẾN PHẦN III. TÌNH HÌNH CHUYÊN MÔN
+   (Màu sắc phân loại & Viền đứt đồng bộ)
+========================================= */
+
+/* A. PTCC - Báo động Đỏ */
+.cm-card.theme-ptcc { border-color: rgba(239, 68, 68, 0.4); }
+.cm-card.theme-ptcc:hover { border-color: #ef4444; box-shadow: 0 8px 20px rgba(239, 68, 68, 0.1); }
+.theme-ptcc .cm-header { background: linear-gradient(90deg, rgba(239, 68, 68, 0.08), transparent); border-bottom-color: rgba(239, 68, 68, 0.3); }
+.theme-ptcc .cm-header h3 { color: #b91c1c; }
+.theme-ptcc .cm-header-icon { color: #ef4444; background: #fef2f2; border-color: rgba(239, 68, 68, 0.2); }
+.theme-ptcc .cm-footer { border-top-color: rgba(239, 68, 68, 0.3); }
+.theme-ptcc .table-wrapper { border-color: rgba(239, 68, 68, 0.3); }
+.theme-ptcc input, .theme-ptcc select, .theme-ptcc textarea { border-color: rgba(239, 68, 68, 0.4) !important; }
+.theme-ptcc input:focus, .theme-ptcc select:focus, .theme-ptcc textarea:focus { border-color: #ef4444 !important; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important; }
+.btn-add-ptcc { color: #ef4444; border: 1px dashed rgba(239,68,68,0.4); background: rgba(239,68,68,0.05); }
+.btn-add-ptcc:hover { background: #ef4444 !important; color: #fff !important; }
+
+/* B. Vào viện - Xanh lá */
+.cm-card.theme-vao { border-color: rgba(34, 197, 94, 0.4); }
+.cm-card.theme-vao:hover { border-color: #22c55e; box-shadow: 0 8px 20px rgba(34, 197, 94, 0.1); }
+.theme-vao .cm-header { background: linear-gradient(90deg, rgba(34, 197, 94, 0.08), transparent); border-bottom-color: rgba(34, 197, 94, 0.3); }
+.theme-vao .cm-header h3 { color: #15803d; }
+.theme-vao .cm-header-icon { color: #22c55e; background: #f0fdf4; border-color: rgba(34, 197, 94, 0.2); }
+.theme-vao .cm-footer { border-top-color: rgba(34, 197, 94, 0.3); }
+.theme-vao .table-wrapper { border-color: rgba(34, 197, 94, 0.3); }
+.theme-vao input, .theme-vao select, .theme-vao textarea { border-color: rgba(34, 197, 94, 0.4) !important; }
+.theme-vao input:focus, .theme-vao select:focus, .theme-vao textarea:focus { border-color: #22c55e !important; box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1) !important; }
+.btn-add-vao { color: #16a34a; border: 1px dashed rgba(34,197,94,0.4); background: rgba(34,197,94,0.05); }
+.btn-add-vao:hover { background: #16a34a !important; color: #fff !important; }
+
+/* C. Chuyển viện - Cam cảnh báo */
+.cm-card.theme-chuyen { border-color: rgba(245, 158, 11, 0.4); }
+.cm-card.theme-chuyen:hover { border-color: #f59e0b; box-shadow: 0 8px 20px rgba(245, 158, 11, 0.1); }
+.theme-chuyen .cm-header { background: linear-gradient(90deg, rgba(245, 158, 11, 0.08), transparent); border-bottom-color: rgba(245, 158, 11, 0.3); }
+.theme-chuyen .cm-header h3 { color: #b45309; }
+.theme-chuyen .cm-header-icon { color: #f59e0b; background: #fffbeb; border-color: rgba(245, 158, 11, 0.2); }
+.theme-chuyen .cm-footer { border-top-color: rgba(245, 158, 11, 0.3); }
+.theme-chuyen .table-wrapper { border-color: rgba(245, 158, 11, 0.3); }
+.theme-chuyen input, .theme-chuyen select, .theme-chuyen textarea { border-color: rgba(245, 158, 11, 0.4) !important; }
+.theme-chuyen input:focus, .theme-chuyen select:focus, .theme-chuyen textarea:focus { border-color: #f59e0b !important; box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1) !important; }
+.btn-add-chuyen { color: #d97706; border: 1px dashed rgba(245,158,11,0.4); background: rgba(245,158,11,0.05); }
+.btn-add-chuyen:hover { background: #d97706 !important; color: #fff !important; }
+
+/* D. Ra viện - Xám trung tính */
+.cm-card.theme-ra { border-color: rgba(100, 116, 139, 0.4); }
+.cm-card.theme-ra:hover { border-color: #64748b; box-shadow: 0 8px 20px rgba(100, 116, 139, 0.1); }
+.theme-ra .cm-header { background: linear-gradient(90deg, rgba(100, 116, 139, 0.08), transparent); border-bottom-color: rgba(100, 116, 139, 0.3); }
+.theme-ra .cm-header h3 { color: #475569; }
+.theme-ra .cm-header-icon { color: #64748b; background: #f8fafc; border-color: rgba(100, 116, 139, 0.2); }
+.theme-ra .cm-footer { border-top-color: rgba(100, 116, 139, 0.3); }
+.theme-ra .table-wrapper { border-color: rgba(100, 116, 139, 0.3); }
+.theme-ra input, .theme-ra select, .theme-ra textarea { border-color: rgba(100, 116, 139, 0.4) !important; }
+.theme-ra input:focus, .theme-ra select:focus, .theme-ra textarea:focus { border-color: #64748b !important; box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.1) !important; }
+.btn-add-ra { color: #475569; border: 1px dashed rgba(100,116,139,0.4); background: rgba(100,116,139,0.05); }
+.btn-add-ra:hover { background: #475569 !important; color: #fff !important; }
+
+/* Dark Mode Tweak */
+body.dark-mode .theme-ptcc h3 { color: #fca5a5; }
+body.dark-mode .theme-ptcc .cm-header-icon { background: #450a0a; color: #f87171; border-color: rgba(239, 68, 68, 0.3); }
+body.dark-mode .theme-vao h3 { color: #86efac; }
+body.dark-mode .theme-vao .cm-header-icon { background: #052e16; color: #4ade80; border-color: rgba(34, 197, 94, 0.3); }
+body.dark-mode .theme-chuyen h3 { color: #fcd34d; }
+body.dark-mode .theme-chuyen .cm-header-icon { background: #451a03; color: #fbbf24; border-color: rgba(245, 158, 11, 0.3); }
+body.dark-mode .theme-ra h3 { color: #cbd5e1; }
+body.dark-mode .theme-ra .cm-header-icon { background: #0f172a; color: #94a3b8; border-color: rgba(100, 116, 139, 0.3); }
+
     /* -----------------------------------------
        1. COLOR PALETTE & RESET
     ----------------------------------------- */
@@ -233,16 +384,90 @@
 
     /* Custom Widths for Section 3 Tables */
     #tablePTCC, #tableVaoVien, #tableChuyenVien, #tableRaVien { min-width: 1000px; }
+    /* Nới rộng riêng bảng PTCC một chút để không bị ép các cột khác khi thêm width cho cột Khoa */
+    #tablePTCC { min-width: 1150px; } 
+    
     #tablePTCC th:nth-child(1), #tableVaoVien th:nth-child(1), #tableChuyenVien th:nth-child(1), #tableRaVien th:nth-child(1) { width: 40px; }
     #tablePTCC th:nth-child(2), #tableVaoVien th:nth-child(2), #tableChuyenVien th:nth-child(2), #tableRaVien th:nth-child(2) { width: 150px; }
     #tablePTCC th:nth-child(3), #tableVaoVien th:nth-child(3), #tableChuyenVien th:nth-child(3), #tableRaVien th:nth-child(3) { width: 220px; }
     #tablePTCC th:nth-child(4), #tablePTCC th:nth-child(7) { width: 100px; }
     #tablePTCC th:nth-child(5), #tablePTCC th:nth-child(6) { width: 220px; }
+    
+    /* THÊM DÒNG NÀY: Cố định độ rộng cho cột số 8 (Khoa) của bảng PTCC */
+    #tablePTCC th:nth-child(8) { width: 130px; }
 
     .datetime-container { display: flex; flex-direction: column; gap: 6px; align-items: center; justify-content: center; }
     .datetime-container input { text-align: center; padding: 6px 8px; border: 1px dashed rgba(100,116,139,.35); border-radius: 4px; width: 100%; max-width: 115px; font-weight: 500; color: var(--text-main); background: transparent; outline: none; transition: all .2s; }
     .datetime-container input:hover:not(:disabled) { border: 1px solid var(--primary); box-shadow: 0 4px 12px rgba(2,132,199,.15); }
+	/* =========================================
+   CẢI TIẾN ĐỘ NỔI BẬT BẢNG BỆNH NHÂN
+========================================= */
 
+/* 1. Đổ bóng tổng thể và hiệu ứng 3D cho Header */
+#bangBenhNhan {
+    border-radius: 8px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06); /* Bóng đổ cho toàn bộ bảng */
+}
+#bangBenhNhan thead th {
+    text-transform: uppercase;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.1) !important;
+    box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.04); /* Đổ bóng chìm tạo khối */
+}
+
+/* 2. Hiệu ứng Hover Highlight toàn bộ dòng (Dễ dò mắt ngang) */
+#bangBenhNhan tbody tr {
+    transition: all 0.2s ease;
+}
+#bangBenhNhan tbody tr:hover td {
+    background-color: rgba(2, 132, 199, 0.08) !important; /* Đổi màu xanh nhạt khi di chuột */
+}
+
+/* 3. Tút lại các ô Input để trông "Clickable" (Có thể nhập) hơn */
+#bangBenhNhan .table-input-compact {
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(100, 116, 139, 0.2);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+#bangBenhNhan .table-input-compact:focus {
+    background: #ffffff;
+    border-color: var(--primary);
+    box-shadow: 0 4px 15px rgba(2, 132, 199, 0.2), 0 0 0 3px rgba(2, 132, 199, 0.1);
+    transform: scale(1.15); /* Phóng to ô khi đang gõ */
+}
+
+/* 4. Cố định cột KHOA khi màn hình nhỏ (Scroll ngang không bị mất tên khoa) */
+#bangBenhNhan th:first-child,
+#bangBenhNhan td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 8;
+    box-shadow: 3px 0 8px rgba(0, 0, 0, 0.05); /* Bóng đổ cắt ngang bảng */
+}
+#bangBenhNhan th:first-child {
+    z-index: 12; /* Header phải nằm trên cùng */
+}
+
+/* 5. Tương thích Dark Mode hoàn hảo */
+body.dark-mode #bangBenhNhan {
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+}
+body.dark-mode #bangBenhNhan thead th {
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: inset 0 -3px 0 rgba(255, 255, 255, 0.05);
+}
+body.dark-mode #bangBenhNhan tbody tr:hover td {
+    background-color: rgba(56, 189, 248, 0.12) !important;
+}
+body.dark-mode #bangBenhNhan .table-input-compact {
+    background: rgba(15, 23, 42, 0.6);
+    border-color: rgba(148, 163, 184, 0.2);
+}
+body.dark-mode #bangBenhNhan th:first-child,
+body.dark-mode #bangBenhNhan td:first-child {
+    box-shadow: 3px 0 8px rgba(0, 0, 0, 0.5);
+}
     /* -----------------------------------------
        8. MODALS & POPUPS & TOASTS
     ----------------------------------------- */
@@ -640,62 +865,112 @@
             </button>
         </div>
 
-        <div class="section">
-            <h2>I. THÀNH PHẦN TRỰC</h2>
-            <div class="grid-3-cols">
-                <div class="subgroup">
-                    <div class="module-title" style="border-bottom: none; padding-bottom: 0; margin-bottom: 8px;">Nhân sự trực</div>
-                    <div style="text-align: center; margin-bottom: 12px;">
-                        <select id="chonMauNhanSu" class="quick-select-staff">
-                            <option value="">Chọn mẫu...</option>
-                        </select>
+        <div class="section" style="background: transparent; border: none; box-shadow: none; padding: 0;">
+    <h2>I. THÀNH PHẦN TRỰC & CẬN LÂM SÀNG</h2>
+    
+    <div class="dashboard-chart-grid"> <div style="display: flex; flex-direction: column; gap: 16px;">
+            <div class="subgroup">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px dashed var(--border-color); padding-bottom: 10px; margin-bottom: 12px;">
+                    <div class="module-title" style="border: none; padding: 0; margin: 0;">
+                        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                        Nhân sự trực
+                    </div>
+                    <select id="chonMauNhanSu" class="quick-select-staff" style="margin: 0;">
+                        <option value="">⚡ Chọn mẫu kíp trực...</option>
+                    </select>
+                </div>
+
+                <div class="grid-3-cols" style="grid-template-columns: 1fr 1fr; gap: 16px;"> 
+                    <div class="staff-vertical">
+                        <div class="staff-item">
+                            <label class="required">Trực Lãnh Đạo</label>
+                            <input type="text" id="trucLanhDao" class="staff-input" placeholder="Nhập tên..." autocomplete="off">
+                        </div>
+                        <div class="staff-item">
+                            <label class="required">Trực Chuyên môn</label>
+                            <input type="text" id="trucChuyenMon" class="staff-input" placeholder="Nhập tên..." autocomplete="off">
+                        </div>
+                        <div class="staff-item">
+                            <label class="required">Trực Phòng khám</label>
+                            <input type="text" id="trucPhongKham" class="staff-input" placeholder="Nhập tên..." autocomplete="off">
+                        </div>
                     </div>
                     <div class="staff-vertical">
-                        <div class="staff-item"><label class="required">Trực Lãnh Đạo</label><input type="text" id="trucLanhDao" class="staff-input" placeholder="Chọn hoặc nhập..." autocomplete="off"></div>
-                        <div class="staff-item"><label class="required">Trực Chuyên môn</label><input type="text" id="trucChuyenMon" class="staff-input" placeholder="Chọn hoặc nhập..." autocomplete="off"></div>
-                        <div class="staff-item"><label class="required">Trực Phòng khám</label><input type="text" id="trucPhongKham" class="staff-input" placeholder="Chọn hoặc nhập..." autocomplete="off"></div>
-                        <div class="staff-item"><label class="required">Trực Xét nghiệm</label><input type="text" id="trucXetNghiem" class="staff-input" placeholder="Chọn hoặc nhập..." autocomplete="off"></div>
-                        <div class="staff-item"><label class="required">Trực CĐHA</label><input type="text" id="trucCDHA" class="staff-input" placeholder="Chọn hoặc nhập..." autocomplete="off"></div>
-                        <div class="staff-item"><label class="required">Trực An ninh, bảo vệ</label><input type="text" id="trucAnNinh" class="staff-input" placeholder="Chọn hoặc nhập..." autocomplete="off"></div>
+                        <div class="staff-item">
+                            <label class="required">Trực Xét nghiệm</label>
+                            <input type="text" id="trucXetNghiem" class="staff-input" placeholder="Nhập tên..." autocomplete="off">
+                        </div>
+                        <div class="staff-item">
+                            <label class="required">Trực CĐHA</label>
+                            <input type="text" id="trucCDHA" class="staff-input" placeholder="Nhập tên..." autocomplete="off">
+                        </div>
+                        <div class="staff-item">
+                            <label class="required">An ninh, bảo vệ</label>
+                            <input type="text" id="trucAnNinh" class="staff-input" placeholder="Nhập tên..." autocomplete="off">
+                        </div>
                     </div>
                 </div>
-                
-                <div class="subgroup">
-                    <div class="module-title">Trực Xét Nghiệm</div>
-                    <div class="sub-row"><span>Huyết học:</span> <input type="number" id="xnHuyetHoc" min="0" list="numberOptions"></div>
-                    <div class="sub-row"><span>Hóa sinh:</span> <input type="number" id="xnHoaSinh" min="0" list="numberOptions"></div>
-                    <div class="sub-row"><span>Vi sinh:</span> <input type="number" id="xnViSinh" min="0" list="numberOptions"></div>
-                    <div class="sub-row"><span>Nước tiểu:</span> <input type="number" id="xnNuocTieu" min="0" list="numberOptions"></div>
-                    <div class="sub-row"><span>Đông máu:</span> <input type="number" id="xnDongMau" min="0" list="numberOptions"></div>
-                    <div class="total-wrapper"><div class="total-badge" id="tongXetNghiem">TỔNG: 0</div></div>
-                </div>
-                
-                <div class="subgroup">
-                    <div class="module-title">Chẩn Đoán Hình Ảnh</div>
-                    <div class="sub-row"><span>Xquang:</span> <input type="number" id="cdhaXquang" min="0" list="numberOptions"></div>
-                    <div class="sub-row"><span>Siêu âm:</span> <input type="number" id="cdhaSieuAm" min="0" list="numberOptions"></div>
-                    <div class="sub-row"><span>CT-Scanner:</span> <input type="number" id="cdhaCT" min="0" list="numberOptions"></div>
-                    <div class="total-wrapper"><div class="total-badge" id="tongCDHA">TỔNG: 0</div></div>
-                </div>
             </div>
-            
-            <div class="subgroup" style="margin-top: 16px; height: auto;">
-                <div class="module-title">Tình hình trang thiết bị, dược, vật tư, điện nước</div>
-                <textarea rows="3" id="tinhTrangThietBi" placeholder="Nhập ghi chú chi tiết..."></textarea>
-                <div style="margin-top: 8px; text-align: right;">
-                    <button type="button" class="quick-fill-btn" onclick="fillEquipment('Tất cả hoạt động bình thường. Không có vật tư hỏng hóc.')">
-                        <svg class="svg-icon" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> Tất cả bình thường
-                    </button>
+
+            <div class="subgroup">
+                <div class="module-title" style="justify-content: flex-start; padding-bottom: 8px;">
+                    <svg class="svg-icon" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg> 
+                    Tình hình trang thiết bị, điện nước
+                </div>
+                <textarea rows="2" id="tinhTrangThietBi" placeholder="Nhập ghi chú chi tiết..."></textarea>
+                <div class="quick-chips-container" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;">
+                    <span class="quick-chip quick-fill-btn" onclick="fillEquipment('Tất cả hoạt động bình thường. Không có vật tư hỏng hóc.')" style="background: var(--bg-body); border: 1px solid var(--border-color); padding: 4px 12px; border-radius: 16px; font-size: 11.5px; font-weight: 600; cursor: pointer;">Bình thường</span>
+                    <span class="quick-chip quick-fill-btn" onclick="fillEquipment('Hệ thống mạng/HIS lỗi.')" style="background: var(--bg-body); border: 1px solid var(--border-color); padding: 4px 12px; border-radius: 16px; font-size: 11.5px; font-weight: 600; cursor: pointer;">Lỗi mạng/HIS</span>
+                    <span class="quick-chip quick-fill-btn" onclick="fillEquipment('Lỗi máy in/Photo.')" style="background: var(--bg-body); border: 1px solid var(--border-color); padding: 4px 12px; border-radius: 16px; font-size: 11.5px; font-weight: 600; cursor: pointer;">Lỗi máy in</span>
                 </div>
             </div>
         </div>
 
-        <div class="section">
-            <div class="section-header">
-                <h2>II. TÌNH HÌNH BỆNH NHÂN</h2>
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+            <div class="subgroup">
+                <div class="module-title" style="color: #059669; border-bottom-color: rgba(5, 150, 105, 0.2);">
+                    <svg class="svg-icon" viewBox="0 0 24 24"><path d="M10 2v7.31"></path><path d="M14 9.3V1.99"></path><path d="M8.5 2h7"></path><path d="M14 9.3a6.5 6.5 0 1 1-4 0"></path><path d="M5.52 16h12.96"></path></svg>
+                    Xét Nghiệm
+                </div>
+                <div class="sub-row"><span>Huyết học:</span> <input type="number" id="xnHuyetHoc" min="0" list="numberOptions"></div>
+                <div class="sub-row"><span>Hóa sinh:</span> <input type="number" id="xnHoaSinh" min="0" list="numberOptions"></div>
+                <div class="sub-row"><span>Vi sinh:</span> <input type="number" id="xnViSinh" min="0" list="numberOptions"></div>
+                <div class="sub-row"><span>Nước tiểu:</span> <input type="number" id="xnNuocTieu" min="0" list="numberOptions"></div>
+                <div class="sub-row"><span>Đông máu:</span> <input type="number" id="xnDongMau" min="0" list="numberOptions"></div>
+                <div class="total-wrapper"><div class="total-badge" id="tongXetNghiem">TỔNG XN: 0</div></div>
             </div>
-            
-            <div class="table-wrapper">
+
+            <div class="subgroup">
+                <div class="module-title" style="color: #d97706; border-bottom-color: rgba(217, 119, 6, 0.2);">
+                    <svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                    Chẩn Đoán Hình Ảnh
+                </div>
+                <div class="sub-row"><span>X-Quang:</span> <input type="number" id="cdhaXquang" min="0" list="numberOptions"></div>
+                <div class="sub-row"><span>Siêu âm:</span> <input type="number" id="cdhaSieuAm" min="0" list="numberOptions"></div>
+                <div class="sub-row"><span>CT-Scanner:</span> <input type="number" id="cdhaCT" min="0" list="numberOptions"></div>
+                <div class="total-wrapper"><div class="total-badge" id="tongCDHA">TỔNG CĐHA: 0</div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <div class="section" style="background: transparent; border: none; box-shadow: none; padding: 0;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+        <h2 style="margin: 0;">II. TÌNH HÌNH BỆNH NHÂN</h2>
+        <div style="display: flex; align-items: center; gap: 10px; background: var(--bg-card); padding: 8px 16px; border-radius: 8px; border: 1px dashed var(--border-color);">
+            <span style="font-size: 13px; font-weight: 600; color: var(--text-muted);">
+                <svg class="svg-icon" style="vertical-align: -3px; margin-right: 4px;" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                Điền nhanh:
+            </span>
+            <select id="chonMauBacSi" class="quick-select-staff" style="margin: 0; padding: 6px 12px;">
+                <option value="">⚡ Chọn mẫu BS trực...</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="cm-card" style="margin-bottom: 0;">
+        <div class="cm-body" style="padding: 0;">
+            <div class="table-wrapper" style="margin: 0; border: none; border-radius: 12px;">
                 <table id="bangBenhNhan">
                     <colgroup>
                         <col style="width: 9%;"> 
@@ -705,12 +980,7 @@
                     <thead>
                         <tr>
                             <th rowspan="2" class="bg-chung">Khoa</th>
-                            <th rowspan="2" class="bg-chung group-divider required" style="position: relative; padding: 4px;">
-                                Bác sĩ trực<br>
-                                <select id="chonMauBacSi" class="quick-select-staff" style="margin: 4px auto 0 auto; width: 95%; padding: 4px; font-size: 11px; font-weight: 500;">
-                                    <option value="">Chọn mẫu...</option>
-                                </select>
-                            </th>
+                            <th rowspan="2" class="bg-chung group-divider required">Bác sĩ trực</th>
                             <th rowspan="2" class="bg-chung group-divider">Cũ</th>
                             <th colspan="3" class="bg-vao group-divider">Nhập viện (Vào)</th>
                             <th colspan="5" class="bg-ra group-divider">Xuất viện (Ra)</th>
@@ -731,111 +1001,120 @@
                     <tfoot id="footBenhNhan"></tfoot>
                 </table>
             </div>
-            <div class="note-text" style="margin-top: 12px; font-size: 13px; color: var(--text-muted); font-style: italic; line-height: 1.6; padding: 0 4px;">
-    <div>* Hiện có = (Cũ + Nhập viện HC + Trực + Sáng + Chuyển khoa Đến) - (Xuất viện HC + Sáng + Xin về + Trốn + Chuyển viện + Chuyển khoa Đi)</div>
-    <div><b>* Tỷ lệ = (Hiện có / Giường KH) × 100%</b></div>
-</div>
         </div>
+    </div>
+    
+    <div class="info-callout">
+        <div style="font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+            <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            Công thức tính tự động:
+        </div>
+        <div style="margin-left: 24px;">
+            • <b>Hiện có</b> = (Cũ + Nhập viện HC + Trực + Sáng + Chuyển khoa Đến) - (Xuất viện HC + Sáng + Xin về + Trốn + Chuyển viện + Chuyển khoa Đi)<br>
+            • <b>Tỷ lệ</b> = (Hiện có / Giường KH) × 100%
+        </div>
+    </div>
+</div>
 
         <div class="section" id="sectionChuyenMon" style="background: transparent; border: none; box-shadow: none; padding: 0;">
-            <h2 style="margin-top: 0;">III. TÌNH HÌNH CHUYÊN MÔN</h2>
-            
-            <div class="cm-card">
-                <div class="cm-header">
-                    <h3>
-                        <div class="cm-header-icon">
-                            <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-                        </div>
-                        A. Bệnh nhân phẫu thuật cấp cứu (PTCC)
-                    </h3>
+    <h2 style="margin-top: 0; margin-bottom: 24px;">III. TÌNH HÌNH CHUYÊN MÔN</h2>
+    
+    <div class="cm-card theme-ptcc">
+        <div class="cm-header">
+            <h3>
+                <div class="cm-header-icon">
+                    <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
                 </div>
-                <div class="cm-body">
-                    <div class="table-wrapper">
-                        <table id="tablePTCC">
-                            <thead><tr><th>STT</th><th>Họ và tên</th><th>Địa chỉ</th><th>Giờ vào</th><th>Chẩn đoán trước mổ</th><th>Chẩn đoán sau mổ & kết quả</th><th>Giờ PTCC</th><th>Khoa</th><th>Hành động</th></tr></thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="cm-footer">
-                    <button type="button" class="add-row-btn" onclick="addRow_tablePTCC()">
-                        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg> Thêm bệnh nhân PTCC
-                    </button>
-                </div>
-            </div>
-
-            <div class="cm-card">
-                <div class="cm-header">
-                    <h3>
-                        <div class="cm-header-icon">
-                            <svg viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
-                        </div>
-                        B. Bệnh nhân vào viện
-                    </h3>
-                </div>
-                <div class="cm-body">
-                    <div class="table-wrapper">
-                        <table id="tableVaoVien">
-                            <thead><tr><th>STT</th><th>Họ và tên</th><th>Địa chỉ</th><th>Giờ vào</th><th>Chẩn đoán lúc vào</th><th>Khoa</th><th>Hành động</th></tr></thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="cm-footer">
-                    <button type="button" class="add-row-btn" onclick="addRow_tableVaoVien()">
-                        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg> Thêm bệnh nhân vào viện
-                    </button>
-                </div>
-            </div>
-
-            <div class="cm-card">
-                <div class="cm-header">
-                    <h3>
-                        <div class="cm-header-icon">
-                            <svg viewBox="0 0 24 24"><path d="M17 3l4 4-4 4"></path><path d="M3 7h18"></path><path d="M7 21l-4-4 4-4"></path><path d="M21 17H3"></path></svg>
-                        </div>
-                        C. Bệnh nhân chuyển viện
-                    </h3>
-                </div>
-                <div class="cm-body">
-                    <div class="table-wrapper">
-                        <table id="tableChuyenVien">
-                            <thead><tr><th>STT</th><th>Họ và tên</th><th>Địa chỉ</th><th>Giờ vào</th><th>Khoa</th><th>Chẩn đoán lúc vào</th><th>Giờ chuyển</th><th>Chẩn đoán lúc chuyển</th><th>Hành động</th></tr></thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="cm-footer">
-                    <button type="button" class="add-row-btn" onclick="addRow_tableChuyenVien()">
-                        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg> Thêm chuyển viện
-                    </button>
-                </div>
-            </div>
-
-            <div class="cm-card">
-                <div class="cm-header">
-                    <h3>
-                        <div class="cm-header-icon">
-                            <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                        </div>
-                        D. Bệnh nhân ra viện, xin về
-                    </h3>
-                </div>
-                <div class="cm-body">
-                    <div class="table-wrapper">
-                        <table id="tableRaVien">
-                            <thead><tr><th>STT</th><th>Họ và tên</th><th>Địa chỉ</th><th>Giờ vào</th><th>Khoa</th><th>Chẩn đoán lúc vào</th><th>Giờ ra</th><th>Chẩn đoán lúc ra</th><th>Hành động</th></tr></thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="cm-footer">
-                    <button type="button" class="add-row-btn" onclick="addRow_tableRaVien()">
-                        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg> Thêm bệnh nhân ra viện
-                    </button>
-                </div>
+                A. Bệnh nhân phẫu thuật cấp cứu (PTCC)
+            </h3>
+        </div>
+        <div class="cm-body">
+            <div class="table-wrapper">
+                <table id="tablePTCC">
+                    <thead><tr><th>STT</th><th>Họ và tên</th><th>Địa chỉ</th><th>Giờ vào</th><th>Chẩn đoán trước mổ</th><th>Chẩn đoán sau mổ & kết quả</th><th>Giờ PTCC</th><th>Khoa</th><th style="width: 80px;">Tác vụ</th></tr></thead>
+                    <tbody></tbody>
+                </table>
             </div>
         </div>
+        <div class="cm-footer" style="background: transparent;">
+            <button type="button" class="add-row-btn btn-add-ptcc" onclick="addRow_tablePTCC()">
+                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg> Thêm bệnh nhân PTCC
+            </button>
+        </div>
+    </div>
+
+    <div class="cm-card theme-vao">
+        <div class="cm-header">
+            <h3>
+                <div class="cm-header-icon">
+                    <svg viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
+                </div>
+                B. Bệnh nhân vào viện
+            </h3>
+        </div>
+        <div class="cm-body">
+            <div class="table-wrapper">
+                <table id="tableVaoVien">
+                    <thead><tr><th>STT</th><th>Họ và tên</th><th>Địa chỉ</th><th>Giờ vào</th><th>Chẩn đoán lúc vào</th><th>Khoa</th><th style="width: 80px;">Tác vụ</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="cm-footer" style="background: transparent;">
+            <button type="button" class="add-row-btn btn-add-vao" onclick="addRow_tableVaoVien()">
+                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg> Thêm bệnh nhân Vào viện
+            </button>
+        </div>
+    </div>
+
+    <div class="cm-card theme-chuyen">
+        <div class="cm-header">
+            <h3>
+                <div class="cm-header-icon">
+                    <svg viewBox="0 0 24 24"><path d="M17 3l4 4-4 4"></path><path d="M3 7h18"></path><path d="M7 21l-4-4 4-4"></path><path d="M21 17H3"></path></svg>
+                </div>
+                C. Bệnh nhân chuyển viện
+            </h3>
+        </div>
+        <div class="cm-body">
+            <div class="table-wrapper">
+                <table id="tableChuyenVien">
+                    <thead><tr><th>STT</th><th>Họ và tên</th><th>Địa chỉ</th><th>Giờ vào</th><th>Khoa</th><th>Chẩn đoán lúc vào</th><th>Giờ chuyển</th><th>Chẩn đoán lúc chuyển</th><th style="width: 80px;">Tác vụ</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="cm-footer" style="background: transparent;">
+            <button type="button" class="add-row-btn btn-add-chuyen" onclick="addRow_tableChuyenVien()">
+                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg> Thêm chuyển viện
+            </button>
+        </div>
+    </div>
+
+    <div class="cm-card theme-ra">
+        <div class="cm-header">
+            <h3>
+                <div class="cm-header-icon">
+                    <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                </div>
+                D. Bệnh nhân ra viện, xin về
+            </h3>
+        </div>
+        <div class="cm-body">
+            <div class="table-wrapper">
+                <table id="tableRaVien">
+                    <thead><tr><th>STT</th><th>Họ và tên</th><th>Địa chỉ</th><th>Giờ vào</th><th>Khoa</th><th>Chẩn đoán lúc vào</th><th>Giờ ra</th><th>Chẩn đoán lúc ra</th><th style="width: 80px;">Tác vụ</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="cm-footer" style="background: transparent;">
+            <button type="button" class="add-row-btn btn-add-ra" onclick="addRow_tableRaVien()">
+                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg> Thêm bệnh nhân Ra viện
+            </button>
+        </div>
+    </div>
+</div>
 
         <div class="signature-section" id="sectionChuKy">
             <div class="signature-box" style="position: relative;">
@@ -2691,14 +2970,35 @@ const BaoCaoApp = (function() {
         }
     }
 
-    async function loadFromCloudToView(trueDate) { 
-        const cloudRecord = cloudDataCache.find(r => { try { let dStr = r.jsonData || r.data || r.JsonData; let d = typeof dStr === 'string' ? JSON.parse(dStr) : dStr; return d && d.ngayTruc === trueDate; } catch(e) { return false; } }); 
-        if (cloudRecord) { let jsonStr = cloudRecord.jsonData || cloudRecord.data || cloudRecord.JsonData; let dataObj = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr; dataObj.isSaved = true; await LocalDB.setItem(getStorageKey(trueDate), dataObj); await loadData(); } else { showToast("Lỗi: Không tìm thấy dữ liệu trên Cloud!", "error"); } 
+    async function loadFromCloudToView(trueDate, isCloud) { 
+        // 1. Nếu là record trên cloud, lưu tạm vào máy để xem
+        if (isCloud !== false) {
+            const cloudRecord = cloudDataCache.find(r => { try { let dStr = r.jsonData || r.data || r.JsonData; let d = typeof dStr === 'string' ? JSON.parse(dStr) : dStr; return d && d.ngayTruc === trueDate; } catch(e) { return false; } }); 
+            if (cloudRecord) { let jsonStr = cloudRecord.jsonData || cloudRecord.data || cloudRecord.JsonData; let dataObj = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr; dataObj.isSaved = true; await LocalDB.setItem(getStorageKey(trueDate), dataObj); }
+        }
+        
+        // 2. Chuyển đổi ngày và load lại dữ liệu (Lỗi thiếu ở bản cũ)
+        activeDate = trueDate; 
+        updateDateDisplay(); 
+        await loadData(); 
+        
+        // 3. Đóng popup dashboard để người dùng nhìn thấy form (Lỗi thiếu ở bản cũ)
+        closeDashboard();
     }
 
     async function loadFromCloudToEdit(trueDate) { 
         const cloudRecord = cloudDataCache.find(r => { try { let dStr = r.jsonData || r.data || r.JsonData; let d = typeof dStr === 'string' ? JSON.parse(dStr) : dStr; return d && d.ngayTruc === trueDate; } catch(e) { return false; } }); 
-        if (cloudRecord) { let jsonStr = cloudRecord.jsonData || cloudRecord.data || cloudRecord.JsonData; let dataObj = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr; dataObj.isSaved = true; await LocalDB.setItem(getStorageKey(trueDate), dataObj); activeDate = trueDate; updateDateDisplay(); await loadData(); applyLockState(false, true); } else { showToast("Lỗi: Không tìm thấy dữ liệu trên Cloud!", "error"); } 
+        if (cloudRecord) { 
+            let jsonStr = cloudRecord.jsonData || cloudRecord.data || cloudRecord.JsonData; 
+            let dataObj = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr; 
+            dataObj.isSaved = true; 
+            await LocalDB.setItem(getStorageKey(trueDate), dataObj); 
+            activeDate = trueDate; 
+            updateDateDisplay(); 
+            await loadData(); 
+            applyLockState(false, true); 
+            closeDashboard(); // Đóng popup dashboard
+        } else { showToast("Lỗi: Không tìm thấy dữ liệu trên Cloud!", "error"); } 
     }
 
     async function loadToEdit(trueDate) {
@@ -2706,6 +3006,7 @@ const BaoCaoApp = (function() {
         updateDateDisplay();
         await loadData();
         applyLockState(false, true);
+        closeDashboard(); // Đóng popup dashboard
     }
 
     async function autoFillCus() {
@@ -2723,11 +3024,28 @@ const BaoCaoApp = (function() {
     }
 
     function fillEquipment(text) {
-        const el = document.getElementById("tinhTrangThietBi"); let currentVal = el.value.trim();
-        if (currentVal === "") el.value = text; else el.value = currentVal + "\n" + text;
-        el.style.height = 'auto'; el.style.height = (el.scrollHeight) + 'px'; 
-        updateSyncStatus('pending'); saveData(false); showToast("Đã điền nhanh ghi chú!", "success");
+    // Kiểm tra trạng thái khóa của form trước khi thực hiện
+    if (isFormLocked) return; 
+
+    const el = document.getElementById("tinhTrangThietBi"); 
+    let currentVal = el.value.trim();
+    
+    // Điền text mới vào textarea
+    if (currentVal === "") {
+        el.value = text; 
+    } else {
+        el.value = currentVal + "\n" + text;
     }
+    
+    // Tự động điều chỉnh độ cao textarea
+    el.style.height = 'auto'; 
+    el.style.height = (el.scrollHeight) + 'px'; 
+    
+    // Gọi các hàm lưu dữ liệu tự động của hệ thống
+    updateSyncStatus('pending'); 
+    saveData(false); 
+    showToast("Đã điền nhanh ghi chú!", "success");
+}
 
     async function fetchDanhSachNhanSu() {
         try {
