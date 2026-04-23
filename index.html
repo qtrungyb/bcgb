@@ -227,7 +227,53 @@ body.dark-mode .theme-ra .cm-header-icon { background: #0f172a; color: #94a3b8; 
     ----------------------------------------- */
     h1 { font-size: 32px; font-weight: 800; text-align: center; margin-bottom: 12px; letter-spacing: 1px; text-transform: uppercase; background: linear-gradient(90deg, #0369a1, #0ea5e9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
     .title-divider { width: 80px; height: 4px; background: var(--primary); border-radius: 2px; margin: 0 auto 24px auto; }
-    h2 { font-size: 18px; font-weight: 700; background: #f0f9ff; display: inline-block; padding: 8px 24px; border-radius: 8px; color: var(--primary); border: 1px solid #e0f2fe; margin: 32px 0 20px 0; }
+    /* =========================================
+   CẢI TIẾN TIÊU ĐỀ CÁC MỤC CHÍNH (H2)
+========================================= */
+h2 {
+    display: flex !important;
+    align-items: center;
+    gap: 12px;
+    font-size: 19px !important;
+    font-weight: 800 !important;
+    color: var(--primary) !important;
+    margin: 45px 0 25px 0 !important;
+    background: none !important; /* Bỏ nền cũ */
+    border: none !important;     /* Bỏ viền cũ */
+    padding: 0 !important;        /* Bỏ padding cũ */
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Icon bọc trong tiêu đề */
+h2 .header-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    background: rgba(2, 132, 199, 0.08); /* Nền xanh nhạt */
+    border-radius: 10px;
+    color: var(--primary);
+    flex-shrink: 0;
+}
+
+/* Đường kẻ ngang thanh mảnh phía sau tiêu đề */
+h2::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--border-color), transparent);
+    margin-left: 10px;
+}
+
+/* Tương thích Dark Mode */
+body.dark-mode h2 {
+    color: var(--primary) !important;
+}
+body.dark-mode h2 .header-icon {
+    background: rgba(56, 189, 248, 0.15);
+}
     h3 { font-size: 16px; font-weight: 600; color: var(--text-main); margin: 28px 0 12px 0; display: flex; align-items: center; gap: 8px; }
     h3::before { content: ""; display: block; width: 6px; height: 18px; background: var(--primary); border-radius: 4px; }
 
@@ -747,6 +793,95 @@ body.dark-mode #bangBenhNhan td:first-child {
         margin: 0;
         padding: 8px 24px;
     }
+	/* =========================================
+   CẢI TIẾN KHU VỰC CHỌN KÍP TRỰC NGÀY
+========================================= */
+#dateControlBar.date-row {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 10px 24px;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin: 0; 
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    transition: all 0.3s ease;
+}
+
+#dateControlBar.date-row:hover {
+    box-shadow: 0 6px 25px rgba(2, 132, 199, 0.08);
+    border-color: rgba(2, 132, 199, 0.3);
+}
+
+.date-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.date-label .svg-icon {
+    color: var(--primary);
+    width: 20px;
+    height: 20px;
+}
+
+#dateControlBar .date-select {
+    background: rgba(2, 132, 199, 0.08) !important;
+    border: 1px solid rgba(2, 132, 199, 0.15) !important;
+    padding: 8px 36px 8px 16px !important; /* Trừ hao không gian cho mũi tên dropdown */
+    border-radius: 8px;
+    font-size: 16px !important;
+    font-weight: 800 !important;
+    color: var(--primary) !important;
+    position: relative;
+}
+
+/* Thêm mũi tên chỉ xuống bằng CSS ::after (không can thiệp vào JS) */
+#dateControlBar .date-select::after {
+    content: "";
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-40%); /* Cân bằng quang học */
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 6px solid currentColor;
+    opacity: 0.7;
+    transition: transform 0.2s;
+}
+
+#dateControlBar .date-select:hover {
+    background: var(--primary) !important;
+    color: #ffffff !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(2, 132, 199, 0.25);
+    border-color: var(--primary) !important;
+}
+
+/* Hiệu ứng khi lịch đang mở (Click) */
+#dateControlBar .date-select:active {
+    transform: translateY(0);
+}
+
+/* Tương thích chế độ Dark Mode */
+body.dark-mode #dateControlBar.date-row {
+    background: var(--bg-card);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+body.dark-mode #dateControlBar .date-select {
+    background: rgba(56, 189, 248, 0.1) !important;
+    border-color: rgba(56, 189, 248, 0.2) !important;
+    color: #38bdf8 !important;
+}
+body.dark-mode #dateControlBar .date-select:hover {
+    background: #38bdf8 !important;
+    color: #0f172a !important;
+}
 </style>
 </head>
 <body>
@@ -837,23 +972,29 @@ body.dark-mode #bangBenhNhan td:first-child {
         <h1>BÁO CÁO GIAO BAN</h1>
         <div class="title-divider"></div>
         
-        <div class="date-row date-controls" style="margin-bottom: 20px;">
-            <span>Kíp trực ngày: </span>
-            <div class="custom-date-wrapper" id="datePickerWrapper">
-                <div id="ngayTrucDisplay" class="date-select" style="min-width: 130px; text-align: center;">...</div>
-                <div id="customCalendar" class="calendar-popup">
-                    <div class="calendar-header">
-                        <button id="prevMonth">&lt;</button>
-                        <span id="calendarMonthYear">Tháng 4 / 2026</span>
-                        <button id="nextMonth">&gt;</button>
-                    </div>
-                    <div class="calendar-days-header">
-                        <span>T2</span><span>T3</span><span>T4</span><span>T5</span><span>T6</span><span>T7</span><span>CN</span>
-                    </div>
-                    <div id="calendarGrid" class="calendar-grid"></div>
-                </div>
-            </div>
+        <div style="text-align: center; margin-bottom: 32px;">
+    <div class="date-row date-controls" id="dateControlBar">
+        <div class="date-label">
+            <svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            <span>Kíp trực ngày:</span>
         </div>
+        <div class="custom-date-wrapper" id="datePickerWrapper">
+            <div id="ngayTrucDisplay" class="date-select" style="min-width: 140px; text-align: center;">...</div>
+            
+            <div id="customCalendar" class="calendar-popup">
+                <div class="calendar-header">
+                    <button id="prevMonth">&lt;</button>
+                    <span id="calendarMonthYear">Tháng 4 / 2026</span>
+                    <button id="nextMonth">&gt;</button>
+                </div>
+                <div class="calendar-days-header">
+                    <span>T2</span><span>T3</span><span>T4</span><span>T5</span><span>T6</span><span>T7</span><span>CN</span>
+                </div>
+                <div id="calendarGrid" class="calendar-grid"></div>
+            </div>
+            </div>
+    </div>
+</div>
 
         <div id="statusBanner" style="display: none; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 16px; border-radius: 8px; border: 2px dashed; margin-bottom: 32px; max-width: 600px; margin-left: auto; margin-right: auto;">
             <div id="statusTitle" style="font-weight: 800; font-size: 16px; letter-spacing: 1px;"></div>
@@ -866,97 +1007,105 @@ body.dark-mode #bangBenhNhan td:first-child {
         </div>
 
         <div class="section" style="background: transparent; border: none; box-shadow: none; padding: 0;">
-    <h2>I. THÀNH PHẦN TRỰC & CẬN LÂM SÀNG</h2>
+    <h2>
+    <span class="header-icon">
+        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+    </span>
+    I. THÀNH PHẦN TRỰC & CẬN LÂM SÀNG
+</h2>
     
-    <div class="dashboard-chart-grid"> <div style="display: flex; flex-direction: column; gap: 16px;">
-            <div class="subgroup">
-                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px dashed var(--border-color); padding-bottom: 10px; margin-bottom: 12px;">
-                    <div class="module-title" style="border: none; padding: 0; margin: 0;">
-                        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                        Nhân sự trực
-                    </div>
-                    <select id="chonMauNhanSu" class="quick-select-staff" style="margin: 0;">
-                        <option value="">⚡ Chọn mẫu kíp trực...</option>
-                    </select>
+    <div style="display: grid; grid-template-columns: minmax(480px, 2.5fr) minmax(160px, 1fr) minmax(160px, 1fr) minmax(220px, 1.2fr); gap: 16px; align-items: stretch; overflow-x: auto; padding-bottom: 8px;">
+        
+        <div class="subgroup">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px dashed var(--border-color); padding-bottom: 10px; margin-bottom: 12px;">
+                <div class="module-title" style="border: none; padding: 0; margin: 0;">
+                    <svg class="svg-icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                    Nhân sự trực
                 </div>
-
-                <div class="grid-3-cols" style="grid-template-columns: 1fr 1fr; gap: 16px;"> 
-                    <div class="staff-vertical">
-                        <div class="staff-item">
-                            <label class="required">Trực Lãnh Đạo</label>
-                            <input type="text" id="trucLanhDao" class="staff-input" placeholder="Nhập tên..." autocomplete="off">
-                        </div>
-                        <div class="staff-item">
-                            <label class="required">Trực Chuyên môn</label>
-                            <input type="text" id="trucChuyenMon" class="staff-input" placeholder="Nhập tên..." autocomplete="off">
-                        </div>
-                        <div class="staff-item">
-                            <label class="required">Trực Phòng khám</label>
-                            <input type="text" id="trucPhongKham" class="staff-input" placeholder="Nhập tên..." autocomplete="off">
-                        </div>
-                    </div>
-                    <div class="staff-vertical">
-                        <div class="staff-item">
-                            <label class="required">Trực Xét nghiệm</label>
-                            <input type="text" id="trucXetNghiem" class="staff-input" placeholder="Nhập tên..." autocomplete="off">
-                        </div>
-                        <div class="staff-item">
-                            <label class="required">Trực CĐHA</label>
-                            <input type="text" id="trucCDHA" class="staff-input" placeholder="Nhập tên..." autocomplete="off">
-                        </div>
-                        <div class="staff-item">
-                            <label class="required">An ninh, bảo vệ</label>
-                            <input type="text" id="trucAnNinh" class="staff-input" placeholder="Nhập tên..." autocomplete="off">
-                        </div>
-                    </div>
-                </div>
+                <select id="chonMauNhanSu" class="quick-select-staff" style="margin: 0; padding: 4px 8px;">
+                    <option value="">⚡ Mẫu kíp...</option>
+                </select>
             </div>
 
-            <div class="subgroup">
-                <div class="module-title" style="justify-content: flex-start; padding-bottom: 8px;">
-                    <svg class="svg-icon" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg> 
-                    Tình hình trang thiết bị, điện nước
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;"> 
+                <div class="staff-vertical">
+                    <div class="staff-item">
+                        <label class="required">Trực Lãnh Đạo</label>
+                        <input type="text" id="trucLanhDao" class="staff-input" placeholder="Nhập tên..." autocomplete="off">
+                    </div>
+                    <div class="staff-item">
+                        <label class="required">Trực Chuyên môn</label>
+                        <input type="text" id="trucChuyenMon" class="staff-input" placeholder="Nhập tên..." autocomplete="off">
+                    </div>
+                    <div class="staff-item">
+                        <label class="required">Trực Phòng khám</label>
+                        <input type="text" id="trucPhongKham" class="staff-input" placeholder="Nhập tên..." autocomplete="off">
+                    </div>
                 </div>
-                <textarea rows="2" id="tinhTrangThietBi" placeholder="Nhập ghi chú chi tiết..."></textarea>
-                <div class="quick-chips-container" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;">
-                    <span class="quick-chip quick-fill-btn" onclick="fillEquipment('Tất cả hoạt động bình thường. Không có vật tư hỏng hóc.')" style="background: var(--bg-body); border: 1px solid var(--border-color); padding: 4px 12px; border-radius: 16px; font-size: 11.5px; font-weight: 600; cursor: pointer;">Bình thường</span>
-                    <span class="quick-chip quick-fill-btn" onclick="fillEquipment('Hệ thống mạng/HIS lỗi.')" style="background: var(--bg-body); border: 1px solid var(--border-color); padding: 4px 12px; border-radius: 16px; font-size: 11.5px; font-weight: 600; cursor: pointer;">Lỗi mạng/HIS</span>
-                    <span class="quick-chip quick-fill-btn" onclick="fillEquipment('Lỗi máy in/Photo.')" style="background: var(--bg-body); border: 1px solid var(--border-color); padding: 4px 12px; border-radius: 16px; font-size: 11.5px; font-weight: 600; cursor: pointer;">Lỗi máy in</span>
+                <div class="staff-vertical">
+                    <div class="staff-item">
+                        <label class="required">Trực Xét nghiệm</label>
+                        <input type="text" id="trucXetNghiem" class="staff-input" placeholder="Nhập tên..." autocomplete="off">
+                    </div>
+                    <div class="staff-item">
+                        <label class="required">Trực CĐHA</label>
+                        <input type="text" id="trucCDHA" class="staff-input" placeholder="Nhập tên..." autocomplete="off">
+                    </div>
+                    <div class="staff-item">
+                        <label class="required">An ninh, bảo vệ</label>
+                        <input type="text" id="trucAnNinh" class="staff-input" placeholder="Nhập tên..." autocomplete="off">
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 16px;">
-            <div class="subgroup">
-                <div class="module-title" style="color: #059669; border-bottom-color: rgba(5, 150, 105, 0.2);">
-                    <svg class="svg-icon" viewBox="0 0 24 24"><path d="M10 2v7.31"></path><path d="M14 9.3V1.99"></path><path d="M8.5 2h7"></path><path d="M14 9.3a6.5 6.5 0 1 1-4 0"></path><path d="M5.52 16h12.96"></path></svg>
-                    Xét Nghiệm
-                </div>
-                <div class="sub-row"><span>Huyết học:</span> <input type="number" id="xnHuyetHoc" min="0" list="numberOptions"></div>
-                <div class="sub-row"><span>Hóa sinh:</span> <input type="number" id="xnHoaSinh" min="0" list="numberOptions"></div>
-                <div class="sub-row"><span>Vi sinh:</span> <input type="number" id="xnViSinh" min="0" list="numberOptions"></div>
-                <div class="sub-row"><span>Nước tiểu:</span> <input type="number" id="xnNuocTieu" min="0" list="numberOptions"></div>
-                <div class="sub-row"><span>Đông máu:</span> <input type="number" id="xnDongMau" min="0" list="numberOptions"></div>
-                <div class="total-wrapper"><div class="total-badge" id="tongXetNghiem">TỔNG XN: 0</div></div>
+        <div class="subgroup">
+            <div class="module-title" style="color: #059669; border-bottom-color: rgba(5, 150, 105, 0.2);">
+                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M10 2v7.31"></path><path d="M14 9.3V1.99"></path><path d="M8.5 2h7"></path><path d="M14 9.3a6.5 6.5 0 1 1-4 0"></path><path d="M5.52 16h12.96"></path></svg>
+                Xét Nghiệm
             </div>
+            <div class="sub-row"><span>Huyết học:</span> <input type="number" id="xnHuyetHoc" min="0" list="numberOptions"></div>
+            <div class="sub-row"><span>Hóa sinh:</span> <input type="number" id="xnHoaSinh" min="0" list="numberOptions"></div>
+            <div class="sub-row"><span>Vi sinh:</span> <input type="number" id="xnViSinh" min="0" list="numberOptions"></div>
+            <div class="sub-row"><span>Nước tiểu:</span> <input type="number" id="xnNuocTieu" min="0" list="numberOptions"></div>
+            <div class="sub-row"><span>Đông máu:</span> <input type="number" id="xnDongMau" min="0" list="numberOptions"></div>
+            <div class="total-wrapper"><div class="total-badge" id="tongXetNghiem">TỔNG XN: 0</div></div>
+        </div>
 
-            <div class="subgroup">
-                <div class="module-title" style="color: #d97706; border-bottom-color: rgba(217, 119, 6, 0.2);">
-                    <svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                    Chẩn Đoán Hình Ảnh
-                </div>
-                <div class="sub-row"><span>X-Quang:</span> <input type="number" id="cdhaXquang" min="0" list="numberOptions"></div>
-                <div class="sub-row"><span>Siêu âm:</span> <input type="number" id="cdhaSieuAm" min="0" list="numberOptions"></div>
-                <div class="sub-row"><span>CT-Scanner:</span> <input type="number" id="cdhaCT" min="0" list="numberOptions"></div>
-                <div class="total-wrapper"><div class="total-badge" id="tongCDHA">TỔNG CĐHA: 0</div></div>
+        <div class="subgroup">
+            <div class="module-title" style="color: #d97706; border-bottom-color: rgba(217, 119, 6, 0.2);">
+                <svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                C.Đ.H.A
+            </div>
+            <div class="sub-row"><span>X-Quang:</span> <input type="number" id="cdhaXquang" min="0" list="numberOptions"></div>
+            <div class="sub-row"><span>Siêu âm:</span> <input type="number" id="cdhaSieuAm" min="0" list="numberOptions"></div>
+            <div class="sub-row"><span>CT-Scanner:</span> <input type="number" id="cdhaCT" min="0" list="numberOptions"></div>
+            <div class="total-wrapper"><div class="total-badge" id="tongCDHA">TỔNG CĐHA: 0</div></div>
+        </div>
+
+        <div class="subgroup">
+           <div class="module-title" style="justify-content: center; padding-bottom: 8px;">
+    <svg class="svg-icon" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg> 
+    Trang thiết bị
+</div>
+            <textarea rows="5" id="tinhTrangThietBi" placeholder="Nhập ghi chú chi tiết..."></textarea>
+            <div class="quick-chips-container" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 10px;">
+                <span class="quick-chip quick-fill-btn" onclick="fillEquipment('Tất cả hoạt động bình thường. Không có vật tư hỏng hóc.')" style="flex: 1; text-align: center; justify-content: center; background: var(--bg-body); border: 1px solid var(--border-color); padding: 4px 12px; border-radius: 16px; font-size: 11.5px; font-weight: 600; cursor: pointer;">Bình thường</span>
+                <span class="quick-chip quick-fill-btn" onclick="fillEquipment('Hệ thống mạng/HIS lỗi.')" style="flex: 1; text-align: center; justify-content: center; background: var(--bg-body); border: 1px solid var(--border-color); padding: 4px 12px; border-radius: 16px; font-size: 11.5px; font-weight: 600; cursor: pointer;">Lỗi HIS</span>
             </div>
         </div>
+        
     </div>
 </div>
 
         <div class="section" style="background: transparent; border: none; box-shadow: none; padding: 0;">
     <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
-        <h2 style="margin: 0;">II. TÌNH HÌNH BỆNH NHÂN</h2>
+        <h2 style="margin: 0;">
+    <span class="header-icon">
+        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><polyline points="17 11 19 13 23 9"></polyline></svg>
+    </span>
+    II. TÌNH HÌNH BỆNH NHÂN
+</h2>
         <div style="display: flex; align-items: center; gap: 10px; background: var(--bg-card); padding: 8px 16px; border-radius: 8px; border: 1px dashed var(--border-color);">
             <span style="font-size: 13px; font-weight: 600; color: var(--text-muted);">
                 <svg class="svg-icon" style="vertical-align: -3px; margin-right: 4px;" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
@@ -1017,7 +1166,12 @@ body.dark-mode #bangBenhNhan td:first-child {
 </div>
 
         <div class="section" id="sectionChuyenMon" style="background: transparent; border: none; box-shadow: none; padding: 0;">
-    <h2 style="margin-top: 0; margin-bottom: 24px;">III. TÌNH HÌNH CHUYÊN MÔN</h2>
+    <h2 style="margin-top: 0; margin-bottom: 24px;">
+    <span class="header-icon">
+        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+    </span>
+    III. TÌNH HÌNH CHUYÊN MÔN
+</h2>
     
     <div class="cm-card theme-ptcc">
         <div class="cm-header">
@@ -1249,13 +1403,13 @@ body.dark-mode #bangBenhNhan td:first-child {
         </div>
 		
 		<div id="tab-history" class="tab-content">
-    <div style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: rgba(2, 132, 199, 0.05); padding: 12px; border-radius: 8px; border: 1px dashed var(--primary);">
+    <div style="margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; background: rgba(2, 132, 199, 0.05); padding: 12px; border-radius: 8px; border: 1px dashed var(--primary);">
         <div style="font-size: 13px; font-weight: 700; color: var(--primary);">
             <svg class="svg-icon" style="margin-right:5px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg> BỘ LỌC NHẬT KÝ
         </div>
         <div style="display: flex; gap: 8px; align-items: center;">
             <input type="date" id="historyFilterDate" style="padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 13px; outline: none; background: var(--bg-card); color: var(--text-main);">
-            <button class="btn-save-main" style="padding: 6px 16px; font-size: 12px; min-width: auto; margin:0;" onclick="BaoCaoApp.loadHistoryLogs(document.getElementById('historyFilterDate').value)">Xem kết quả</button>
+            <button class="btn-save-main" style="padding: 6px 16px; font-size: 12px; min-width: auto; margin:0;" onclick="loadHistoryLogs(document.getElementById('historyFilterDate').value)">Xem kết quả</button>
         </div>
     </div>
 
@@ -1282,14 +1436,6 @@ body.dark-mode #bangBenhNhan td:first-child {
     </div>
 </div>
 		
-        <div id="tab-history" class="tab-content">
-            <div class="table-wrapper" style="max-height: 45vh; overflow-y: auto; box-shadow: none; border: none; background: transparent;">
-                <table class="modern-table">
-                    <thead><tr><th>Thời gian</th><th>Tài khoản</th><th>Thao tác chi tiết</th></tr></thead>
-                    <tbody id="historyTableBody"></tbody>
-                </table>
-            </div>
-        </div>
 
         <div class="modal-actions" style="margin-top: 24px;">
             <button class="modal-btn" onclick="closeDashboard()">Đóng lại</button>
@@ -2181,17 +2327,45 @@ const BaoCaoApp = (function() {
     }
 
     async function trinhDuyetBaoCao() {
-        promptPassword(`Xác thực để TRÌNH DUYỆT báo cáo ngày ${activeDate}`, async function(user) { 
-            if (!user) return;
-            let isCreator = (originalData && originalData.nguoiTao === user.fullname); let isAdmin = (user.role === 'admin');
-            if (isAdmin || isCreator) { 
-                try {
-                    let btn = document.getElementById('btnTrinhDuyet'); if(btn) { btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg> Đang xử lý...`; btn.disabled = true; }
-                    currentReportSubmitted = true; currentRejectMessage = ""; await saveReportAll(true, true); logAction(`Đã TRÌNH DUYỆT báo cáo ngày ${activeDate}`); showToast("Đã Trình duyệt thành công! Chờ Lãnh đạo phê duyệt.", "success");
-                } catch(e) { showToast("Lỗi khi trình duyệt: " + e.message, "error"); } finally { let btn = document.getElementById('btnTrinhDuyet'); if(btn) { btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"></path></svg> Trình Duyệt`; btn.disabled = false; } }
-            } else { showToast(`CẢNH BÁO: Bạn không có quyền trình báo cáo của BS. ${originalData ? originalData.nguoiTao : 'khác'}!`, "error"); } 
-        });
+    // 1. KIỂM TRA BẮT BUỘC ĐIỀN ĐỦ DỮ LIỆU TRƯỚC KHI TRÌNH DUYỆT
+    document.querySelectorAll('.error-highlight').forEach(el => el.classList.remove('error-highlight'));
+    let missingFields = []; let firstErrorEl = null;
+
+    const checkField = (id, name) => { const el = document.getElementById(id); if (!el) return; if (!el.value) { missingFields.push(name); el.classList.add('error-highlight'); if (!firstErrorEl) firstErrorEl = el; } };
+
+    checkField("trucLanhDao", "Trực Lãnh Đạo"); checkField("trucChuyenMon", "Trực Chuyên môn"); checkField("trucPhongKham", "Trực Phòng khám"); checkField("trucXetNghiem", "Trực Xét nghiệm"); checkField("trucCDHA", "Trực CĐHA"); checkField("trucAnNinh", "Trực An ninh, bảo vệ");
+
+    const selects = document.querySelectorAll('#tbodyBenhNhan .bs-input');
+    selects.forEach((sel, idx) => { if (!sel.value) { let khoaName = benhNhanData[idx] ? benhNhanData[idx].khoa : "Khoa"; missingFields.push("Bác sĩ trực (" + khoaName + ")"); sel.classList.add('error-highlight'); if (!firstErrorEl) firstErrorEl = sel; } });
+
+    // Nếu thiếu, báo lỗi và cuộn tới ô lỗi, KHÔNG cho hiện bảng nhập mật khẩu
+    if (missingFields.length > 0) { 
+        showToast("Không thể Trình duyệt! Vui lòng điền đủ các mục bắt buộc (*): " + missingFields.join(", "), "error"); 
+        if(firstErrorEl) firstErrorEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
+        return; 
     }
+
+    // 2. NẾU ĐÃ ĐIỀN ĐỦ THÌ MỚI TIẾN HÀNH XÁC THỰC
+    promptPassword(`Xác thực để TRÌNH DUYỆT báo cáo ngày ${activeDate}`, async function(user) { 
+        if (!user) return;
+        let isCreator = (originalData && originalData.nguoiTao === user.fullname); let isAdmin = (user.role === 'admin');
+        if (isAdmin || isCreator) { 
+            try {
+                let btn = document.getElementById('btnTrinhDuyet'); if(btn) { btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg> Đang xử lý...`; btn.disabled = true; }
+                currentReportSubmitted = true; currentRejectMessage = ""; 
+                await saveReportAll(true, true); 
+                logAction(`Đã TRÌNH DUYỆT báo cáo ngày ${activeDate}`); 
+                showToast("Đã Trình duyệt thành công! Chờ Lãnh đạo phê duyệt.", "success");
+            } catch(e) { 
+                showToast("Lỗi khi trình duyệt: " + e.message, "error"); 
+            } finally { 
+                let btn = document.getElementById('btnTrinhDuyet'); if(btn) { btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"></path></svg> Trình Duyệt`; btn.disabled = false; } 
+            }
+        } else { 
+            showToast(`CẢNH BÁO: Bạn không có quyền trình báo cáo của BS. ${originalData ? originalData.nguoiTao : 'khác'}!`, "error"); 
+        } 
+    });
+}
         
     async function duyetBaoCao() {
         promptPassword(`Xác thực Lãnh đạo để DUYỆT báo cáo ngày ${activeDate}`, async function(user) { 
@@ -2927,8 +3101,9 @@ const BaoCaoApp = (function() {
         if (btnExcel) btnExcel.style.display = (isMedicalAdmin || isITAdmin) ? 'inline-flex' : 'none';
         
         let isOwner = (originalData && currentUserSession && originalData.nguoiTao === currentUserSession.fullname);
-        let btnTrinhDuyet = document.getElementById('btnTrinhDuyet'); 
-        if(btnTrinhDuyet) btnTrinhDuyet.style.display = (hasData && !currentReportSubmitted && !currentReportApproved && (!isEditor || !isTimeLocked) && !lockedBySomeoneElse && !lockedByCreator && !isViewer && (isOwner || isITAdmin)) ? 'inline-flex' : 'none';
+		let isSavedDraft = (originalData && originalData.isSaved === true); // Bắt buộc phải là bản đã bấm lưu chính thức
+		let btnTrinhDuyet = document.getElementById('btnTrinhDuyet'); 
+		if(btnTrinhDuyet) btnTrinhDuyet.style.display = (hasData && isSavedDraft && !currentReportSubmitted && !currentReportApproved && (!isEditor || !isTimeLocked) && !lockedBySomeoneElse && !lockedByCreator && !isViewer && (isOwner || isITAdmin)) ? 'inline-flex' : 'none';
         
         let btnDuyet = document.getElementById('btnDuyet'); if(btnDuyet) btnDuyet.style.display = (isMedicalAdmin && hasData && currentReportSubmitted && !currentReportApproved) ? 'inline-flex' : 'none';
         let btnTuChoi = document.getElementById('btnTuChoi'); if(btnTuChoi) btnTuChoi.style.display = (isMedicalAdmin && hasData && currentReportSubmitted && !currentReportApproved) ? 'inline-flex' : 'none';
@@ -2944,18 +3119,26 @@ const BaoCaoApp = (function() {
         if (!datalistEl) { datalistEl = document.createElement("datalist"); datalistEl.id = datalistId; document.body.appendChild(datalistEl); }
         datalistEl.innerHTML = "";
         
-        const fullOptions = [...optionsArray, "➕ Thêm người (Khác...)", "🔄 Làm mới (Xóa)"];
-        fullOptions.forEach(opt => { if (opt === "-- Chọn --") return; let option = document.createElement("option"); option.value = opt; datalistEl.appendChild(option); });
+        // Chỉ lấy mảng gốc, bỏ 2 tùy chọn thêm/xóa
+        const fullOptions = [...optionsArray];
+        fullOptions.forEach(opt => { 
+            if (opt === "-- Chọn --") return; 
+            let option = document.createElement("option"); 
+            option.value = opt; 
+            datalistEl.appendChild(option); 
+        });
         inputEl.setAttribute("list", datalistId);
 
         if (!inputEl.dataset.initialized) {
             inputEl.addEventListener('input', function(e) {
-                if(isFormLocked) return; let val = e.target.value; e.target.classList.remove('error-highlight');
-                if (val === "🔄 Làm mới (Xóa)") { e.target.value = ""; e.target.dataset.prevValue = ""; updateSyncStatus('pending'); saveData(false); } 
-                else if (val === "➕ Thêm người (Khác...)") {
-                    e.target.value = e.target.dataset.prevValue || ""; let cur = e.target.value;
-                    openModal("Nhập tên khác:", (customVal) => { if (customVal) { e.target.value = cur ? (cur + " - " + customVal) : customVal; e.target.dataset.prevValue = e.target.value; } updateSyncStatus('pending'); saveData(false); });
-                } else { e.target.dataset.prevValue = val; updateSyncStatus('pending'); saveData(false); }
+                if(isFormLocked) return; 
+                let val = e.target.value; 
+                e.target.classList.remove('error-highlight');
+                
+                // Lưu trực tiếp giá trị và cập nhật data
+                e.target.dataset.prevValue = val; 
+                updateSyncStatus('pending'); 
+                saveData(false); 
             });
             inputEl.addEventListener('focus', function() { if(!isFormLocked) this.select(); });
             inputEl.dataset.initialized = "true";
@@ -3802,6 +3985,7 @@ document.getElementById("footBenhNhan").innerHTML = `<tr>
         fetchFromCloudAndRefreshUI,
         handleDeleteLogs,
         xoaTatCaLocal,
+        loadHistoryLogs, // Đã thêm hàm lọc ngày tháng
 
         trinhDuyetBaoCao,
         duyetBaoCao,
@@ -3846,6 +4030,7 @@ window.tuChoiBaoCao = BaoCaoApp.tuChoiBaoCao;
 window.huyDuyetBaoCao = BaoCaoApp.huyDuyetBaoCao;
 window.quickEditCurrent = BaoCaoApp.quickEditCurrent;
 window.fillEquipment = BaoCaoApp.fillEquipment;
+window.loadHistoryLogs = BaoCaoApp.loadHistoryLogs; // Kéo thẳng biến này ra toàn cục
 window.BaoCaoApp = BaoCaoApp;
 </script>
 </body>
