@@ -365,11 +365,11 @@ body.dark-mode .theme-ra .cm-header-icon { background: #0f172a; color: #94a3b8; 
     #bangBenhNhan td:nth-child(1) { text-align: left; padding-left: 8px; font-weight: 700; color: var(--text-main); }
     #footBenhNhan td { position: sticky; bottom: 0; font-weight: 700; border-top: 2px solid var(--border-color); z-index: 9; padding: 10px 2px; }
 
-    .table-input-compact { width: 100%; padding: 6px 2px; border: 1px dashed rgba(100,116,139,.35); border-radius: 4px; font-size: 13px; font-weight: 600; text-align: center !important; color: var(--primary); background: transparent; outline: none; transition: all .2s; }
+    .table-input-compact { width: 100%; padding: 6px 2px; border: 1px dashed rgba(100,116,139,.35); border-radius: 4px; font-size: 13px; font-weight: 600; text-align: center !important; color: var(--primary); background: transparent; outline: none; transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s, transform 0.2s; will-change: transform, border-color;; }
     .table-input-compact:focus { border: 1px dashed var(--primary); transform: scale(1.15); z-index: 50; position: relative; background: var(--bg-card); box-shadow: 0 0 0 3px rgba(2,132,199,.1); }
     .table-input-compact:hover:not(:disabled) { border: 1px solid var(--primary); background: rgba(255,255,255,.7); transform: scale(1.08); z-index: 40; position: relative; box-shadow: 0 4px 12px rgba(2,132,199,.15); cursor: text; }
 
-    .clean-input { width: 100%; padding: 8px 10px; border: 1px dashed rgba(100,116,139,.35); border-radius: 6px; font-size: 13px; background: transparent; color: var(--text-main); resize: none; overflow: hidden; line-height: 1.5; font-family: inherit; outline: none; transition: all .2s; }
+    .clean-input { width: 100%; padding: 8px 10px; border: 1px dashed rgba(100,116,139,.35); border-radius: 6px; font-size: 13px; background: transparent; color: var(--text-main); resize: none; overflow: hidden; line-height: 1.5; font-family: inherit; outline: none; transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s, transform 0.2s; will-change: transform, border-color;; }
     .clean-input:focus { background: var(--bg-body); border: 1px dashed var(--primary); position: relative; z-index: 10; box-shadow: 0 0 0 3px rgba(2,132,199,.1); }
     .clean-input:hover:not(:disabled) { border: 1px solid var(--primary); background: rgba(255,255,255,.7); box-shadow: 0 4px 12px rgba(2,132,199,.15); }
 
@@ -3363,7 +3363,25 @@ const BaoCaoApp = (function() {
         const datalist = document.getElementById('numberOptions'); 
         for (let i = 0; i <= 100; i++) { let opt = document.createElement('option'); opt.value = i; datalist.appendChild(opt); }
         
-        ["xnHuyetHoc","xnHoaSinh","xnViSinh","xnNuocTieu","xnDongMau","cdhaXquang","cdhaSieuAm","cdhaCT"].forEach(id => document.getElementById(id).addEventListener("input", () => { tinhTongXetNghiem(); tinhTongCDHA(); }));
+        // 1. Tự động tính tổng và LƯU cho các ô Cận lâm sàng
+        ["xnHuyetHoc","xnHoaSinh","xnViSinh","xnNuocTieu","xnDongMau","cdhaXquang","cdhaSieuAm","cdhaCT"].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener("input", () => {
+                    tinhTongXetNghiem(); 
+                    tinhTongCDHA();
+                    if (!isFormLocked) { updateSyncStatus('pending'); saveData(false); }
+                });
+            }
+        });
+
+        // 2. Tự động LƯU cho ô Ghi chú Trang thiết bị
+        const txtThietBi = document.getElementById("tinhTrangThietBi");
+        if (txtThietBi) {
+            txtThietBi.addEventListener("input", () => {
+                if (!isFormLocked) { updateSyncStatus('pending'); saveData(false); }
+            });
+        }
 
         // --- BỘ DELEGATION SỰ KIỆN: BẢNG BỆNH NHÂN ---
         const bangBenhNhanEl = document.getElementById('bangBenhNhan');
@@ -3426,7 +3444,72 @@ const BaoCaoApp = (function() {
                         showToast(`Lỗi logic: Khoa ${row.khoa} đang bị âm bệnh nhân!`, "error");
                     }
                     target.value = f0(row[field]);
-                    renderBangBenhNhan(); 
+                    target.value = f0(row[field]);
+
+// --- BẮT ĐẦU: CẬP NHẬT CỤC BỘ THAY VÌ RE-RENDER TOÀN BẢNG ---
+const { hienCo, tyLe } = tinhHienCoVaTyLe(row);
+
+// 1. Cập nhật UI của dòng hiện tại
+const tr = target.closest('tr');
+if (tr) {
+    // Cập nhật ô Hiện có (cột số 17, index 17)
+    const hienCoCell = tr.cells[17]; 
+    hienCoCell.innerText = hienCo < 0 ? `⚠ ${f0(hienCo)}` : f0(hienCo);
+    hienCoCell.style.color = hienCo < 0 ? 'var(--danger)' : 'var(--primary)';
+    hienCoCell.style.fontWeight = 'bold';
+
+    // Cập nhật ô Tỷ lệ (cột cuối cùng)
+    const tyLeCell = tr.cells[19];
+    tyLeCell.innerText = f0(tyLe > 0 ? tyLe.toFixed(1) + "%" : 0);
+    
+    // Cập nhật class Overload
+    if (tyLe > 100) {
+        tr.classList.add('row-overload');
+        tyLeCell.classList.add('text-overload');
+        tr.cells[0].innerHTML = `<span style="color:var(--danger);font-weight:900;">⚠️ ${row.khoa}</span>`;
+    } else {
+        tr.classList.remove('row-overload');
+        tyLeCell.classList.remove('text-overload');
+        tr.cells[0].innerText = row.khoa;
+    }
+}
+
+// 2. Tự động tính toán lại và cập nhật phần Footer (Tổng cộng)
+let tong = { cu:0, vaoHC:0, vaoTruc:0, ra:0, chuyenDi:0, chuyenDen:0, chuyenVien:0, xinVe:0, tronVien:0, tuVongNgoaiTru:0, tuVongNoiTru:0, ptCapCuu:0, vaoSang:0, raSang:0, hienCo:0, duKienRa:0, giuongKH:0 };
+benhNhanData.forEach(r => {
+    const rHC = tinhHienCoVaTyLe(r).hienCo;
+    tong.cu += r.cu; tong.vaoHC += r.vaoHC; tong.vaoTruc += r.vaoTruc; tong.vaoSang += r.vaoSang;
+    tong.ra += r.ra; tong.raSang += r.raSang; tong.xinVe += r.xinVe; tong.tronVien += r.tronVien;
+    tong.chuyenVien += r.chuyenVien; tong.chuyenDen += r.chuyenDen; tong.chuyenDi += r.chuyenDi;
+    tong.tuVongNgoaiTru += r.tuVongNgoaiTru; tong.tuVongNoiTru += r.tuVongNoiTru;
+    tong.ptCapCuu += r.ptCapCuu; tong.duKienRa += r.duKienRa; tong.giuongKH += r.giuongKH;
+    tong.hienCo += rHC;
+});
+const tyTong = tong.giuongKH > 0 ? (tong.hienCo / tong.giuongKH) * 100 : 0;
+
+// Render lại riêng tfoot (nhẹ hơn rất nhiều so với tbody)
+document.getElementById("footBenhNhan").innerHTML = `<tr>
+    <td colspan="2" class="bg-chung group-divider" style="text-align: center; letter-spacing: 1px;">TỔNG SỐ</td>
+    <td class="bg-chung group-divider">${f0(tong.cu)}</td>
+    <td class="bg-vao">${f0(tong.vaoHC)}</td>
+    <td class="bg-vao">${f0(tong.vaoTruc)}</td>
+    <td class="bg-vao group-divider">${f0(tong.vaoSang)}</td>
+    <td class="bg-ra">${f0(tong.ra)}</td>
+    <td class="bg-ra">${f0(tong.raSang)}</td>
+    <td class="bg-ra">${f0(tong.xinVe)}</td>
+    <td class="bg-ra">${f0(tong.tronVien)}</td>
+    <td class="bg-ra group-divider">${f0(tong.chuyenVien)}</td>
+    <td class="bg-ck">${f0(tong.chuyenDen)}</td>
+    <td class="bg-ck group-divider">${f0(tong.chuyenDi)}</td>
+    <td class="bg-tv">${f0(tong.tuVongNgoaiTru)}</td>
+    <td class="bg-tv group-divider">${f0(tong.tuVongNoiTru)}</td>
+    <td class="bg-pt group-divider">${f0(tong.ptCapCuu)}</td>
+    <td class="bg-tong">${f0(tong.duKienRa)}</td>
+    <td class="bg-tong">${f0(tong.hienCo)}</td>
+    <td class="bg-tong">${f0(tong.giuongKH)}</td>
+    <td class="bg-tong">${f0(tyTong > 0 ? tyTong.toFixed(1) + "%" : 0)}</td>
+</tr>`;
+// --- KẾT THÚC CẬP NHẬT CỤC BỘ ---
                 } else if (target.classList.contains('bs-input')) {
                     let val = target.value.trim().replace(/(?:^|\s)\S/g, a => a.toUpperCase());
                     target.value = val;
@@ -3556,30 +3639,40 @@ const BaoCaoApp = (function() {
         document.addEventListener('focusin', function(e) { if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) e.target.dataset.oldVal = e.target.value || ""; });
         document.addEventListener('change', function(e) {
             if (isFormLocked || !activeDate) return;
-            let el = e.target; if (!['INPUT', 'SELECT', 'TEXTAREA'].includes(el.tagName)) return;
-            let oldVal = el.dataset.oldVal || ""; let newVal = el.value || ""; if (oldVal === newVal) return;
-            let printOld = oldVal.trim() === "" ? "(trống)" : oldVal; let printNew = newVal.trim() === "" ? "(trống)" : newVal;
-            if (printOld.length > 50) printOld = printOld.substring(0, 50) + "..."; if (printNew.length > 50) printNew = printNew.substring(0, 50) + "...";
-            let fieldDetail = el.id || el.name || "dữ liệu";
-            const mapId = { "trucLanhDao": "Trực Lãnh Đạo", "trucChuyenMon": "Trực Chuyên Môn", "trucPhongKham": "Trực Phòng Khám", "trucXetNghiem": "Trực Xét Nghiệm", "trucCDHA": "Trực CĐHA", "trucAnNinh": "Trực An Ninh", "xnHuyetHoc": "XN Huyết học", "xnHoaSinh": "XN Hóa sinh", "xnViSinh": "XN Vi sinh", "xnNuocTieu": "XN Nước tiểu", "xnDongMau": "XN Đông máu", "cdhaXquang": "CĐHA Xquang", "cdhaSieuAm": "CĐHA Siêu âm", "cdhaCT": "CĐHA CT-Scanner", "tinhTrangThietBi": "Tình trạng thiết bị", "nguoiLamBaoCao": "Người làm báo cáo" };
-            if (mapId[el.id]) fieldDetail = mapId[el.id];
-            else {
-                let closestTr = el.closest('tr'); let closestTable = el.closest('table');
-                if (closestTable) {
-                    if (closestTable.id === 'bangBenhNhan') {
-                        let khoaName = closestTr?.cells[0]?.innerText.replace("⚠️", "").trim() || "Khoa"; let colName = "chỉ số";
-                        if (el.classList.contains('bs-input')) colName = "Bác sĩ trực"; else { const bnCols = ["Khoa", "Bác sĩ", "Bệnh nhân Cũ", "Vào Hành chính", "Vào Trực", "Vào Sáng", "Ra viện", "Ra Sáng", "Xin về", "Trốn viện", "Chuyển viện", "Chuyển đến", "Chuyển đi", "Tử vong Ngoại trú", "Tử vong Nội trú", "PT Cấp cứu", "Dự kiến ra"]; let cellIdx = el.closest('td').cellIndex; if (bnCols[cellIdx]) colName = bnCols[cellIdx]; }
-                        fieldDetail = `[Khoa ${khoaName}] cột ${colName}`;
-                    } else {
-                        let tableNames = { "tablePTCC": "PTCC", "tableVaoVien": "Vào viện", "tableChuyenVien": "Chuyển viện", "tableRaVien": "Ra viện" }; let tName = tableNames[closestTable.id] || "Danh sách"; let rowStt = closestTr?.cells[0]?.innerText || "X"; let cellIdx = el.closest('td')?.cellIndex; let colName = closestTable.rows[0]?.cells[cellIdx]?.innerText || "dữ liệu";
-                        fieldDetail = `[Bảng ${tName}] BN số ${rowStt} - cột ${colName}`;
+            let el = e.target; 
+            if (!['INPUT', 'SELECT', 'TEXTAREA'].includes(el.tagName)) return;
+            
+            // Đẩy tác vụ quét DOM và ghi log xuống cuối hàng đợi
+            setTimeout(() => {
+                let oldVal = el.dataset.oldVal || ""; 
+                let newVal = el.value || ""; 
+                if (oldVal === newVal) return;
+                
+                let printOld = oldVal.trim() === "" ? "(trống)" : oldVal; 
+                let printNew = newVal.trim() === "" ? "(trống)" : newVal;
+                if (printOld.length > 50) printOld = printOld.substring(0, 50) + "..."; 
+                if (printNew.length > 50) printNew = printNew.substring(0, 50) + "...";
+                
+                let fieldDetail = el.id || el.name || "dữ liệu";
+                const mapId = { "trucLanhDao": "Trực Lãnh Đạo", "trucChuyenMon": "Trực Chuyên Môn", "trucPhongKham": "Trực Phòng Khám", "trucXetNghiem": "Trực Xét Nghiệm", "trucCDHA": "Trực CĐHA", "trucAnNinh": "Trực An Ninh", "xnHuyetHoc": "XN Huyết học", "xnHoaSinh": "XN Hóa sinh", "xnViSinh": "XN Vi sinh", "xnNuocTieu": "XN Nước tiểu", "xnDongMau": "XN Đông máu", "cdhaXquang": "CĐHA Xquang", "cdhaSieuAm": "CĐHA Siêu âm", "cdhaCT": "CĐHA CT-Scanner", "tinhTrangThietBi": "Tình trạng thiết bị", "nguoiLamBaoCao": "Người làm báo cáo" };
+                if (mapId[el.id]) fieldDetail = mapId[el.id];
+                else {
+                    let closestTr = el.closest('tr'); let closestTable = el.closest('table');
+                    if (closestTable) {
+                        if (closestTable.id === 'bangBenhNhan') {
+                            let khoaName = closestTr?.cells[0]?.innerText.replace("⚠️", "").trim() || "Khoa"; let colName = "chỉ số";
+                            if (el.classList.contains('bs-input')) colName = "Bác sĩ trực"; else { const bnCols = ["Khoa", "Bác sĩ", "Bệnh nhân Cũ", "Vào Hành chính", "Vào Trực", "Vào Sáng", "Ra viện", "Ra Sáng", "Xin về", "Trốn viện", "Chuyển viện", "Chuyển đến", "Chuyển đi", "Tử vong Ngoại trú", "Tử vong Nội trú", "PT Cấp cứu", "Dự kiến ra"]; let cellIdx = el.closest('td').cellIndex; if (bnCols[cellIdx]) colName = bnCols[cellIdx]; }
+                            fieldDetail = `[Khoa ${khoaName}] cột ${colName}`;
+                        } else {
+                            let tableNames = { "tablePTCC": "PTCC", "tableVaoVien": "Vào viện", "tableChuyenVien": "Chuyển viện", "tableRaVien": "Ra viện" }; let tName = tableNames[closestTable.id] || "Danh sách"; let rowStt = closestTr?.cells[0]?.innerText || "X"; let cellIdx = el.closest('td')?.cellIndex; let colName = closestTable.rows[0]?.cells[cellIdx]?.innerText || "dữ liệu";
+                            fieldDetail = `[Bảng ${tName}] BN số ${rowStt} - cột ${colName}`;
+                        }
                     }
                 }
-            }
-            let actDate = activeDate.split('-').reverse().join('/'); logAction(`[Ngày ${actDate}] Sửa ${fieldDetail}: "${printOld}" ➡️ "${printNew}"`);
-            el.dataset.oldVal = newVal; 
+                let actDate = activeDate.split('-').reverse().join('/'); logAction(`[Ngày ${actDate}] Sửa ${fieldDetail}: "${printOld}" ➡️ "${printNew}"`);
+                el.dataset.oldVal = newVal; 
+            }, 10);
         });
-        document.addEventListener("input", function(e) { if (!e.target.classList.contains("modal-input") && !isFormLocked) { updateSyncStatus('pending'); saveData(false); } });
     }
 
     // ==========================================
