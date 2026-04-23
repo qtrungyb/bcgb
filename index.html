@@ -2408,41 +2408,101 @@ const BaoCaoApp = (function() {
     function updateDateDisplay() { let parts = activeDate.split("-"); document.getElementById("ngayTrucDisplay").textContent = `${parts[2]}/${parts[1]}/${parts[0]}`; }
 
     async function renderChart() {
-        const allRecords = await getCombinedRecords(); const uniqueMap = new Map(); allRecords.forEach(r => uniqueMap.set(r.date, r));
-        let records = Array.from(uniqueMap.values()).sort((a, b) => new Date(a.date) - new Date(b.date));
-        let monthVal = document.getElementById("monthFilter") ? document.getElementById("monthFilter").value : "all";
-        
-        if(monthVal !== "all") records = records.filter(r => r.date.startsWith(monthVal)); else records = records.slice(-15);
-        if(records.length === 0) return;
-        
-        const labels = records.map(r => r.date.split('-').reverse().slice(0,2).join('/')); const dataHienCo = records.map(r => r.hienCo);
-        const isDark = document.body.classList.contains('dark-mode'); const textColor = isDark ? '#e2e8f0' : '#334155'; const gridColor = isDark ? '#334155' : '#e2e8f0';
-        
-        if(trendChartInstance) trendChartInstance.destroy(); if(doughnutChartInstance) doughnutChartInstance.destroy(); if(barChartInstance) barChartInstance.destroy();
-        
+    const allRecords = await getCombinedRecords(); 
+    const uniqueMap = new Map(); 
+    allRecords.forEach(r => uniqueMap.set(r.date, r));
+    let records = Array.from(uniqueMap.values()).sort((a, b) => new Date(a.date) - new Date(b.date));
+    let monthVal = document.getElementById("monthFilter") ? document.getElementById("monthFilter").value : "all";
+    
+    if(monthVal !== "all") records = records.filter(r => r.date.startsWith(monthVal)); else records = records.slice(-15);
+    if(records.length === 0) return;
+    
+    const labels = records.map(r => r.date.split('-').reverse().slice(0,2).join('/')); 
+    const dataHienCo = records.map(r => r.hienCo);
+    const isDark = document.body.classList.contains('dark-mode'); 
+    const textColor = isDark ? '#e2e8f0' : '#334155'; 
+    const gridColor = isDark ? '#334155' : '#e2e8f0';
+    
+    // XÓA ĐOẠN NÀY:
+    // if(trendChartInstance) trendChartInstance.destroy(); if(doughnutChartInstance) doughnutChartInstance.destroy(); if(barChartInstance) barChartInstance.destroy();
+    
+    // ==========================================
+    // 1. TỐI ƯU TREND CHART (Biểu đồ đường)
+    // ==========================================
+    if (trendChartInstance) {
+        // Chỉ cập nhật dữ liệu nếu biểu đồ đã tồn tại
+        trendChartInstance.data.labels = labels;
+        trendChartInstance.data.datasets[0].data = dataHienCo;
+        trendChartInstance.options.scales.x.grid.color = gridColor;
+        trendChartInstance.options.scales.x.ticks.color = textColor;
+        trendChartInstance.options.scales.y.grid.color = gridColor;
+        trendChartInstance.options.scales.y.ticks.color = textColor;
+        trendChartInstance.options.plugins.title.color = textColor;
+        trendChartInstance.options.plugins.datalabels.color = textColor;
+        trendChartInstance.update();
+    } else {
+        // Khởi tạo lần đầu
         trendChartInstance = new Chart(document.getElementById('trendChart').getContext('2d'), { 
-            type: 'line', data: { labels: labels, datasets: [{ data: dataHienCo, borderColor: '#0284c7', backgroundColor: 'rgba(2, 132, 199, 0.2)', borderWidth: 3, fill: true, tension: 0.3 }] }, plugins: [ChartDataLabels],
+            type: 'line', 
+            data: { labels: labels, datasets: [{ data: dataHienCo, borderColor: '#0284c7', backgroundColor: 'rgba(2, 132, 199, 0.2)', borderWidth: 3, fill: true, tension: 0.3 }] }, plugins: [ChartDataLabels],
             options: { responsive: true, maintainAspectRatio: false, layout: { padding: { top: 25, bottom: 10 } }, plugins: { datalabels: { align: 'top', color: textColor, font: { weight: 'bold', family: "'Inter', sans-serif", size: 12 }, formatter: (value) => value > 0 ? value : '' }, title: { display: true, text: 'Tổng bệnh nhân trong 15 ngày', position: 'bottom', color: textColor, font: {family: "'Inter', sans-serif", size: 14}, padding: { top: 10 } }, legend: { display: false }, tooltip: { displayColors: false, callbacks: { label: function(context) { return context.parsed.y; } } } }, scales: { x: { grid: { color: gridColor }, ticks: { color: textColor } }, y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor } } } } 
         });
+    }
 
-        const latestRecord = records[records.length - 1];
-        if(latestRecord && latestRecord.khoaStats) {
+    // ==========================================
+    // 2. TỐI ƯU DOUGHNUT CHART (Biểu đồ tròn)
+    // ==========================================
+    const latestRecord = records[records.length - 1];
+    if(latestRecord && latestRecord.khoaStats) {
+        const dLabels = Object.keys(latestRecord.khoaStats);
+        const dData = Object.values(latestRecord.khoaStats);
+
+        if (doughnutChartInstance) {
+            doughnutChartInstance.data.labels = dLabels;
+            doughnutChartInstance.data.datasets[0].data = dData;
+            doughnutChartInstance.options.plugins.title.color = textColor;
+            doughnutChartInstance.options.plugins.legend.labels.color = textColor;
+            doughnutChartInstance.update();
+        } else {
             doughnutChartInstance = new Chart(document.getElementById('doughnutChart').getContext('2d'), { 
-                type: 'doughnut', data: { labels: Object.keys(latestRecord.khoaStats), datasets: [{ data: Object.values(latestRecord.khoaStats), backgroundColor: ['#0284c7', '#16a34a', '#eab308', '#ef4444', '#8b5cf6', '#f97316', '#06b6d4'] }] }, plugins: [ChartDataLabels],
+                type: 'doughnut', 
+                data: { labels: dLabels, datasets: [{ data: dData, backgroundColor: ['#0284c7', '#16a34a', '#eab308', '#ef4444', '#8b5cf6', '#f97316', '#06b6d4'] }] }, plugins: [ChartDataLabels],
                 options: { responsive: true, maintainAspectRatio: false, layout: { padding: { bottom: 10 } }, plugins: { datalabels: { color: '#fff', font: { weight: 'bold', family: "'Inter', sans-serif", size: 12 }, formatter: (value) => value > 0 ? value : '' }, title: { display: true, text: 'Tỷ lệ hiện có tại các khoa', position: 'bottom', color: textColor, font: {family: "'Inter', sans-serif", size: 14}, padding: { top: 10 } }, legend: { position: 'right', labels: { color: textColor, font: {family: "'Inter', sans-serif"} } } } } 
             });
         }
+    }
 
-        let last7Records = Array.from(uniqueMap.values()).sort((a, b) => new Date(a.date) - new Date(b.date)).slice(-7);
-        const labels7 = last7Records.map(r => r.date.split('-').reverse().slice(0,2).join('/')); const dataVao = last7Records.map(r => r.tongVao); const dataRa = last7Records.map(r => r.tongRa);
-        const barChartCanvas = document.getElementById('barChart');
-        if (barChartCanvas) {
+    // ==========================================
+    // 3. TỐI ƯU BAR CHART (Biểu đồ cột)
+    // ==========================================
+    let last7Records = Array.from(uniqueMap.values()).sort((a, b) => new Date(a.date) - new Date(b.date)).slice(-7);
+    const labels7 = last7Records.map(r => r.date.split('-').reverse().slice(0,2).join('/')); 
+    const dataVao = last7Records.map(r => r.tongVao); 
+    const dataRa = last7Records.map(r => r.tongRa);
+    const barChartCanvas = document.getElementById('barChart');
+    
+    if (barChartCanvas) {
+        if (barChartInstance) {
+            barChartInstance.data.labels = labels7;
+            barChartInstance.data.datasets[0].data = dataVao;
+            barChartInstance.data.datasets[1].data = dataRa;
+            barChartInstance.options.scales.x.grid.color = gridColor;
+            barChartInstance.options.scales.x.ticks.color = textColor;
+            barChartInstance.options.scales.y.grid.color = gridColor;
+            barChartInstance.options.scales.y.ticks.color = textColor;
+            barChartInstance.options.plugins.title.color = textColor;
+            barChartInstance.options.plugins.legend.labels.color = textColor;
+            barChartInstance.options.plugins.datalabels.color = textColor;
+            barChartInstance.update();
+        } else {
             barChartInstance = new Chart(barChartCanvas.getContext('2d'), {
-                type: 'bar', data: { labels: labels7, datasets: [{ label: 'Vào viện', data: dataVao, backgroundColor: '#16a34a', borderRadius: 4 }, { label: 'Ra viện', data: dataRa, backgroundColor: '#ef4444', borderRadius: 4 }] }, plugins: [ChartDataLabels],
+                type: 'bar', 
+                data: { labels: labels7, datasets: [{ label: 'Vào viện', data: dataVao, backgroundColor: '#16a34a', borderRadius: 4 }, { label: 'Ra viện', data: dataRa, backgroundColor: '#ef4444', borderRadius: 4 }] }, plugins: [ChartDataLabels],
                 options: { responsive: true, maintainAspectRatio: false, layout: { padding: { top: 25, bottom: 10 } }, plugins: { datalabels: { anchor: 'end', align: 'top', color: textColor, font: { weight: 'bold', family: "'Inter', sans-serif", size: 11 }, formatter: (value) => value > 0 ? value : '' }, title: { display: true, text: 'Bệnh nhân vào/ra trong 7 ngày', position: 'bottom', color: textColor, font: {family: "'Inter', sans-serif", size: 14}, padding: { top: 10 } }, legend: { position: 'top', labels: { color: textColor, font: {family: "'Inter', sans-serif"} } } }, scales: { x: { grid: { color: gridColor }, ticks: { color: textColor } }, y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor } } } }
             });
         }
     }
+}
 
     async function renderDashboard() {
         const allRecords = await getCombinedRecords();
@@ -3568,8 +3628,10 @@ document.getElementById("footBenhNhan").innerHTML = `<tr>
                     }
 
                     dataArray[idx][col] = target.value;
-                    target.style.height = 'auto';
-                    target.style.height = target.scrollHeight + 'px';
+                    requestAnimationFrame(() => {
+						target.style.height = 'auto';
+						target.style.height = target.scrollHeight + 'px';
+					});
                     updateSyncStatus('pending');
                     saveData(false);
                     
