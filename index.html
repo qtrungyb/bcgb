@@ -1371,6 +1371,192 @@ body.dark-mode .chart-container-box {
 }
 
 
+/* =========================================
+   CẢI TIẾN BỘ LỌC VÀ TÌM KIẾM QUẢN LÝ BÁO CÁO
+========================================= */
+.dashboard-controls-wrapper {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    background: rgba(241, 245, 249, 0.6);
+    padding: 8px 12px;
+    border-radius: 14px;
+    border: 1px solid var(--border-color);
+    margin-right: 16px; /* Cân đối với layout tổng thể */
+}
+
+body.dark-mode .dashboard-controls-wrapper {
+    background: rgba(30, 41, 59, 0.4);
+}
+
+/* Khu vực Dropdown Lọc Tháng */
+.modern-filter-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.modern-filter-wrapper::after {
+    content: "";
+    position: absolute;
+    right: 14px;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 6px solid var(--primary);
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+.modern-filter-select {
+    padding: 10px 36px 10px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 700;
+    background: var(--bg-card);
+    color: var(--primary);
+    outline: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    appearance: none;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+    min-width: 160px;
+}
+
+.modern-filter-select:hover, .modern-filter-select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.08);
+}
+
+/* Khu vực Ô Tìm kiếm */
+.modern-search-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.modern-search-wrapper .search-icon {
+    position: absolute;
+    left: 14px;
+    color: var(--text-muted);
+    width: 16px;
+    height: 16px;
+    pointer-events: none;
+    transition: color 0.3s;
+}
+
+.modern-search-input {
+    width: 200px;
+    padding: 10px 16px 10px 38px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 500;
+    background: var(--bg-card);
+    color: var(--text-main);
+    outline: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.modern-search-input::placeholder {
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.modern-search-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15), inset 0 1px 2px rgba(0,0,0,0.02);
+    width: 250px; /* Hiệu ứng mở rộng mượt mà khi focus */
+}
+
+.modern-search-input:focus + .search-icon,
+.modern-search-input:not(:placeholder-shown) + .search-icon {
+    color: var(--primary);
+}
+
+/* Nút Tải lại (Refresh) */
+.btn-refresh-modern {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 600;
+    background: rgba(192, 38, 211, 0.08);
+    color: #c026d3;
+    border: 1px solid rgba(192, 38, 211, 0.2);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-refresh-modern:hover {
+    background: #c026d3;
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(192, 38, 211, 0.25);
+}
+
+/* Tương thích Dark Mode */
+body.dark-mode .modern-search-input,
+body.dark-mode .modern-filter-select {
+    background: rgba(15, 23, 42, 0.6);
+    border-color: #334155;
+    color: var(--text-main);
+}
+body.dark-mode .modern-filter-select {
+    color: var(--primary);
+}
+body.dark-mode .modern-search-input:focus,
+body.dark-mode .modern-filter-select:focus {
+    background: #1e293b;
+}
+
+/* =========================================
+   CẢI TIẾN NÚT ĐÓNG LẠI (MODAL)
+========================================= */
+.btn-close-modern {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 28px;
+    border-radius: 12px;
+    font-size: 14.5px;
+    font-weight: 700;
+    background: rgba(100, 116, 139, 0.08);
+    color: var(--text-muted);
+    border: 1px solid rgba(100, 116, 139, 0.2);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.btn-close-modern:hover {
+    background: rgba(239, 68, 68, 0.08); /* Ánh đỏ nhẹ cảnh báo đóng */
+    color: var(--danger);
+    border-color: rgba(239, 68, 68, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(239, 68, 68, 0.12);
+}
+
+.btn-close-modern:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.1);
+}
+
+/* Tương thích Dark Mode */
+body.dark-mode .btn-close-modern {
+    background: rgba(30, 41, 59, 0.6);
+    color: #cbd5e1;
+    border-color: #334155;
+}
+body.dark-mode .btn-close-modern:hover {
+    background: rgba(239, 68, 68, 0.15);
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.4);
+}
 
 
 </style>
@@ -1832,22 +2018,38 @@ body.dark-mode .chart-container-box {
         <button class="close-modal-btn" onclick="closeDashboard()" title="Đóng cửa sổ">✕</button>
         
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px; flex-wrap: wrap; gap: 10px;">
-            <div>
-                <h3 style="margin: 0; font-size: 24px; color: var(--primary); text-align: left;">
-                    <svg class="svg-icon" style="width:24px; height:24px;" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg> QUẢN LÝ BÁO CÁO
-                </h3>
-                <span style="font-size:13px; color:var(--text-muted); font-weight:500;" id="dashboardSubtitle">Đang tải dữ liệu...</span>
-            </div>
-            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-                <select id="monthFilter" onchange="filterReports()" style="padding: 10px 12px; border: 1px dashed #cbd5e1; border-radius: 8px; font-size: 14px; background: transparent; color: inherit; outline: none; transition: 0.2s; cursor: pointer; min-width: 150px;">
-                    <option value="all">Tất cả các tháng</option>
-                </select>
-                <input type="text" id="searchReport" placeholder="🔍 Tìm..." style="width: 200px; padding: 10px 16px; border: 1px dashed #cbd5e1; border-radius: 8px; font-size: 14px; background: transparent; color: inherit; outline: none; transition: 0.2s;">
-                <button class="add-row-btn" style="background:rgba(192, 38, 211, 0.1); border-color:#f0abfc; color:#c026d3; padding: 10px 16px; margin-right: 32px;" onclick="fetchFromCloudAndRefreshUI(true)">
-                    <svg class="svg-icon" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> Tải
-                </button>
-            </div>
+    <div>
+        <h3 style="margin: 0; font-size: 24px; color: var(--primary); text-align: left;">
+            <svg class="svg-icon" style="width:24px; height:24px;" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg> QUẢN LÝ BÁO CÁO
+        </h3>
+        <span style="font-size:13px; color:var(--text-muted); font-weight:500;" id="dashboardSubtitle">Đang tải dữ liệu...</span>
+    </div>
+    
+    <div class="dashboard-controls-wrapper" style="margin-right: 32px; padding: 6px 12px;">
+        <div class="modern-filter-wrapper">
+            <select id="monthFilter" class="modern-filter-select" onchange="filterReports()">
+                <option value="all">Tất cả các tháng</option>
+            </select>
         </div>
+        
+        <div class="modern-search-wrapper">
+            <input type="text" id="searchReport" class="modern-search-input" placeholder="Tìm kiếm báo cáo..." autocomplete="off">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+        </div>
+
+        <button class="btn-refresh-modern" onclick="fetchFromCloudAndRefreshUI(true)">
+            <svg class="svg-icon" style="width: 16px; height: 16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg> 
+            Tải lại
+        </button>
+    </div>
+</div>
 
         <div style="display:flex; justify-content:space-between; margin-bottom:16px; align-items:flex-end; border-bottom: 2px dashed var(--border-color); flex-wrap: wrap;">
             <div class="tabs" style="margin-bottom: 0; border-bottom: none; gap: 16px;">
@@ -1976,9 +2178,15 @@ body.dark-mode .chart-container-box {
 </div>
 		
 
-        <div class="modal-actions" style="margin-top: 24px;">
-            <button class="modal-btn" onclick="closeDashboard()">Đóng lại</button>
-        </div>
+        <div class="modal-actions" style="margin-top: 32px; padding-top: 24px; border-top: 1px dashed var(--border-color); justify-content: center;">
+    <button class="btn-close-modern" onclick="closeDashboard()">
+        <svg class="svg-icon" style="width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+        Đóng cửa sổ
+    </button>
+</div>
     </div>
     </div>
 
@@ -4345,7 +4553,16 @@ const BaoCaoApp = (function() {
         }
         
         initTheme(); checkInitialLogin();
-
+		
+		// Bấm ra ngoài khoảng xám để đóng Dashboard Quản lý báo cáo
+        document.getElementById('dashboardModal').addEventListener('click', function(e) {
+            // Kiểm tra xem vị trí click có chính xác là lớp nền overlay không (tránh click nhầm nội dung bên trong)
+            if (e.target === this) {
+                closeDashboard();
+            }
+        });
+		
+		
         document.getElementById("btnTaoMoi").addEventListener("click", async () => {
             let key = getStorageKey(activeDate); let data = await LocalDB.getItem(key); let isSavedStatus = data ? (data.isSaved === true) : false;
             if (isSavedStatus) { showToast("Báo cáo ngày này đã tồn tại! Vui lòng Sửa, hoặc chọn ngày khác.", "error"); } 
