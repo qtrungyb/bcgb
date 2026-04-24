@@ -429,7 +429,29 @@ body.dark-mode h2 .header-icon {
     .modern-table tbody tr:hover td { background: var(--bg-body); }
 
     /* Custom Widths for Section 3 Tables */
-    #tablePTCC, #tableVaoVien, #tableChuyenVien, #tableRaVien { min-width: 1000px; }
+    #tableVaoVien, #tableChuyenVien, #tableRaVien { min-width: 1150px; } /* Nới rộng tổng thể để không ép cột */
+    #tablePTCC { min-width: 1300px; } /* Bảng PTCC nhiều cột hơn nên cần rộng hơn nữa */
+    
+    #tablePTCC th:nth-child(1), #tableVaoVien th:nth-child(1), #tableChuyenVien th:nth-child(1), #tableRaVien th:nth-child(1) { width: 40px; }
+    #tablePTCC th:nth-child(2), #tableVaoVien th:nth-child(2), #tableChuyenVien th:nth-child(2), #tableRaVien th:nth-child(2) { width: 150px; }
+    #tablePTCC th:nth-child(3), #tableVaoVien th:nth-child(3), #tableChuyenVien th:nth-child(3), #tableRaVien th:nth-child(3) { width: 220px; }
+    
+    /* CẢI TIẾN: Nới rộng đồng bộ các cột Giờ/Ngày để hiển thị đầy đủ */
+    #tablePTCC th:nth-child(4), #tablePTCC th:nth-child(7),
+    #tableVaoVien th:nth-child(4),
+    #tableChuyenVien th:nth-child(4), #tableChuyenVien th:nth-child(7),
+    #tableRaVien th:nth-child(4), #tableRaVien th:nth-child(7) { 
+        width: 145px; /* Tăng lên 145px */
+    }
+    
+    #tablePTCC th:nth-child(5), #tablePTCC th:nth-child(6) { width: 220px; }
+    
+    /* Cố định độ rộng cho cột số 8 (Khoa) của bảng PTCC */
+    #tablePTCC th:nth-child(8) { width: 130px; }
+
+    .datetime-container { display: flex; flex-direction: column; gap: 6px; align-items: center; justify-content: center; }
+    /* Nới rộng max-width của ô nhập liệu datetime từ 115px lên 140px */
+    .datetime-container input { text-align: center; padding: 6px 8px; border: 1px dashed rgba(100,116,139,.35); border-radius: 4px; width: 100%; max-width: 140px; font-weight: 500; color: var(--text-main); background: transparent; outline: none; transition: all .2s; }
     /* Nới rộng riêng bảng PTCC một chút để không bị ép các cột khác khi thêm width cho cột Khoa */
     #tablePTCC { min-width: 1150px; } 
     
@@ -1011,7 +1033,7 @@ body.dark-mode #dateControlBar .date-select:hover {
     <span class="header-icon">
         <svg class="svg-icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
     </span>
-    I. THÀNH PHẦN TRỰC & CẬN LÂM SÀNG
+    I. THÀNH PHẦN TRỰC
 </h2>
     
     <div style="display: grid; grid-template-columns: minmax(480px, 2.5fr) minmax(160px, 1fr) minmax(160px, 1fr) minmax(220px, 1.2fr); gap: 16px; align-items: stretch; overflow-x: auto; padding-bottom: 8px;">
@@ -1156,7 +1178,7 @@ body.dark-mode #dateControlBar .date-select:hover {
     <div class="info-callout">
         <div style="font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
             <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-            Công thức tính tự động:
+            Công thức tính:
         </div>
         <div style="margin-left: 24px;">
             • <b>Hiện có</b> = (Cũ + Nhập viện HC + Trực + Sáng + Chuyển khoa Đến) - (Xuất viện HC + Sáng + Xin về + Trốn + Chuyển viện + Chuyển khoa Đi)<br>
