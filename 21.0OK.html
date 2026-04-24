@@ -1904,7 +1904,7 @@ body.dark-mode .chart-container-box {
                             </div>
                             <span style="color: #d97706;">Tình hình Vào / Ra</span>
                         </div>
-                        <select id="barChartRange" onchange="BaoCaoApp.switchTab('chart')">
+                        <select id="barChartRange">
                             <option value="7">7 ngày qua</option>
                             <option value="15">15 ngày qua</option>
                             <option value="30">30 ngày qua</option>
@@ -3385,45 +3385,35 @@ const BaoCaoApp = (function() {
             gradRa.addColorStop(1, '#dc2626');
 
             if (barChartInstance) {
-                barChartInstance.data.labels = labelsBar;
-                barChartInstance.data.datasets[0].data = dataVao;
-                barChartInstance.data.datasets[1].data = dataRa;
-                barChartInstance.data.datasets[0].backgroundColor = gradVao;
-                barChartInstance.data.datasets[1].backgroundColor = gradRa;
-                barChartInstance.options.scales.x.grid.color = gridColor;
-                barChartInstance.options.scales.x.ticks.color = textColor;
-                barChartInstance.options.scales.y.grid.color = gridColor;
-                barChartInstance.options.scales.y.ticks.color = textColor;
-                barChartInstance.options.plugins.legend.labels.color = textColor;
-                barChartInstance.options.plugins.datalabels.color = textColor;
-                barChartInstance.options.plugins.tooltip = premiumTooltip;
-                barChartInstance.update();
-            } else {
-                barChartInstance = new Chart(ctxBar, {
-                    type: 'bar', 
-                    data: { 
-                        labels: labelsBar, 
-                        datasets: [
-                            { label: 'Vào viện', data: dataVao, backgroundColor: gradVao, borderRadius: 6, borderSkipped: false, barPercentage: 0.7 }, 
-                            { label: 'Ra viện', data: dataRa, backgroundColor: gradRa, borderRadius: 6, borderSkipped: false, barPercentage: 0.7 }
-                        ] 
-                    }, 
-                    plugins: [ChartDataLabels],
-                    options: { 
-                        responsive: true, maintainAspectRatio: false, layout: { padding: { top: 15 } }, 
-                        plugins: { 
-                            datalabels: { anchor: 'end', align: 'top', offset: 2, color: textColor, font: { weight: '800', family: "'Inter', sans-serif", size: 11 }, formatter: (value) => value > 0 ? value : '' }, 
-                            title: { display: false }, 
-                            tooltip: premiumTooltip,
-                            legend: { position: 'top', align: 'end', labels: { usePointStyle: true, boxWidth: 10, color: textColor, font: {family: "'Inter', sans-serif", weight: '700', size: 12} } } 
-                        }, 
-                        scales: { 
-                            x: { grid: { display: false }, ticks: { color: textColor } }, 
-                            y: { beginAtZero: true, grid: { color: gridColor, drawBorder: false, borderDash: [5, 5] }, ticks: { color: textColor } } 
-                        } 
-                    }
-                });
+            barChartInstance.destroy(); 
+        }
+
+        barChartInstance = new Chart(ctxBar, {
+            type: 'bar', 
+            data: { 
+                labels: labelsBar, 
+                datasets: [
+                    { label: 'Vào viện', data: dataVao, backgroundColor: gradVao, borderRadius: 6, borderSkipped: false, barPercentage: 0.7 }, 
+                    { label: 'Ra viện', data: dataRa, backgroundColor: gradRa, borderRadius: 6, borderSkipped: false, barPercentage: 0.7 }
+                ] 
+            }, 
+            plugins: [ChartDataLabels],
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                layout: { padding: { top: 15 } }, 
+                plugins: { 
+                    datalabels: { anchor: 'end', align: 'top', offset: 2, color: textColor, font: { weight: '800', family: "'Inter', sans-serif", size: 11 }, formatter: (value) => value > 0 ? value : '' }, 
+                    title: { display: false }, 
+                    tooltip: premiumTooltip,
+                    legend: { position: 'top', align: 'end', labels: { usePointStyle: true, boxWidth: 10, color: textColor, font: {family: "'Inter', sans-serif", weight: '700', size: 12} } } 
+                }, 
+                scales: { 
+                    x: { grid: { display: false }, ticks: { color: textColor } }, 
+                    y: { beginAtZero: true, grid: { color: gridColor, drawBorder: false, borderDash: [5, 5] }, ticks: { color: textColor } } 
+                } 
             }
+        });
         }
     }
 	
@@ -3793,7 +3783,7 @@ const BaoCaoApp = (function() {
         if (currentReportApproved) finalLock = true; else if (isEditor && currentReportSubmitted) finalLock = true; else if (isEditor && isTimeLocked) finalLock = true; if (lockedBySomeoneElse || lockedByCreator) finalLock = true;
         isFormLocked = finalLock; 
         
-        document.querySelectorAll('.report-card input:not(#searchReport), .report-card select, .report-card textarea').forEach(el => el.disabled = finalLock);
+        document.querySelectorAll('.report-card input:not(#searchReport):not(#historyFilterDate), .report-card select:not(#barChartRange):not(#monthFilter):not(#logDeleteRange), .report-card textarea').forEach(el => el.disabled = finalLock);
         document.querySelectorAll('.add-row-btn:not([onclick^="fetchFrom"]), .remove-row-btn, .quick-fill-btn').forEach(btn => btn.style.display = finalLock ? 'none' : 'inline-flex');
         
         const banner = document.getElementById('statusBanner'); 
