@@ -584,7 +584,26 @@ body.dark-mode #bangBenhNhan td:first-child {
     .calendar-day { padding: 10px 0; text-align: center; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--text-main); position: relative; transition: .2s; border: 1px solid transparent; }
     .calendar-day:hover { background: var(--bg-body); border-color: var(--border-color); }
     .calendar-day.active { background: var(--primary); color: #fff; box-shadow: 0 4px 10px rgba(2,132,199,.3); border-color: var(--primary); }
-    .calendar-day.has-data::after { content: ''; position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); width: 5px; height: 5px; background: var(--danger); border-radius: 50%; box-shadow: 0 0 4px rgba(239,68,68,.4); }
+    /* --- CSS CHẤM TRẠNG THÁI TRÊN LỊCH --- */
+    .calendar-day.status-dot::after {
+        content: ''; position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%);
+        width: 5px; height: 5px; border-radius: 50%; transition: all 0.2s;
+    }
+    
+    /* 1. Đã duyệt - Xanh lá */
+    .calendar-day.status-approved::after { background: var(--success); box-shadow: 0 0 4px rgba(22,163,74,.5); }
+    
+    /* 2. Chờ duyệt (Trình duyệt) - Tím */
+    .calendar-day.status-pending::after { background: #a855f7; box-shadow: 0 0 4px rgba(168,85,247,.5); }
+    
+    /* 3. Từ chối - Đỏ */
+    .calendar-day.status-rejected::after { background: var(--danger); box-shadow: 0 0 4px rgba(239,68,68,.5); }
+    
+    /* 4. Bản nháp - Xanh dương */
+    .calendar-day.status-draft::after { background: var(--primary); box-shadow: 0 0 4px rgba(2,132,199,.5); }
+
+    /* Khi ngày được chọn (active nền xanh), đổi chấm thành màu trắng để không bị chìm */
+    .calendar-day.active.status-dot::after { background: #ffffff !important; box-shadow: 0 0 4px rgba(255,255,255,0.8) !important; }
     .calendar-day.active.has-data::after { background: #fff; box-shadow: 0 0 4px rgba(255,255,255,.8); }
     .calendar-day.other-month { color: var(--text-muted); opacity: .5; font-weight: 400; }
 
@@ -1482,20 +1501,28 @@ body.dark-mode .chart-container-box {
                     <span>T2</span><span>T3</span><span>T4</span><span>T5</span><span>T6</span><span>T7</span><span>CN</span>
                 </div>
                 <div id="calendarGrid" class="calendar-grid"></div>
-            </div>
+                
+                <div style="display: flex; justify-content: center; gap: 12px; margin-top: 14px; font-size: 10.5px; color: var(--text-muted); font-weight: 600; flex-wrap: wrap;">
+                    <div style="display:flex; align-items:center; gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:var(--success);"></span>Đã duyệt</div>
+                    <div style="display:flex; align-items:center; gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#a855f7;"></span>Chờ duyệt</div>
+                    <div style="display:flex; align-items:center; gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:var(--danger);"></span>Từ chối</div>
+                    <div style="display:flex; align-items:center; gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:var(--primary);"></span>Nháp</div>
+                </div>
             </div>
     </div>
 </div>
 
-        <div id="statusBanner" style="display: none; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 16px; border-radius: 8px; border: 2px dashed; margin-bottom: 32px; max-width: 600px; margin-left: auto; margin-right: auto;">
-            <div id="statusTitle" style="font-weight: 800; font-size: 16px; letter-spacing: 1px;"></div>
-            <div id="statusInfo" style="font-size: 14px; font-weight: 600; font-style: italic;"></div>
-        </div>
+        <div id="statusBanner" style="display: none; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 16px; border-radius: 8px; border: 2px dashed; margin-top: 25px; margin-bottom: 25px; max-width: 600px; margin-left: auto; margin-right: auto;">
+    <div id="statusTitle" style="font-weight: 800; font-size: 16px; letter-spacing: 1px;"></div>
+    <div id="statusInfo" style="font-size: 14px; font-weight: 600; font-style: italic;"></div>
+</div>
         
-        <div style="text-align: center; margin-bottom: 32px; margin-top: -12px;">
-            <button id="btnTaoMoi" class="btn-create" style="display: none;">Tạo Mới Báo Cáo
-            </button>
-        </div>
+        <div style="text-align: center; margin-bottom: 32px; margin-top: 25px;">
+    <button id="btnTaoMoi" class="btn-create" style="display: none;">
+        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg>
+        Tạo Mới Báo Cáo
+    </button>
+</div>
 
         <div class="section" style="background: transparent; border: none; box-shadow: none; padding: 0;">
     <h2>
@@ -3073,32 +3100,68 @@ const BaoCaoApp = (function() {
         if (cloudDataCache && cloudDataCache.length > 0) { cloudDataCache.forEach(r => { try { let dStr = r.jsonData || r.data || r.JsonData; let data = typeof dStr === 'string' ? JSON.parse(dStr) : dStr; let dKey = data.ngayTruc || r.ngayTruc || r.date; if (dKey) { calendarStatusMap[dKey] = { isSubmitted: data.isSubmitted || false, isApproved: data.isApproved || false, rejectMessage: data.rejectMessage || "" }; } } catch(e) {} }); }
     }
 
-    function checkDateHasData(dateStr) {
-        let status = calendarStatusMap[dateStr]; if (!status) return false;
+    // HÀM MỚI: Trả về tên class CSS tương ứng với trạng thái thay vì chỉ trả về true/false
+    function getDateStatusClass(dateStr) {
+        let status = calendarStatusMap[dateStr]; 
+        if (!status) return null; // Không có dữ liệu
+
+        // Ẩn bản nháp/chờ duyệt đối với user chỉ có quyền xem
         const isViewer = currentUserSession && !["admin", "quantri", "editor"].includes(currentUserSession.role);
-        if (isViewer) return status.isApproved; 
-        if (status.isSubmitted || status.isApproved || status.rejectMessage) return true;
-        return false;
+        if (isViewer && !status.isApproved) return null; 
+
+        if (status.isApproved) return 'status-approved';
+        if (status.rejectMessage) return 'status-rejected';
+        if (status.isSubmitted) return 'status-pending';
+        
+        // Nếu có dữ liệu trong Map nhưng chưa submit/approve/reject -> Bản nháp
+        return 'status-draft';
     }
 
     async function renderCalendar() {
         await updateCalendarCache(); 
-        const monthYearSpan = document.getElementById("calendarMonthYear"); const grid = document.getElementById("calendarGrid"); grid.innerHTML = "";
+        const monthYearSpan = document.getElementById("calendarMonthYear"); 
+        const grid = document.getElementById("calendarGrid"); 
+        grid.innerHTML = "";
         monthYearSpan.textContent = `Tháng ${currentCalMonth + 1} / ${currentCalYear}`;
         
-        const firstDay = new Date(currentCalYear, currentCalMonth, 1).getDay(); const daysInMonth = new Date(currentCalYear, currentCalMonth + 1, 0).getDate(); const prevMonthDays = new Date(currentCalYear, currentCalMonth, 0).getDate();
+        const firstDay = new Date(currentCalYear, currentCalMonth, 1).getDay(); 
+        const daysInMonth = new Date(currentCalYear, currentCalMonth + 1, 0).getDate(); 
+        const prevMonthDays = new Date(currentCalYear, currentCalMonth, 0).getDate();
         
         let startDayIndex = firstDay - 1; if (startDayIndex === -1) startDayIndex = 6;
-        for (let i = startDayIndex - 1; i >= 0; i--) { let dayDiv = document.createElement("div"); dayDiv.className = "calendar-day other-month"; dayDiv.textContent = prevMonthDays - i; grid.appendChild(dayDiv); }
+        for (let i = startDayIndex - 1; i >= 0; i--) { 
+            let dayDiv = document.createElement("div"); dayDiv.className = "calendar-day other-month"; dayDiv.textContent = prevMonthDays - i; grid.appendChild(dayDiv); 
+        }
+        
         for (let i = 1; i <= daysInMonth; i++) {
-            let dayDiv = document.createElement("div"); dayDiv.className = "calendar-day"; dayDiv.textContent = i;
+            let dayDiv = document.createElement("div"); 
+            dayDiv.className = "calendar-day"; 
+            dayDiv.textContent = i;
+            
             let dStr = `${currentCalYear}-${String(currentCalMonth + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-            if (dStr === activeDate) dayDiv.classList.add("active"); if (checkDateHasData(dStr)) dayDiv.classList.add("has-data");
-            dayDiv.addEventListener("click", async () => { activeDate = dStr; updateDateDisplay(); document.getElementById("customCalendar").style.display = "none"; await loadData(); });
+            if (dStr === activeDate) dayDiv.classList.add("active"); 
+            
+            // LOGIC MỚI: Thêm class màu sắc tương ứng
+            let statusClass = getDateStatusClass(dStr);
+            if (statusClass) {
+                dayDiv.classList.add("status-dot");
+                dayDiv.classList.add(statusClass);
+            }
+
+            dayDiv.addEventListener("click", async () => { 
+                activeDate = dStr; 
+                updateDateDisplay(); 
+                document.getElementById("customCalendar").style.display = "none"; 
+                await loadData(); 
+            });
             grid.appendChild(dayDiv);
         }
-        const totalCells = grid.children.length; const remainingCells = (Math.ceil(totalCells / 7) * 7) - totalCells;
-        for (let i = 1; i <= remainingCells; i++) { let dayDiv = document.createElement("div"); dayDiv.className = "calendar-day other-month"; dayDiv.textContent = i; grid.appendChild(dayDiv); }
+        
+        const totalCells = grid.children.length; 
+        const remainingCells = (Math.ceil(totalCells / 7) * 7) - totalCells;
+        for (let i = 1; i <= remainingCells; i++) { 
+            let dayDiv = document.createElement("div"); dayDiv.className = "calendar-day other-month"; dayDiv.textContent = i; grid.appendChild(dayDiv); 
+        }
     }
 
     function updateDateDisplay() { let parts = activeDate.split("-"); document.getElementById("ngayTrucDisplay").textContent = `${parts[2]}/${parts[1]}/${parts[0]}`; }
