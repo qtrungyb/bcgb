@@ -904,6 +904,386 @@ body.dark-mode #dateControlBar .date-select:hover {
     background: #38bdf8 !important;
     color: #0f172a !important;
 }
+/* =========================================
+   CẢI TIẾN GIAO DIỆN TAB QUẢN LÝ BÁO CÁO (MODERN DATA LIST)
+========================================= */
+.modern-table {
+    border-collapse: separate !important;
+    border-spacing: 0 10px !important; /* Tạo khoảng trống giữa các dòng */
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+}
+.modern-table thead th {
+    background: transparent !important;
+    border: none !important;
+    color: var(--text-muted);
+    font-size: 11.5px;
+    letter-spacing: 0.5px;
+    padding: 0 16px 8px 16px !important;
+}
+.modern-table tbody tr {
+    background: var(--bg-card) !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    border-radius: 12px;
+    transition: all 0.2s ease;
+}
+.modern-table tbody tr:hover {
+    transform: translateY(-2px) scale(1.005);
+    box-shadow: 0 8px 20px rgba(2, 132, 199, 0.08);
+}
+.modern-table tbody td {
+    border: none !important; /* Xóa đường viền đứt cũ */
+    padding: 14px 16px !important;
+    background: transparent !important;
+}
+/* Bo góc cho ô đầu và ô cuối của mỗi dòng */
+.modern-table tbody td:first-child { border-radius: 12px 0 0 12px; }
+.modern-table tbody td:last-child { border-radius: 0 12px 12px 0; }
+
+/* Cải tiến nút hành động có icon */
+.action-btn-group {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+.modern-table .btn-action-small {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+}
+.modern-table .btn-action-small svg {
+    width: 14px;
+    height: 14px;
+    stroke-width: 2.5;
+}
+
+/* Empty State (Trạng thái trống) */
+.empty-state-row td {
+    padding: 40px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+.empty-state-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-muted);
+}
+.empty-state-box svg {
+    width: 48px;
+    height: 48px;
+    color: var(--border-color);
+}
+
+/* Tương thích Dark Mode */
+body.dark-mode .modern-table tbody tr {
+    background: rgba(30, 41, 59, 0.8) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+body.dark-mode .modern-table tbody tr:hover {
+    background: #1e293b !important;
+    box-shadow: 0 8px 20px rgba(56, 189, 248, 0.1);
+}
+/* =========================================
+   TOOLTIP TÓM TẮT NHANH (HOVER EFFECT)
+========================================= */
+#reportQuickTooltip {
+    position: fixed;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(2, 132, 199, 0.2);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+    border-radius: 12px;
+    padding: 16px;
+    width: 250px;
+    z-index: 100000;
+    pointer-events: none; /* Không cản trở click chuột ở dưới */
+    opacity: 0;
+    transform: scale(0.95);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    display: none;
+}
+#reportQuickTooltip.show {
+    opacity: 1;
+    transform: scale(1);
+}
+.tooltip-header {
+    font-size: 13.5px;
+    font-weight: 800;
+    color: var(--primary);
+    border-bottom: 1px dashed rgba(2, 132, 199, 0.3);
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.tooltip-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+.tooltip-stat-box {
+    background: var(--bg-body);
+    padding: 10px 8px;
+    border-radius: 8px;
+    text-align: center;
+    border: 1px dashed var(--border-color);
+}
+.tooltip-stat-value {
+    font-size: 18px;
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 4px;
+}
+.tooltip-stat-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+/* Tương thích Dark Mode cho Tooltip */
+body.dark-mode #reportQuickTooltip {
+    background: rgba(15, 23, 42, 0.85);
+    border-color: rgba(56, 189, 248, 0.3);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+}
+body.dark-mode .tooltip-stat-box {
+    background: rgba(30, 41, 59, 0.6);
+    border-color: rgba(148, 163, 184, 0.2);
+}
+
+/* =========================================
+   TÚT LẠI THANH CUỘN (SCROLLBAR) BẢNG DANH SÁCH
+========================================= */
+#tab-cloud .table-wrapper::-webkit-scrollbar,
+#tab-local .table-wrapper::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+#tab-cloud .table-wrapper::-webkit-scrollbar-track,
+#tab-local .table-wrapper::-webkit-scrollbar-track {
+    background: transparent;
+}
+#tab-cloud .table-wrapper::-webkit-scrollbar-thumb,
+#tab-local .table-wrapper::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.2);
+    border-radius: 10px;
+}
+#tab-cloud .table-wrapper::-webkit-scrollbar-thumb:hover,
+#tab-local .table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: var(--primary);
+}
+
+/* =========================================
+   2. GIAO DIỆN TAB ĐIỀU HƯỚNG HIỆN ĐẠI (SEGMENTED TABS)
+========================================= */
+.tabs {
+    background: rgba(100, 116, 139, 0.08) !important;
+    padding: 6px !important;
+    border-radius: 12px !important;
+    display: inline-flex !important;
+    gap: 4px !important;
+    border: none !important;
+    margin-bottom: 20px !important;
+}
+body.dark-mode .tabs {
+    background: rgba(15, 23, 42, 0.4) !important;
+}
+.tab-btn {
+    background: transparent;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 8px;
+    color: var(--text-muted);
+    font-weight: 700;
+    font-size: 13.5px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.tab-btn:hover:not(.active) {
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.5);
+}
+body.dark-mode .tab-btn:hover:not(.active) {
+    background: rgba(30, 41, 59, 0.5);
+    color: #e2e8f0;
+}
+.tab-btn.active {
+    background: var(--bg-card);
+    color: var(--primary) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border: none !important; /* Ghi đè viền gạch chân cũ */
+}
+body.dark-mode .tab-btn.active {
+    background: #1e293b;
+    color: #38bdf8 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* =========================================
+   3. TOAST THÔNG BÁO (HIỆU ỨNG TRƯỢT NẢY MƯỢT MÀ)
+========================================= */
+#toast-container {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 999999;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    pointer-events: none;
+}
+.toast {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-left: 4px solid var(--primary);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.05);
+    padding: 16px 20px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transform: translateX(120%) scale(0.9);
+    opacity: 0;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+    font-weight: 600;
+    color: var(--text-main);
+    font-size: 14px;
+    pointer-events: auto;
+}
+.toast.show {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+}
+body.dark-mode .toast {
+    background: rgba(30, 41, 59, 0.95);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    color: #e2e8f0;
+}
+
+/* =========================================
+   CẢI TIẾN GIAO DIỆN THỐNG KÊ (BENTO GRID)
+========================================= */
+.dashboard-chart-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-top: 10px;
+}
+
+.chart-container-box {
+    background: var(--bg-card);
+    padding: 20px;
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.chart-container-box:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(2, 132, 199, 0.1);
+    border-color: rgba(2, 132, 199, 0.3);
+}
+
+/* Thanh màu Gradient trên đỉnh mỗi thẻ (Tạo điểm nhấn) */
+.chart-container-box::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary), #818cf8);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.chart-container-box:hover::before {
+    opacity: 1;
+}
+
+/* Bố cục Grid chuyên biệt */
+.chart-trend { grid-column: span 2; }
+.chart-doughnut { grid-column: span 1; }
+.chart-bar { grid-column: 1 / -1; }
+
+@media (max-width: 900px) {
+    .dashboard-chart-grid { grid-template-columns: 1fr; }
+    .chart-trend, .chart-doughnut { grid-column: 1 / -1; }
+}
+
+/* Tiêu đề biểu đồ dạng Component hiện đại */
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px dashed var(--border-color);
+}
+.chart-title {
+    font-size: 14.5px;
+    font-weight: 800;
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.chart-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    background: rgba(2, 132, 199, 0.1);
+    border-radius: 10px;
+    color: var(--primary);
+}
+
+/* Tinh chỉnh nút Select Filter của Bar Chart */
+#barChartRange {
+    padding: 8px 16px;
+    border: 1px solid rgba(2, 132, 199, 0.3);
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
+    background: rgba(2, 132, 199, 0.05);
+    color: var(--primary);
+    outline: none;
+    cursor: pointer;
+    transition: all .2s;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+}
+#barChartRange:hover {
+    background: var(--primary);
+    color: white;
+}
+
+body.dark-mode .chart-container-box {
+    background: rgba(30, 41, 59, 0.6);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+
+
+
 </style>
 </head>
 <body>
@@ -1372,29 +1752,49 @@ body.dark-mode #dateControlBar .date-select:hover {
 
         <div id="tab-chart" class="tab-content active">
             <div class="dashboard-chart-grid">
-                <div class="chart-container-box">
-                    <div style="position: relative; height: 230px; width: 100%;">
+                <div class="chart-container-box chart-trend">
+                    <div class="chart-header">
+                        <div class="chart-title">
+                            <div class="chart-icon">
+                                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                            </div>
+                            Tổng bệnh nhân (15 ngày)
+                        </div>
+                    </div>
+                    <div style="position: relative; height: 260px; width: 100%; flex-grow: 1;">
                         <canvas id="trendChart"></canvas>
                     </div>
                 </div>
-                <div class="chart-container-box">
-                    <div style="position: relative; height: 230px; width: 100%;">
+
+                <div class="chart-container-box chart-doughnut">
+                    <div class="chart-header">
+                        <div class="chart-title">
+                            <div class="chart-icon" style="color: #16a34a; background: rgba(22, 163, 74, 0.1);">
+                                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2.5"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>
+                            </div>
+                            <span style="color: #16a34a;">HIỆN TẠI</span>
+                        </div>
+                    </div>
+                    <div style="position: relative; height: 260px; width: 100%; flex-grow: 1;">
                         <canvas id="doughnutChart"></canvas>
                     </div>
                 </div>
-                <div class="chart-container-box" style="grid-column: 1 / -1;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px dashed var(--border-color);">
-                        <div style="font-size: 13px; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 6px;">
-                            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M18 20V10"></path><path d="M12 20V4"></path><path d="M6 20v-6"></path></svg>
-                            TÌNH HÌNH BỆNH NHÂN VÀO / RA
+
+                <div class="chart-container-box chart-bar">
+                    <div class="chart-header">
+                        <div class="chart-title">
+                            <div class="chart-icon" style="color: #f59e0b; background: rgba(245, 158, 11, 0.1);">
+                                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2.5"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                            </div>
+                            <span style="color: #d97706;">Tình hình Vào / Ra</span>
                         </div>
-                        <select id="barChartRange" onchange="BaoCaoApp.switchTab('chart')" style="padding: 6px 12px; border: 1px dashed rgba(100,116,139,.35); border-radius: 6px; font-size: 13px; font-weight: 600; background: transparent; color: var(--text-main); outline: none; cursor: pointer; transition: all .2s;">
-                            <option value="7">7 ngày gần nhất</option>
-                            <option value="15">15 ngày gần nhất</option>
-                            <option value="30">30 ngày gần nhất</option>
+                        <select id="barChartRange" onchange="BaoCaoApp.switchTab('chart')">
+                            <option value="7">7 ngày qua</option>
+                            <option value="15">15 ngày qua</option>
+                            <option value="30">30 ngày qua</option>
                         </select>
                     </div>
-                    <div style="position: relative; height: 250px; width: 100%;">
+                    <div style="position: relative; height: 300px; width: 100%;">
                         <canvas id="barChart"></canvas>
                     </div>
                 </div>
@@ -2613,7 +3013,73 @@ const BaoCaoApp = (function() {
     }
 
     function updateDateDisplay() { let parts = activeDate.split("-"); document.getElementById("ngayTrucDisplay").textContent = `${parts[2]}/${parts[1]}/${parts[0]}`; }
+	
+	
+	function showQuickSummary(e, r) {
+        let tooltip = document.getElementById('reportQuickTooltip');
+        if (!tooltip) {
+            tooltip = document.createElement('div');
+            tooltip.id = 'reportQuickTooltip';
+            document.body.appendChild(tooltip);
+        }
+        
+        // Chỉ cập nhật lại HTML nếu trỏ sang dòng báo cáo khác (giảm lag)
+        if (tooltip.dataset.date !== r.date) {
+            tooltip.dataset.date = r.date;
+            let tongVao = r.tongVao || 0;
+            let tongRa = r.tongRa || 0;
+            let hienCo = r.hienCo || 0;
+            
+            let dateStr = r.date;
+            if (dateStr.includes('-')) dateStr = dateStr.split('-').reverse().join('/');
+            
+            tooltip.innerHTML = `
+                <div class="tooltip-header">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                    Ngày ${dateStr}
+                </div>
+                <div class="tooltip-grid">
+                    <div class="tooltip-stat-box">
+                        <div class="tooltip-stat-value" style="color: var(--success);">${tongVao}</div>
+                        <div class="tooltip-stat-label">Vào viện</div>
+                    </div>
+                    <div class="tooltip-stat-box">
+                        <div class="tooltip-stat-value" style="color: var(--danger);">${tongRa}</div>
+                        <div class="tooltip-stat-label">Ra/Chuyển</div>
+                    </div>
+                    <div class="tooltip-stat-box" style="grid-column: 1 / -1; background: rgba(2, 132, 199, 0.05); border-color: var(--primary);">
+                        <div class="tooltip-stat-value" style="color: var(--primary); font-size: 22px;">${hienCo}</div>
+                        <div class="tooltip-stat-label" style="color: var(--primary);">Tổng Bệnh Nhân Hiện Có</div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        tooltip.style.display = 'block';
+        
+        // Tính toán vị trí chuột để Tooltip bám theo
+        let leftPos = e.clientX + 20;
+        let topPos = e.clientY + 20;
+        
+        // Chống tràn màn hình (nếu đưa chuột sát mép viền)
+        if (leftPos + 260 > window.innerWidth) leftPos = e.clientX - 270;
+        if (topPos + 180 > window.innerHeight) topPos = e.clientY - 190;
+        
+        tooltip.style.left = leftPos + 'px';
+        tooltip.style.top = topPos + 'px';
+        tooltip.classList.add('show');
+    }
 
+    function hideQuickSummary() {
+        let tooltip = document.getElementById('reportQuickTooltip');
+        if (tooltip) {
+            tooltip.classList.remove('show');
+            tooltip.style.display = 'none';
+            tooltip.dataset.date = ""; 
+        }
+    }
+	
+	
     async function renderChart() {
         const allRecords = await getCombinedRecords(); 
         const uniqueMap = new Map(); 
@@ -2627,84 +3093,188 @@ const BaoCaoApp = (function() {
         const labels = records.map(r => r.date.split('-').reverse().slice(0,2).join('/')); 
         const dataHienCo = records.map(r => r.hienCo);
         const isDark = document.body.classList.contains('dark-mode'); 
-        const textColor = isDark ? '#e2e8f0' : '#334155'; 
-        const gridColor = isDark ? '#334155' : '#e2e8f0';
         
-        // 1. TỐI ƯU TREND CHART (Biểu đồ đường)
+        // Màu sắc tự động theo Theme
+        const textColor = isDark ? '#e2e8f0' : '#334155'; 
+        const gridColor = isDark ? 'rgba(51, 65, 85, 0.4)' : 'rgba(226, 232, 240, 0.6)';
+        const tooltipBg = isDark ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.9)';
+        const tooltipText = isDark ? '#f8fafc' : '#0f172a';
+        
+        // --- 1. SETUP TÀI NGUYÊN CHO TREND CHART (ĐƯỜNG) ---
+        let ctxTrend = document.getElementById('trendChart').getContext('2d');
+        let gradientTrend = ctxTrend.createLinearGradient(0, 0, 0, 300);
+        gradientTrend.addColorStop(0, isDark ? 'rgba(56, 189, 248, 0.4)' : 'rgba(2, 132, 199, 0.3)');
+        gradientTrend.addColorStop(1, isDark ? 'rgba(56, 189, 248, 0.0)' : 'rgba(2, 132, 199, 0.0)');
+        let trendColor = isDark ? '#38bdf8' : '#0284c7';
+
+        // Cấu hình chung cho Tooltip xịn xò
+        const premiumTooltip = {
+            backgroundColor: tooltipBg,
+            titleColor: trendColor,
+            bodyColor: tooltipText,
+            borderColor: isDark ? 'rgba(56, 189, 248, 0.2)' : 'rgba(2, 132, 199, 0.2)',
+            borderWidth: 1,
+            padding: 12,
+            boxPadding: 6,
+            usePointStyle: true,
+            titleFont: { family: "'Inter', sans-serif", size: 13, weight: 'bold' },
+            bodyFont: { family: "'Inter', sans-serif", size: 13, weight: '600' },
+            cornerRadius: 8
+        };
+
         if (trendChartInstance) {
             trendChartInstance.data.labels = labels;
             trendChartInstance.data.datasets[0].data = dataHienCo;
+            trendChartInstance.data.datasets[0].backgroundColor = gradientTrend;
+            trendChartInstance.data.datasets[0].borderColor = trendColor;
             trendChartInstance.options.scales.x.grid.color = gridColor;
             trendChartInstance.options.scales.x.ticks.color = textColor;
             trendChartInstance.options.scales.y.grid.color = gridColor;
             trendChartInstance.options.scales.y.ticks.color = textColor;
-            trendChartInstance.options.plugins.title.color = textColor;
             trendChartInstance.options.plugins.datalabels.color = textColor;
+            trendChartInstance.options.plugins.tooltip = { ...premiumTooltip, displayColors: false };
             trendChartInstance.update();
         } else {
-            trendChartInstance = new Chart(document.getElementById('trendChart').getContext('2d'), { 
+            trendChartInstance = new Chart(ctxTrend, { 
                 type: 'line', 
-                data: { labels: labels, datasets: [{ data: dataHienCo, borderColor: '#0284c7', backgroundColor: 'rgba(2, 132, 199, 0.2)', borderWidth: 3, fill: true, tension: 0.3 }] }, plugins: [ChartDataLabels],
-                options: { responsive: true, maintainAspectRatio: false, layout: { padding: { top: 25, bottom: 10 } }, plugins: { datalabels: { align: 'top', color: textColor, font: { weight: 'bold', family: "'Inter', sans-serif", size: 12 }, formatter: (value) => value > 0 ? value : '' }, title: { display: true, text: 'Tổng bệnh nhân trong 15 ngày', position: 'bottom', color: textColor, font: {family: "'Inter', sans-serif", size: 14}, padding: { top: 10 } }, legend: { display: false }, tooltip: { displayColors: false, callbacks: { label: function(context) { return context.parsed.y; } } } }, scales: { x: { grid: { color: gridColor }, ticks: { color: textColor } }, y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor } } } } 
+                data: { 
+                    labels: labels, 
+                    datasets: [{ 
+                        data: dataHienCo, 
+                        borderColor: trendColor, 
+                        backgroundColor: gradientTrend, 
+                        borderWidth: 3, 
+                        fill: true, 
+                        tension: 0.4,
+                        pointBackgroundColor: trendColor,
+                        pointBorderColor: isDark ? '#0f172a' : '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }] 
+                }, 
+                plugins: [ChartDataLabels],
+                options: { 
+                    responsive: true, maintainAspectRatio: false, layout: { padding: { top: 15 } }, 
+                    plugins: { 
+                        datalabels: { align: 'top', offset: 6, color: textColor, font: { weight: 'bold', family: "'Inter', sans-serif", size: 11 }, formatter: (value) => value > 0 ? value : '' }, 
+                        title: { display: false }, legend: { display: false }, 
+                        tooltip: { ...premiumTooltip, displayColors: false, callbacks: { label: (ctx) => `${ctx.parsed.y} bệnh nhân hiện có` } } 
+                    }, 
+                    scales: { 
+                        x: { grid: { color: gridColor, drawBorder: false }, ticks: { color: textColor } }, 
+                        y: { beginAtZero: true, grid: { color: gridColor, drawBorder: false, borderDash: [5, 5] }, ticks: { color: textColor, stepSize: 10 } } 
+                    } 
+                } 
             });
         }
 
-        // 2. TỐI ƯU DOUGHNUT CHART (Biểu đồ tròn)
+        // --- 2. SETUP DOUGHNUT CHART ---
         const latestRecord = records[records.length - 1];
         if(latestRecord && latestRecord.khoaStats) {
             const dLabels = Object.keys(latestRecord.khoaStats);
             const dData = Object.values(latestRecord.khoaStats);
+            const pieColors = ['#0284c7', '#16a34a', '#eab308', '#ef4444', '#8b5cf6', '#f97316', '#06b6d4'];
 
             if (doughnutChartInstance) {
                 doughnutChartInstance.data.labels = dLabels;
                 doughnutChartInstance.data.datasets[0].data = dData;
-                doughnutChartInstance.options.plugins.title.color = textColor;
                 doughnutChartInstance.options.plugins.legend.labels.color = textColor;
+                doughnutChartInstance.options.plugins.tooltip = premiumTooltip;
                 doughnutChartInstance.update();
             } else {
                 doughnutChartInstance = new Chart(document.getElementById('doughnutChart').getContext('2d'), { 
                     type: 'doughnut', 
-                    data: { labels: dLabels, datasets: [{ data: dData, backgroundColor: ['#0284c7', '#16a34a', '#eab308', '#ef4444', '#8b5cf6', '#f97316', '#06b6d4'] }] }, plugins: [ChartDataLabels],
-                    options: { responsive: true, maintainAspectRatio: false, layout: { padding: { bottom: 10 } }, plugins: { datalabels: { color: '#fff', font: { weight: 'bold', family: "'Inter', sans-serif", size: 12 }, formatter: (value) => value > 0 ? value : '' }, title: { display: true, text: 'Tỷ lệ hiện có tại các khoa', position: 'bottom', color: textColor, font: {family: "'Inter', sans-serif", size: 14}, padding: { top: 10 } }, legend: { position: 'right', labels: { color: textColor, font: {family: "'Inter', sans-serif"} } } } } 
+                    data: { 
+                        labels: dLabels, 
+                        datasets: [{ 
+                            data: dData, 
+                            backgroundColor: pieColors, 
+                            borderWidth: isDark ? 2 : 2,
+                            borderColor: isDark ? '#1e293b' : '#ffffff',
+                            hoverOffset: 6
+                        }] 
+                    }, 
+                    plugins: [ChartDataLabels],
+                    options: { 
+                        responsive: true, maintainAspectRatio: false, layout: { padding: 0 }, 
+                        plugins: { 
+                            datalabels: { color: '#fff', font: { weight: 'bold', family: "'Inter', sans-serif", size: 11 }, formatter: (value) => value > 0 ? value : '' }, 
+                            title: { display: false }, 
+                            tooltip: premiumTooltip,
+                            legend: { position: 'right', labels: { boxWidth: 12, usePointStyle: true, padding: 15, color: textColor, font: {family: "'Inter', sans-serif", size: 12, weight: '600'} } } 
+                        },
+                        cutout: '65%' // Làm vòng tròn mỏng lại cho tinh tế hơn
+                    } 
                 });
             }
         }
 
-        // 3. TỐI ƯU BAR CHART (Biểu đồ cột)
+        // --- 3. SETUP BAR CHART (CỘT) VỚI GRADIENT ---
         const barRangeSelect = document.getElementById('barChartRange');
-        const barRange = barRangeSelect ? parseInt(barRangeSelect.value) : 7; // Lấy giá trị filter, mặc định 7
-        
+        const barRange = barRangeSelect ? parseInt(barRangeSelect.value) : 7; 
         let lastRecords = Array.from(uniqueMap.values()).sort((a, b) => new Date(a.date) - new Date(b.date)).slice(-barRange);
         const labelsBar = lastRecords.map(r => r.date.split('-').reverse().slice(0,2).join('/')); 
         const dataVao = lastRecords.map(r => r.tongVao); 
         const dataRa = lastRecords.map(r => r.tongRa);
         const barChartCanvas = document.getElementById('barChart');
-        const barChartTitle = `Bệnh nhân vào/ra trong ${barRange} ngày`;
         
         if (barChartCanvas) {
+            let ctxBar = barChartCanvas.getContext('2d');
+            
+            // Gradient Xanh lá (Vào)
+            let gradVao = ctxBar.createLinearGradient(0, 0, 0, 300);
+            gradVao.addColorStop(0, '#4ade80');
+            gradVao.addColorStop(1, '#16a34a');
+
+            // Gradient Đỏ (Ra)
+            let gradRa = ctxBar.createLinearGradient(0, 0, 0, 300);
+            gradRa.addColorStop(0, '#f87171');
+            gradRa.addColorStop(1, '#dc2626');
+
             if (barChartInstance) {
                 barChartInstance.data.labels = labelsBar;
                 barChartInstance.data.datasets[0].data = dataVao;
                 barChartInstance.data.datasets[1].data = dataRa;
+                barChartInstance.data.datasets[0].backgroundColor = gradVao;
+                barChartInstance.data.datasets[1].backgroundColor = gradRa;
                 barChartInstance.options.scales.x.grid.color = gridColor;
                 barChartInstance.options.scales.x.ticks.color = textColor;
                 barChartInstance.options.scales.y.grid.color = gridColor;
                 barChartInstance.options.scales.y.ticks.color = textColor;
-                barChartInstance.options.plugins.title.color = textColor;
-                barChartInstance.options.plugins.title.text = barChartTitle;
                 barChartInstance.options.plugins.legend.labels.color = textColor;
                 barChartInstance.options.plugins.datalabels.color = textColor;
+                barChartInstance.options.plugins.tooltip = premiumTooltip;
                 barChartInstance.update();
             } else {
-                barChartInstance = new Chart(barChartCanvas.getContext('2d'), {
+                barChartInstance = new Chart(ctxBar, {
                     type: 'bar', 
-                    data: { labels: labelsBar, datasets: [{ label: 'Vào viện', data: dataVao, backgroundColor: '#16a34a', borderRadius: 4 }, { label: 'Ra viện', data: dataRa, backgroundColor: '#ef4444', borderRadius: 4 }] }, plugins: [ChartDataLabels],
-                    options: { responsive: true, maintainAspectRatio: false, layout: { padding: { top: 25, bottom: 10 } }, plugins: { datalabels: { anchor: 'end', align: 'top', color: textColor, font: { weight: 'bold', family: "'Inter', sans-serif", size: 11 }, formatter: (value) => value > 0 ? value : '' }, title: { display: true, text: barChartTitle, position: 'bottom', color: textColor, font: {family: "'Inter', sans-serif", size: 14}, padding: { top: 10 } }, legend: { position: 'top', labels: { color: textColor, font: {family: "'Inter', sans-serif"} } } }, scales: { x: { grid: { color: gridColor }, ticks: { color: textColor } }, y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor } } } }
+                    data: { 
+                        labels: labelsBar, 
+                        datasets: [
+                            { label: 'Vào viện', data: dataVao, backgroundColor: gradVao, borderRadius: 6, borderSkipped: false, barPercentage: 0.7 }, 
+                            { label: 'Ra viện', data: dataRa, backgroundColor: gradRa, borderRadius: 6, borderSkipped: false, barPercentage: 0.7 }
+                        ] 
+                    }, 
+                    plugins: [ChartDataLabels],
+                    options: { 
+                        responsive: true, maintainAspectRatio: false, layout: { padding: { top: 15 } }, 
+                        plugins: { 
+                            datalabels: { anchor: 'end', align: 'top', offset: 2, color: textColor, font: { weight: '800', family: "'Inter', sans-serif", size: 11 }, formatter: (value) => value > 0 ? value : '' }, 
+                            title: { display: false }, 
+                            tooltip: premiumTooltip,
+                            legend: { position: 'top', align: 'end', labels: { usePointStyle: true, boxWidth: 10, color: textColor, font: {family: "'Inter', sans-serif", weight: '700', size: 12} } } 
+                        }, 
+                        scales: { 
+                            x: { grid: { display: false }, ticks: { color: textColor } }, 
+                            y: { beginAtZero: true, grid: { color: gridColor, drawBorder: false, borderDash: [5, 5] }, ticks: { color: textColor } } 
+                        } 
+                    }
                 });
             }
         }
     }
-
+	
     async function renderDashboard() {
         const allRecords = await getCombinedRecords();
         const tbodyLocal = document.getElementById("dashboardBodyLocal"); tbodyLocal.innerHTML = "";
@@ -2751,33 +3321,92 @@ const BaoCaoApp = (function() {
         let cloudRecords = allRecords.filter(r => r.isCloud).sort((a, b) => new Date(b.date.trim().substring(0,10)) - new Date(a.date.trim().substring(0,10)));
         if(subtitleEl) subtitleEl.innerText = `Máy: ${localRecords.length} bản ghi | Cloud: ${cloudRecords.length} bản ghi.`;
         
+        // --- 1. HÀM HIỂN THỊ TOOLTIP THÔNG MINH ---
+        const showQuickSummary = (e, r) => {
+            let tooltip = document.getElementById('reportQuickTooltip');
+            if (!tooltip) {
+                tooltip = document.createElement('div');
+                tooltip.id = 'reportQuickTooltip';
+                document.body.appendChild(tooltip);
+            }
+            if (tooltip.dataset.date !== r.date) {
+                tooltip.dataset.date = r.date;
+                let tongVao = r.tongVao || 0; let tongRa = r.tongRa || 0; let hienCo = r.hienCo || 0;
+                let dateStr = r.date.includes('-') ? r.date.split('-').reverse().join('/') : r.date;
+                
+                tooltip.innerHTML = `
+                    <div class="tooltip-header">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                        Ngày ${dateStr}
+                    </div>
+                    <div class="tooltip-grid">
+                        <div class="tooltip-stat-box">
+                            <div class="tooltip-stat-value" style="color: var(--success);">${tongVao}</div>
+                            <div class="tooltip-stat-label">Vào viện</div>
+                        </div>
+                        <div class="tooltip-stat-box">
+                            <div class="tooltip-stat-value" style="color: var(--danger);">${tongRa}</div>
+                            <div class="tooltip-stat-label">Ra/Chuyển</div>
+                        </div>
+                        <div class="tooltip-stat-box" style="grid-column: 1 / -1; background: rgba(2, 132, 199, 0.05); border-color: var(--primary);">
+                            <div class="tooltip-stat-value" style="color: var(--primary); font-size: 22px;">${hienCo}</div>
+                            <div class="tooltip-stat-label" style="color: var(--primary);">Tổng Bệnh Nhân Hiện Có</div>
+                        </div>
+                    </div>
+                `;
+            }
+            tooltip.style.display = 'block';
+            let leftPos = e.clientX + 20; let topPos = e.clientY + 20;
+            if (leftPos + 260 > window.innerWidth) leftPos = e.clientX - 270;
+            if (topPos + 180 > window.innerHeight) topPos = e.clientY - 190;
+            tooltip.style.left = leftPos + 'px'; tooltip.style.top = topPos + 'px';
+            tooltip.classList.add('show');
+        };
+
+        const hideQuickSummary = () => {
+            let tooltip = document.getElementById('reportQuickTooltip');
+            if (tooltip) { tooltip.classList.remove('show'); tooltip.style.display = 'none'; tooltip.dataset.date = ""; }
+        };
+
+        // --- 2. HÀM RENDER DÒNG BÁO CÁO (MODERN LIST) ---
         const formatRow = (r, isCloud) => {
             let trueDate = r.date || "Không rõ"; let gKey = r.gSheetKey ? r.gSheetKey.toString().replace(/'/g, "\\'") : trueDate; let trueDateFormatted = trueDate; if (trueDate.includes('-')) { let p = trueDate.split('-'); trueDateFormatted = `${p[2]}/${p[1]}/${p[0]}`; }
-            let metaHtml = ""; if (r.nguoiSua && r.thoiGianSua) metaHtml = `<div style="font-size:11px; color:var(--text-muted); font-weight:normal; margin-top:4px; line-height:1.4;">Sửa bởi: <b>${r.nguoiSua}</b></div>`; else if (r.nguoiTao && r.thoiGianTao) metaHtml = `<div style="font-size:11px; color:var(--text-muted); font-weight:normal; margin-top:4px; line-height:1.4;">Tạo bởi: <b>${r.nguoiTao}</b></div>`;
+            let metaHtml = ""; if (r.nguoiSua && r.thoiGianSua) metaHtml = `<div style="font-size:11.5px; color:var(--text-muted); font-weight:500; margin-top:6px;"><svg class="svg-icon" style="width:12px;height:12px;vertical-align:-2px;margin-right:2px;" viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>Sửa: ${r.nguoiSua}</div>`; else if (r.nguoiTao && r.thoiGianTao) metaHtml = `<div style="font-size:11.5px; color:var(--text-muted); font-weight:500; margin-top:6px;"><svg class="svg-icon" style="width:12px;height:12px;vertical-align:-2px;margin-right:2px;" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>Tạo: ${r.nguoiTao}</div>`;
             
-            let statusBadge = ""; if (r.isApproved) statusBadge = `<span style="background:#dcfce7; color:#166534; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; border: 1px dashed #22c55e; white-space: nowrap;">✅ Đã duyệt</span>`; else if (r.isSubmitted) statusBadge = `<span style="background:#f3e8ff; color:#7e22ce; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; border: 1px dashed #a855f7; white-space: nowrap;">⏳ Chờ duyệt</span>`; else if (r.rejectMessage) statusBadge = `<span style="background:#fee2e2; color:#b91c1c; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; border: 1px dashed #ef4444; white-space: nowrap;">❌ Từ chối</span>`; else statusBadge = `<span style="background:#f1f5f9; color:#475569; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; border: 1px dashed #cbd5e1; white-space: nowrap;">📝 Bản nháp</span>`;
+            let statusBadge = ""; if (r.isApproved) statusBadge = `<span style="background:#dcfce7; color:#166534; padding: 6px 12px; border-radius: 20px; font-size: 11.5px; font-weight: 700; white-space: nowrap; display:inline-flex; align-items:center; gap:4px;"><svg class="svg-icon" style="width:14px;height:14px;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg> Đã duyệt</span>`; else if (r.isSubmitted) statusBadge = `<span style="background:#f3e8ff; color:#7e22ce; padding: 6px 12px; border-radius: 20px; font-size: 11.5px; font-weight: 700; white-space: nowrap; display:inline-flex; align-items:center; gap:4px;"><svg class="svg-icon" style="width:14px;height:14px;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Chờ duyệt</span>`; else if (r.rejectMessage) statusBadge = `<span style="background:#fee2e2; color:#b91c1c; padding: 6px 12px; border-radius: 20px; font-size: 11.5px; font-weight: 700; white-space: nowrap; display:inline-flex; align-items:center; gap:4px;"><svg class="svg-icon" style="width:14px;height:14px;" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Từ chối</span>`; else statusBadge = `<span style="background:#f1f5f9; color:#475569; padding: 6px 12px; border-radius: 20px; font-size: 11.5px; font-weight: 700; white-space: nowrap; display:inline-flex; align-items:center; gap:4px;"><svg class="svg-icon" style="width:14px;height:14px;" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Bản nháp</span>`;
 
             let canEdit = false; let canDelete = isITAdmin; let isCreator = (currentUserSession && (r.nguoiTao === currentUserSession.fullname || r.nguoiTao === currentUserSession.username));
             if (!r.isApproved && !r.isSubmitted) { if (isCreator || isITAdmin) canEdit = true; }
 
-            let tr = document.createElement("tr"); let actionBtns = `<button class="btn-action-small btn-view" onclick="BaoCaoApp.loadToViewWrapper('${trueDate}', ${isCloud})">Xem</button>`;
-            if (canEdit) actionBtns += `\n<button class="btn-action-small btn-edit" onclick="BaoCaoApp.handleEditClick('${trueDate}', ${isCloud}, ${r.isApproved || false})">Sửa</button>`;
-            if (canDelete) actionBtns += `\n<button class="btn-action-small btn-del" onclick="BaoCaoApp.handleDeleteClick('${trueDate}', '${gKey}', ${isCloud}, ${r.isApproved || false})">Xóa</button>`;
-            tr.innerHTML = `<td><div class="true-date-text" style="font-weight: 800; font-size: 14px; color: var(--primary);">${trueDateFormatted}</div>${metaHtml}</td><td><span style="font-weight: 600;">${r.lanhDao}</span></td><td><span style="font-weight: 900; color: var(--text-main); font-size: 15px;">${r.hienCo}</span></td><td>${statusBadge}</td><td style="text-align: center; min-width: 150px;">${actionBtns}</td>`; return tr;
+            let tr = document.createElement("tr"); 
+            
+            // Gắn sự kiện Hover Tooltip
+            tr.onmousemove = (e) => showQuickSummary(e, r);
+            tr.onmouseleave = () => hideQuickSummary();
+
+            let actionBtns = `<div class="action-btn-group"><button class="btn-action-small btn-view" onclick="BaoCaoApp.loadToViewWrapper('${trueDate}', ${isCloud})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> Xem</button>`;
+            if (canEdit) actionBtns += `<button class="btn-action-small btn-edit" onclick="BaoCaoApp.handleEditClick('${trueDate}', ${isCloud}, ${r.isApproved || false})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Sửa</button>`;
+            if (canDelete) actionBtns += `<button class="btn-action-small btn-del" onclick="BaoCaoApp.handleDeleteClick('${trueDate}', '${gKey}', ${isCloud}, ${r.isApproved || false})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> Xóa</button>`;
+            actionBtns += `</div>`;
+
+            tr.innerHTML = `<td><div class="true-date-text" style="font-weight: 800; font-size: 15px; color: var(--primary);">${trueDateFormatted}</div>${metaHtml}</td><td><span style="font-weight: 700; color: var(--text-main);">${r.lanhDao}</span></td><td><span style="font-weight: 900; color: var(--primary); font-size: 16px; background: rgba(2, 132, 199, 0.1); padding: 4px 10px; border-radius: 8px;">${r.hienCo}</span></td><td>${statusBadge}</td><td style="text-align: center; min-width: 180px;">${actionBtns}</td>`; 
+            return tr;
         };
         
         const localFragment = document.createDocumentFragment();
         const cloudFragment = document.createDocumentFragment();
 
+        const emptyStateHtml = (text) => `<tr class="empty-state-row"><td colspan='5'><div class="empty-state-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="9" y1="14" x2="15" y2="14"></line></svg><span style="font-weight: 600; font-size: 14px;">${text}</span></div></td></tr>`;
+
         if(localRecords.length === 0) {
-            tbodyLocal.innerHTML = "<tr><td colspan='5' style='color:#64748b; padding:30px; text-align:center;'>Chưa có dữ liệu nào đã lưu trên máy.</td></tr>"; 
+            tbodyLocal.innerHTML = emptyStateHtml("Chưa có dữ liệu nào đang lưu tạm trên máy của bạn."); 
         } else {
             localRecords.forEach(r => localFragment.appendChild(formatRow(r, false)));
             tbodyLocal.appendChild(localFragment);
         }
 
         if(cloudRecords.length === 0) {
-            tbodyCloud.innerHTML = "<tr><td colspan='5' style='color:#64748b; padding:30px; text-align:center;'>Chưa có dữ liệu nào lưu trên hệ thống.</td></tr>"; 
+            tbodyCloud.innerHTML = emptyStateHtml("Chưa có báo cáo nào được đồng bộ trên hệ thống."); 
         } else {
             cloudRecords.forEach(r => cloudFragment.appendChild(formatRow(r, true)));
             tbodyCloud.appendChild(cloudFragment);
