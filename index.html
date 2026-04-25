@@ -1657,6 +1657,9 @@ body.dark-mode .btn-close-modern:hover {
             </button>
             
             <div class="top-left-btns">
+                <button class="btn-dashboard" onclick="openStatistics()" style="background:#f0fdf4; color:#16a34a; border-color:#86efac;">
+                    <svg class="svg-icon" viewBox="0 0 24 24"><path d="M3 3v18h18"></path><path d="M18 17V9"></path><path d="M13 17V5"></path><path d="M8 17v-3"></path></svg> Thống Kê
+                </button>
                 <button class="btn-dashboard" onclick="openDashboard()">
                     <svg class="svg-icon" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg> Quản Lý Báo Cáo
                 </button>
@@ -2053,10 +2056,7 @@ body.dark-mode .btn-close-modern:hover {
 
         <div style="display:flex; justify-content:space-between; margin-bottom:16px; align-items:flex-end; border-bottom: 2px dashed var(--border-color); flex-wrap: wrap;">
             <div class="tabs" style="margin-bottom: 0; border-bottom: none; gap: 16px;">
-                <button class="tab-btn active" onclick="switchTab('chart')" id="btnTabChart" style="padding: 12px 4px;">
-                    <svg class="svg-icon" viewBox="0 0 24 24"><path d="M3 3v18h18"></path><path d="M18 17V9"></path><path d="M13 17V5"></path><path d="M8 17v-3"></path></svg> THỐNG KÊ
-                </button>
-                <button class="tab-btn" onclick="switchTab('cloud')" id="btnTabCloud" style="padding: 12px 4px;">
+                <button class="tab-btn active" onclick="switchTab('cloud')" id="btnTabCloud" style="padding: 12px 4px;">
                     <svg class="svg-icon" viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg> ĐÃ LƯU
                 </button>
                 <button class="tab-btn" onclick="switchTab('local')" id="btnTabLocal" style="display: none; padding: 12px 4px;">
@@ -2068,59 +2068,9 @@ body.dark-mode .btn-close-modern:hover {
             </div>
             <button id="btnToggleLocalMemory" class="btn-toggle-local" onclick="toggleLocalTab()">Ẩn/hiện bộ nhớ máy tính</button>
         </div>
+        
 
-        <div id="tab-chart" class="tab-content active">
-            <div class="dashboard-chart-grid">
-                <div class="chart-container-box chart-trend">
-                    <div class="chart-header">
-                        <div class="chart-title">
-                            <div class="chart-icon">
-                                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-                            </div>
-                            Tổng bệnh nhân (15 ngày)
-                        </div>
-                    </div>
-                    <div style="position: relative; height: 260px; width: 100%; flex-grow: 1;">
-                        <canvas id="trendChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="chart-container-box chart-doughnut">
-                    <div class="chart-header">
-                        <div class="chart-title">
-                            <div class="chart-icon" style="color: #16a34a; background: rgba(22, 163, 74, 0.1);">
-                                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2.5"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>
-                            </div>
-                            <span style="color: #16a34a;">HIỆN TẠI</span>
-                        </div>
-                    </div>
-                    <div style="position: relative; height: 260px; width: 100%; flex-grow: 1;">
-                        <canvas id="doughnutChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="chart-container-box chart-bar">
-                    <div class="chart-header">
-                        <div class="chart-title">
-                            <div class="chart-icon" style="color: #f59e0b; background: rgba(245, 158, 11, 0.1);">
-                                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2.5"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
-                            </div>
-                            <span style="color: #d97706;">Tình hình Vào / Ra</span>
-                        </div>
-                        <select id="barChartRange">
-                            <option value="7">7 ngày qua</option>
-                            <option value="15">15 ngày qua</option>
-                            <option value="30">30 ngày qua</option>
-                        </select>
-                    </div>
-                    <div style="position: relative; height: 300px; width: 100%;">
-                        <canvas id="barChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="tab-cloud" class="tab-content">
+        <div id="tab-cloud" class="tab-content active"">
             <div class="table-wrapper" style="max-height: 45vh; overflow-y: auto; box-shadow: none; border: none; background: transparent;">
                 <table id="tableCloud" class="modern-table">
                     <thead><tr><th>Ngày Trực</th><th>Trực Lãnh Đạo</th><th>Tổng BN</th><th>Trạng thái</th><th style="text-align: center;">Hành động</th></tr></thead>
@@ -2189,6 +2139,75 @@ body.dark-mode .btn-close-modern:hover {
 </div>
     </div>
     </div>
+
+<div id="statisticsModal" class="modal-overlay">
+        <div class="modal-box" style="max-width: 1050px; width: 95%; padding: 32px; border-color: var(--success);">
+            <button class="close-modal-btn" onclick="closeStatistics()" title="Đóng cửa sổ">✕</button>
+            <h3 style="margin: 0 0 24px 0; font-size: 24px; color: var(--success); text-align: left; display: flex; align-items: center; gap: 8px;">
+                <svg class="svg-icon" style="width:28px; height:28px;" viewBox="0 0 24 24"><path d="M3 3v18h18"></path><path d="M18 17V9"></path><path d="M13 17V5"></path><path d="M8 17v-3"></path></svg> THỐNG KÊ BÁO CÁO
+            </h3>
+            
+            <div class="dashboard-chart-grid">
+                <div class="chart-container-box chart-trend">
+                    <div class="chart-header">
+                        <div class="chart-title">
+                            <div class="chart-icon">
+                                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                            </div>
+                            Tổng bệnh nhân (15 ngày)
+                        </div>
+                    </div>
+                    <div style="position: relative; height: 260px; width: 100%; flex-grow: 1;">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container-box chart-doughnut">
+                    <div class="chart-header">
+                        <div class="chart-title">
+                            <div class="chart-icon" style="color: #16a34a; background: rgba(22, 163, 74, 0.1);">
+                                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2.5"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>
+                            </div>
+                            <span style="color: #16a34a;">HIỆN TẠI</span>
+                        </div>
+                    </div>
+                    <div style="position: relative; height: 260px; width: 100%; flex-grow: 1;">
+                        <canvas id="doughnutChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container-box chart-bar">
+                    <div class="chart-header">
+                        <div class="chart-title">
+                            <div class="chart-icon" style="color: #f59e0b; background: rgba(245, 158, 11, 0.1);">
+                                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2.5"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                            </div>
+                            <span style="color: #d97706;">Tình hình Vào / Ra</span>
+                        </div>
+                        <select id="barChartRange">
+                            <option value="7">7 ngày qua</option>
+                            <option value="15">15 ngày qua</option>
+                            <option value="30">30 ngày qua</option>
+                        </select>
+                    </div>
+                    <div style="position: relative; height: 300px; width: 100%;">
+                        <canvas id="barChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-actions" style="margin-top: 32px; padding-top: 24px; border-top: 1px dashed var(--border-color); justify-content: center;">
+                <button class="btn-close-modern" onclick="closeStatistics()">
+                    <svg class="svg-icon" style="width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                    Đóng
+                </button>
+            </div>
+        </div>
+    </div>
+
 
     <div id="changePasswordModal" class="modal-overlay">
         <div class="modal-box" style="max-width: 320px; border-color: var(--primary);">
@@ -3770,7 +3789,9 @@ const BaoCaoApp = (function() {
         let textVal = document.getElementById("searchReport").value.toLowerCase().trim(); let monthVal = document.getElementById("monthFilter").value;
         let rowsLocal = document.querySelectorAll("#dashboardBodyLocal tr"); let rowsCloud = document.querySelectorAll("#dashboardBodyCloud tr"); 
         const checkRow = (tr) => { if (tr.cells.length < 4) { tr.style.display = ""; return; } let textMatch = tr.innerText.toLowerCase().includes(textVal); let monthMatch = true; if (monthVal !== 'all') { let dateStrEl = tr.querySelector('.true-date-text'); if (dateStrEl) { let parts = dateStrEl.innerText.split('/'); if (parts.length === 3 && `${parts[2]}-${parts[1]}` !== monthVal) monthMatch = false; } } tr.style.display = (textMatch && monthMatch) ? "" : "none"; };
-        rowsLocal.forEach(checkRow); rowsCloud.forEach(checkRow); if(document.getElementById('tab-chart').classList.contains('active')) await renderChart();
+        rowsLocal.forEach(checkRow); rowsCloud.forEach(checkRow); 
+        // Thay thế dòng kiểm tra tab-chart cũ bằng dòng kiểm tra statisticsModal
+        if(document.getElementById('statisticsModal') && document.getElementById('statisticsModal').classList.contains('show')) await renderChart();
     }
 
     function toggleLockGiuongKH() {
@@ -4481,8 +4502,23 @@ const BaoCaoApp = (function() {
     // ==========================================
     async function openDashboard() { 
         const modal = document.getElementById('dashboardModal'); modal.style.display = "flex"; 
-        setTimeout(() => modal.classList.add("show"), 10); await switchTab('chart'); await renderDashboard(); 
+        // Đổi 'chart' thành 'cloud'
+        setTimeout(() => modal.classList.add("show"), 10); await switchTab('cloud'); await renderDashboard(); 
         if(cloudDataCache.length === 0) await fetchFromCloudAndRefreshUI(); 
+    }
+
+    // Thêm 2 hàm mới này ngay bên dưới
+    async function openStatistics() {
+        const modal = document.getElementById('statisticsModal'); 
+        modal.style.display = "flex";
+        setTimeout(() => modal.classList.add("show"), 10);
+        await renderChart(); // Khởi tạo biểu đồ khi mở
+    }
+
+    function closeStatistics() {
+        const modal = document.getElementById('statisticsModal');
+        modal.classList.remove("show");
+        setTimeout(() => modal.style.display = "none", 200);
     }
 
     function closeDashboard() { const modal = document.getElementById('dashboardModal'); modal.classList.remove("show"); setTimeout(() => modal.style.display = "none", 200); }
@@ -4976,6 +5012,8 @@ document.getElementById("footBenhNhan").innerHTML = `<tr>
         toggleUserDropdown,
         openDashboard,
         closeDashboard,
+		openStatistics,    // <-- THÊM VÀO ĐÂY
+        closeStatistics,
         switchTab,
         toggleLocalTab,
         toggleLockGiuongKH,
@@ -5023,6 +5061,8 @@ window.closeChangePasswordModal = BaoCaoApp.closeChangePasswordModal;
 window.loginProactively = BaoCaoApp.loginProactively;
 window.openDashboard = BaoCaoApp.openDashboard;
 window.closeDashboard = BaoCaoApp.closeDashboard;
+window.openStatistics = BaoCaoApp.openStatistics;
+window.closeStatistics = BaoCaoApp.closeStatistics;
 window.switchTab = BaoCaoApp.switchTab;
 window.toggleLocalTab = BaoCaoApp.toggleLocalTab;
 window.toggleLockGiuongKH = BaoCaoApp.toggleLockGiuongKH;
@@ -5043,6 +5083,18 @@ window.quickEditCurrent = BaoCaoApp.quickEditCurrent;
 window.fillEquipment = BaoCaoApp.fillEquipment;
 window.loadHistoryLogs = BaoCaoApp.loadHistoryLogs; // Kéo thẳng biến này ra toàn cục
 window.BaoCaoApp = BaoCaoApp;
+// Lắng nghe sự kiện click ra ngoài vùng trống để đóng modal
+document.addEventListener('click', function(e) {
+    // Tự động đóng bảng Quản lý báo cáo
+    if (e.target.id === 'dashboardModal') {
+        if (typeof BaoCaoApp !== 'undefined') BaoCaoApp.closeDashboard();
+    }
+    
+    // Tự động đóng bảng Thống kê
+    if (e.target.id === 'statisticsModal') {
+        if (typeof BaoCaoApp !== 'undefined') BaoCaoApp.closeStatistics();
+    }
+});
 </script>
 </body>
 </html>
