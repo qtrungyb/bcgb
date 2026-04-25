@@ -640,6 +640,22 @@ body.dark-mode #bangBenhNhan td:first-child {
     /* -----------------------------------------
        11. USER PROFILE DROPDOWN
     ----------------------------------------- */
+	/* Tự động xổ menu khi hover trên Desktop */
+    @media (hover: hover) {
+        #userInfoContainer:hover .user-dropdown-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        #userInfoContainer:hover .user-profile-trigger .dropdown-chevron {
+            transform: rotate(180deg);
+            color: var(--primary);
+        }
+        #userInfoContainer:hover .user-profile-trigger {
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.1);
+        }
+    }
     .user-profile-trigger { display: flex; align-items: center; gap: 10px; padding: 6px 14px 6px 6px; background: var(--bg-card); border: 1px dashed var(--border-color); border-radius: 30px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 2px 5px rgba(0,0,0,0.02); user-select: none; margin-bottom: 8px; }
     .user-profile-trigger:hover { border-color: var(--primary); box-shadow: 0 4px 12px rgba(2, 132, 199, 0.1); }
     .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 900; text-transform: uppercase; }
@@ -1558,7 +1574,171 @@ body.dark-mode .btn-close-modern:hover {
     border-color: rgba(239, 68, 68, 0.4);
 }
 
+/* CẢI TIẾN DROP DOWN MENU */
+.user-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 10px); /* Tăng khoảng cách một chút */
+    left: 0;
+    width: 240px; /* Rộng hơn một chút để không bị gò bó */
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px; /* Bo tròn mềm mại hơn */
+    box-shadow: 0 15px 35px rgba(0,0,0,0.12), 0 5px 15px rgba(0,0,0,0.05);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-15px);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 1000;
+    overflow: hidden;
+}
 
+/* Hiệu ứng khi Hover */
+#userInfoContainer:hover .user-dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+/* Cải tiến các mục trong Menu */
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 92%;
+    margin: 4px auto; /* Tạo khoảng cách với viền menu */
+    padding: 10px 14px;
+    border-radius: 10px; /* Bo tròn các item */
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-main);
+    transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background: rgba(2, 132, 199, 0.08);
+    color: var(--primary);
+    transform: translateX(4px); /* Hiệu ứng nhích nhẹ sang phải khi hover */
+}
+
+.dropdown-item.text-danger:hover {
+    background: rgba(239, 68, 68, 0.08);
+    color: var(--danger);
+}
+
+.dropdown-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+    margin: 8px 0;
+}
+/* --- HIỆU ỨNG NHẤP NHÁY CHO NÚT SỬA BÁO CÁO --- */
+@keyframes pulse-orange {
+    0% { box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(217, 119, 6, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(217, 119, 6, 0); }
+}
+
+.btn-edit-quick {
+    animation: pulse-orange 2s infinite;
+}
+
+
+/* =========================================
+   CẢI TIẾN PREMIUM CHO MENU XỔ RA (DROPDOWN)
+========================================= */
+
+/* 1. Nền kính mờ và thiết kế Menu tổng thể */
+.user-dropdown-menu {
+    background: rgba(255, 255, 255, 0.8) !important; /* Độ trong suốt */
+    backdrop-filter: blur(15px); /* Làm mờ hậu cảnh */
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    border-radius: 16px !important;
+    padding: 8px !important;
+    width: 250px !important;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1) !important;
+    
+    /* Hiệu ứng nảy khi xuất hiện */
+    transform: translateY(-15px) scale(0.95);
+    transform-origin: top;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+/* 2. Hiệu ứng khi Hover để hiện Menu */
+#userInfoContainer:hover .user-dropdown-menu {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translateY(0) scale(1) !important;
+}
+
+/* Tương thích Dark Mode */
+body.dark-mode .user-dropdown-menu {
+    background: rgba(30, 41, 59, 0.8) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4) !important;
+}
+
+/* 3. Cải tiến các mục bên trong Menu */
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px !important;
+    margin: 4px 0 !important;
+    border-radius: 12px !important;
+    transition: all 0.2s ease !important;
+    border: none !important;
+    width: 100% !important;
+}
+
+/* Hiệu ứng khi di chuột qua từng mục */
+.dropdown-item:hover {
+    background: rgba(2, 132, 199, 0.1) !important;
+    transform: translateX(6px); /* Nhích sang phải */
+}
+
+/* 4. Tạo ô chứa biểu tượng (Icon Box) */
+.dropdown-item .svg-icon {
+    width: 32px !important;
+    height: 32px !important;
+    padding: 7px;
+    border-radius: 10px;
+    margin-right: 12px !important;
+    transition: all 0.3s ease !important;
+}
+
+/* Màu sắc riêng cho từng loại Icon Box */
+/* Quản lý báo cáo */
+.dropdown-item[onclick*="openDashboard"] .svg-icon {
+    background: rgba(2, 132, 199, 0.15);
+    color: #0284c7;
+}
+/* Thống kê */
+.dropdown-item[onclick*="openStatistics"] .svg-icon {
+    background: rgba(22, 163, 74, 0.15);
+    color: #16a34a;
+}
+/* Đổi mật khẩu */
+.dropdown-item[onclick*="openChangePassword"] .svg-icon {
+    background: rgba(100, 116, 139, 0.15);
+    color: #64748b;
+}
+/* Đăng xuất */
+.dropdown-item.text-danger .svg-icon {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+}
+
+/* Phóng to icon khi hover dòng đó */
+.dropdown-item:hover .svg-icon {
+    transform: scale(1.1) rotate(-5deg);
+}
+
+.dropdown-divider {
+    margin: 8px 12px !important;
+    opacity: 0.5;
+}
 </style>
 </head>
 <body>
@@ -1635,38 +1815,42 @@ body.dark-mode .btn-close-modern:hover {
                     <svg class="dropdown-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </div>
                 <div id="userDropdownMenu" class="user-dropdown-menu">
-                    <div class="dropdown-header">
-                        <div class="header-avatar" id="avatarIconLarge">U</div>
-                        <div class="header-info">
-                            <strong id="dropFullName">Tên Người Dùng</strong>
-                            <span id="dropUsername">@username</span>
-                        </div>
-                    </div>
-                    <div class="dropdown-divider"></div>
-                    <button class="dropdown-item" onclick="openChangePasswordModal()">
-                        <svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Đổi mật khẩu
-                    </button>
-                    <button class="dropdown-item text-danger" onclick="logoutUser()">
-                        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg> Đăng Xuất
-                    </button>
-                </div>
+    <div class="dropdown-header">
+        <div class="header-avatar" id="avatarIconLarge">U</div>
+        <div class="header-info">
+            <strong id="dropFullName">Tên Người Dùng</strong>
+            <span id="dropUsername">@username</span>
+        </div>
+    </div>
+    
+    <div class="dropdown-divider"></div>
+    
+    <button class="dropdown-item" onclick="openDashboard()" style="color: var(--primary);">
+        <svg class="svg-icon" style="margin-right: 8px;" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg> 
+        Quản lý báo cáo
+    </button>
+
+    <button class="dropdown-item" onclick="openStatistics()" style="color: #16a34a;">
+        <svg class="svg-icon" style="margin-right: 8px;" viewBox="0 0 24 24"><path d="M3 3v18h18"></path><path d="M18 17V9"></path><path d="M13 17V5"></path><path d="M8 17v-3"></path></svg> 
+        Thống kê
+    </button>
+    
+    <div class="dropdown-divider"></div>
+    
+    <button class="dropdown-item" onclick="openChangePasswordModal()">
+        <svg class="svg-icon" style="margin-right: 8px;" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> 
+        Đổi mật khẩu
+    </button>
+    <button class="dropdown-item text-danger" onclick="logoutUser()">
+        <svg class="svg-icon" style="margin-right: 8px;" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg> 
+        Đăng Xuất
+    </button>
+</div>
             </div>
             
             <button id="btnDangNhapTop" class="btn-dashboard" style="background:#f0fdf4; color:#16a34a; border-color:#86efac; width: fit-content; display: none;" onclick="loginProactively()">
                 <svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Đăng nhập
             </button>
-            
-            <div class="top-left-btns">
-                <button class="btn-dashboard" onclick="openStatistics()" style="background:#f0fdf4; color:#16a34a; border-color:#86efac;">
-                    <svg class="svg-icon" viewBox="0 0 24 24"><path d="M3 3v18h18"></path><path d="M18 17V9"></path><path d="M13 17V5"></path><path d="M8 17v-3"></path></svg> Thống Kê
-                </button>
-                <button class="btn-dashboard" onclick="openDashboard()">
-                    <svg class="svg-icon" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg> Quản Lý Báo Cáo
-                </button>
-                <button id="btnSuaNhanh" class="btn-edit-quick" style="display: none;" onclick="quickEditCurrent()">
-                    <svg class="svg-icon" viewBox="0 0 24 24"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg> Sửa báo cáo
-                </button>
-            </div>
         </div>
 
         <h1>BÁO CÁO GIAO BAN</h1>
@@ -1702,9 +1886,16 @@ body.dark-mode .btn-close-modern:hover {
     </div>
 </div>
 
-        <div id="statusBanner" style="display: none; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 16px; border-radius: 8px; border: 2px dashed; margin-top: 25px; margin-bottom: 25px; max-width: 600px; margin-left: auto; margin-right: auto;">
+        <div id="statusBanner" style="display: none; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 16px; border-radius: 8px; border: 2px dashed; margin-top: 25px; margin-bottom: 15px; max-width: 600px; margin-left: auto; margin-right: auto;">
     <div id="statusTitle" style="font-weight: 800; font-size: 16px; letter-spacing: 1px;"></div>
     <div id="statusInfo" style="font-size: 14px; font-weight: 600; font-style: italic;"></div>
+</div>
+
+<div style="text-align: center; margin-bottom: 25px;">
+    <button id="btnSuaNhanh" class="btn-edit-quick" style="display: none; padding: 10px 24px; border-radius: 12px; box-shadow: 0 4px 12px rgba(217, 119, 6, 0.15);" onclick="quickEditCurrent()">
+        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg> 
+        Sửa báo cáo
+    </button>
 </div>
         
         <div style="text-align: center; margin-bottom: 32px; margin-top: 25px;">
