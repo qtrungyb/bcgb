@@ -2051,6 +2051,156 @@ body.dark-mode .formula-tooltip-content {
 body.dark-mode .formula-tooltip-content::after {
     border-color: #1e293b transparent transparent transparent;
 }
+/* =========================================
+   CẢI TIẾN BỘ LỌC TRẠNG THÁI (STATUS CHIPS)
+========================================= */
+.status-filter-wrapper {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    border-bottom: 1px dashed var(--border-color);
+    padding-bottom: 16px;
+    align-items: center;
+}
+.status-chip {
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    color: var(--text-muted);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    outline: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+.status-chip:hover {
+    background: rgba(100, 116, 139, 0.08);
+    color: var(--text-main);
+    transform: translateY(-1px);
+}
+
+/* Các trạng thái khi được Active (Bấm vào) */
+.status-chip.active[data-status="all"] { 
+    background: var(--text-main); color: #fff; border-color: var(--text-main); box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+}
+.status-chip.active.status-approved { 
+    background: #16a34a; color: #fff; border-color: #16a34a; box-shadow: 0 4px 10px rgba(22, 163, 74, 0.25); 
+}
+.status-chip.active.status-pending { 
+    background: #9333ea; color: #fff; border-color: #9333ea; box-shadow: 0 4px 10px rgba(147, 51, 234, 0.25); 
+}
+.status-chip.active.status-rejected { 
+    background: #dc2626; color: #fff; border-color: #dc2626; box-shadow: 0 4px 10px rgba(220, 38, 38, 0.25); 
+}
+.status-chip.active.status-draft { 
+    background: #475569; color: #fff; border-color: #475569; box-shadow: 0 4px 10px rgba(71, 85, 105, 0.25); 
+}
+
+/* Tương thích Dark Mode */
+body.dark-mode .status-chip { background: rgba(30, 41, 59, 0.6); border-color: #334155; }
+body.dark-mode .status-chip:hover { background: rgba(51, 65, 85, 0.8); color: #f8fafc; }
+
+
+/* =========================================
+   GIAO DIỆN DROPDOWN TRẠNG THÁI BÁO CÁO
+========================================= */
+.status-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    min-width: 170px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    display: flex;
+    flex-direction: column;
+    padding: 6px;
+    gap: 2px;
+}
+.status-dropdown-menu.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+.status-dropdown-item {
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    text-align: left;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.status-dropdown-item .dot {
+    width: 8px; height: 8px; border-radius: 50%; background: transparent;
+}
+.status-dropdown-item:hover { background: rgba(100, 116, 139, 0.08); color: var(--text-main); }
+.status-dropdown-item.active { background: rgba(2, 132, 199, 0.08); color: var(--primary); font-weight: 700; }
+
+/* Màu chấm trạng thái */
+.item-approved .dot { background: #16a34a; }
+.item-pending .dot { background: #9333ea; }
+.item-rejected .dot { background: #dc2626; }
+.item-draft .dot { background: #475569; }
+
+/* Hover theo màu */
+.item-approved:hover { background: rgba(22, 163, 74, 0.08); color: #16a34a; }
+.item-pending:hover { background: rgba(147, 51, 234, 0.08); color: #9333ea; }
+.item-rejected:hover { background: rgba(220, 38, 38, 0.08); color: #dc2626; }
+
+/* Tương thích Dark Mode */
+body.dark-mode .status-dropdown-menu {
+    background: #1e293b; border-color: #334155; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+}
+body.dark-mode .status-dropdown-item:hover { background: rgba(30, 41, 59, 0.8); color: #e2e8f0; }
+body.dark-mode .status-dropdown-item.active { background: rgba(56, 189, 248, 0.1); color: #38bdf8; }
+
+/* Ẩn bộ lọc chip cũ nếu còn sót */
+.status-filter-wrapper { display: none !important; }
+
+
+/* =========================================
+   HIỆU ỨNG HOVER CHO BỘ LỌC TRẠNG THÁI
+========================================= */
+/* 1. Tự động hiển thị menu khi lướt chuột vào bộ lọc */
+.modern-filter-wrapper:hover .status-dropdown-menu {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translateY(0) !important;
+}
+
+/* 2. Đổi màu viền nút để trông "sáng" lên khi hover */
+.modern-filter-wrapper:hover .modern-filter-select {
+    border-color: var(--primary);
+    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.08);
+}
+
+/* 3. TẠO CẦU NỐI TÀNG HÌNH (QUAN TRỌNG)
+   Giúp chuột không bị "rớt" hover khi kéo từ nút xuống menu */
+.status-dropdown-menu::before {
+    content: "";
+    position: absolute;
+    top: -15px; 
+    left: 0;
+    width: 100%;
+    height: 15px;
+    background: transparent;
+}
 </style>
 </head>
 <body>
@@ -2542,6 +2692,22 @@ body.dark-mode .formula-tooltip-content::after {
             </select>
         </div>
         
+		<div class="modern-filter-wrapper" style="position: relative;">
+    <button id="statusDropdownTrigger" class="modern-filter-select" style="display: flex; align-items: center; gap: 8px;">
+        <svg class="svg-icon" style="width: 16px; height: 16px;" viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg> 
+        <span>Lọc: <span id="currentStatusLabel" style="font-weight: 800;">Tất cả</span></span>
+    </button>
+    
+    <div id="statusDropdownMenu" class="status-dropdown-menu">
+        <button class="status-dropdown-item active" data-status="all">Tất cả</button>
+        <button class="status-dropdown-item item-approved" data-status="Đã duyệt"><span class="dot"></span> Đã duyệt</button>
+        <button class="status-dropdown-item item-pending" data-status="Chờ duyệt"><span class="dot"></span> Chờ duyệt</button>
+        <button class="status-dropdown-item item-rejected" data-status="Từ chối"><span class="dot"></span> Từ chối</button>
+        <button class="status-dropdown-item item-draft" data-status="Bản nháp"><span class="dot"></span> Bản nháp</button>
+    </div>
+</div>
+		
+		
         <div class="modern-search-wrapper">
             <input type="text" id="searchReport" class="modern-search-input" placeholder="Tìm kiếm báo cáo..." autocomplete="off">
             <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -4292,14 +4458,106 @@ const BaoCaoApp = (function() {
         await filterReports(); 
     }
 
-    async function filterReports() { 
-        let textVal = document.getElementById("searchReport").value.toLowerCase().trim(); let monthVal = document.getElementById("monthFilter").value;
-        let rowsLocal = document.querySelectorAll("#dashboardBodyLocal tr"); let rowsCloud = document.querySelectorAll("#dashboardBodyCloud tr"); 
-        const checkRow = (tr) => { if (tr.cells.length < 4) { tr.style.display = ""; return; } let textMatch = tr.innerText.toLowerCase().includes(textVal); let monthMatch = true; if (monthVal !== 'all') { let dateStrEl = tr.querySelector('.true-date-text'); if (dateStrEl) { let parts = dateStrEl.innerText.split('/'); if (parts.length === 3 && `${parts[2]}-${parts[1]}` !== monthVal) monthMatch = false; } } tr.style.display = (textMatch && monthMatch) ? "" : "none"; };
-        rowsLocal.forEach(checkRow); rowsCloud.forEach(checkRow); 
-        // Thay thế dòng kiểm tra tab-chart cũ bằng dòng kiểm tra statisticsModal
-        if(document.getElementById('statisticsModal') && document.getElementById('statisticsModal').classList.contains('show')) await renderChart();
+    // --- THAY THẾ HÀM filterReports CŨ BẰNG HÀM NÀY ---
+async function filterReports() { 
+    let textVal = document.getElementById("searchReport").value.toLowerCase().trim(); 
+    let monthVal = document.getElementById("monthFilter").value;
+    
+    // Lấy giá trị trạng thái từ chip đang active
+    let activeChip = document.querySelector('.status-dropdown-item.active');
+    let statusVal = activeChip ? activeChip.getAttribute('data-status') : 'all';
+
+    let rowsLocal = document.querySelectorAll("#dashboardBodyLocal tr"); 
+    let rowsCloud = document.querySelectorAll("#dashboardBodyCloud tr"); 
+    
+    const checkRow = (tr) => { 
+        // Bỏ qua dòng báo lỗi "Không có dữ liệu"
+        if (tr.classList.contains('empty-state-row')) { tr.style.display = ""; return; } 
+        
+        // 1. Lọc theo chữ (Search)
+        let textMatch = tr.innerText.toLowerCase().includes(textVal); 
+        
+        // 2. Lọc theo tháng
+        let monthMatch = true; 
+        if (monthVal !== 'all') { 
+            let dateStrEl = tr.querySelector('.true-date-text'); 
+            if (dateStrEl) { 
+                let parts = dateStrEl.innerText.split('/'); 
+                if (parts.length === 3 && `${parts[2]}-${parts[1]}` !== monthVal) monthMatch = false; 
+            } 
+        } 
+        
+        // 3. Lọc theo trạng thái (Chips)
+        let statusMatch = true;
+        if (statusVal !== 'all') {
+            // Cột trạng thái nằm ở vị trí thứ 4 (index 3)
+            let statusCell = tr.cells[3]; 
+            if (statusCell) {
+                statusMatch = statusCell.innerText.includes(statusVal);
+            }
+        }
+
+        // Hiện dòng nếu thỏa mãn cả 3 điều kiện
+        tr.style.display = (textMatch && monthMatch && statusMatch) ? "" : "none"; 
+    };
+    
+    rowsLocal.forEach(checkRow); 
+    rowsCloud.forEach(checkRow); 
+    
+    if(document.getElementById('statisticsModal') && document.getElementById('statisticsModal').classList.contains('show')) await renderChart();
+}
+
+// --- HÀM ĐÓNG MỞ DROPDOWN TRẠNG THÁI ---
+function toggleStatusDropdown(e) {
+    e.stopPropagation();
+    document.getElementById('statusDropdownMenu').classList.toggle('show');
+}
+
+// --- HÀM KHỞI TẠO SỰ KIỆN CHO DROPDOWN ---
+// --- HÀM KHỞI TẠO SỰ KIỆN CHO DROPDOWN ---
+function initStatusDropdown() {
+    const trigger = document.getElementById('statusDropdownTrigger');
+    const menu = document.getElementById('statusDropdownMenu');
+    const items = document.querySelectorAll('.status-dropdown-item');
+    const label = document.getElementById('currentStatusLabel');
+
+    // 1. Gán sự kiện Mở/Đóng menu khi bấm vào nút
+    if (trigger) {
+        trigger.addEventListener('click', function(e) {
+            e.stopPropagation(); // Ngăn sự kiện nổi bọt
+            menu.classList.toggle('show');
+        });
     }
+
+    // 2. Xử lý khi chọn các mục bên trong menu
+    items.forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.stopPropagation();
+            
+            // Bỏ active tất cả và gán active cho thẻ được chọn
+            items.forEach(c => c.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Cập nhật text hiển thị trên nút bấm
+            label.innerText = this.innerText.trim();
+            
+            // Ẩn Menu đi sau khi chọn
+            menu.classList.remove('show');
+            
+            // Chạy lại bộ lọc báo cáo
+            if (typeof filterReports === 'function') filterReports();
+        });
+    });
+
+    // 3. Đóng menu khi bấm ra ngoài vùng dropdown
+    document.addEventListener('click', function(e) {
+        if (menu && menu.classList.contains('show') && !menu.contains(e.target) && !trigger.contains(e.target)) {
+            menu.classList.remove('show');
+        }
+    });
+}
+// Khởi chạy hàm
+initStatusDropdown();
 
     function toggleLockGiuongKH() {
         if (isFormLocked) return showToast("Báo cáo đang bị khóa, không thể sửa!", "error");
