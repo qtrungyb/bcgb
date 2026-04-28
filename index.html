@@ -2029,7 +2029,7 @@ body:has(#userInfoContainer:hover) .report-card {
     content: '';
     position: absolute;
     top: 100%;
-    left: 20px;
+    right: 20px; /* Đổi từ left: 20px sang right: 20px */
     border-width: 6px;
     border-style: solid;
     border-color: rgba(255, 255, 255, 0.98) transparent transparent transparent;
@@ -2202,6 +2202,320 @@ body.dark-mode .status-dropdown-item.active { background: rgba(56, 189, 248, 0.1
     height: 15px;
     background: transparent;
 }
+/* =========================================
+   TĂNG ĐỘ ĐẬM KHI HOVER DÒNG QUẢN LÝ BÁO CÁO
+========================================= */
+
+/* Chế độ sáng (Light Mode) */
+.modern-table tbody tr:hover {
+    background: rgba(2, 132, 199, 0.12) !important; /* Đổ nền xanh lam nhạt giúp dòng nổi bật hẳn lên */
+    transform: translateY(-2px) scale(1.01) !important; /* Tăng độ phóng to nhẹ lên 1.01 */
+    box-shadow: 0 10px 25px rgba(2, 132, 199, 0.18) !important; /* Bóng đổ xanh đậm và rộng hơn */
+    cursor: pointer;
+}
+
+/* Tương thích chế độ tối (Dark Mode) */
+body.dark-mode .modern-table tbody tr:hover {
+    background: rgba(56, 189, 248, 0.18) !important; /* Đổ nền xanh mờ sáng hơn */
+    box-shadow: 0 10px 25px rgba(56, 189, 248, 0.25) !important;
+}
+/* =========================================
+   NÂNG CẤP BẢNG BỆNH NHÂN - PHẦN 2 (TỐI ƯU UX)
+========================================= */
+
+/* 1. Xử lý table để hỗ trợ tính năng Cố định (Sticky) mượt mà */
+#bangBenhNhan {
+    border-collapse: separate !important;
+    border-spacing: 0;
+}
+
+/* 2. Cố định cột đầu tiên (KHOA) khi cuộn ngang */
+#bangBenhNhan th:nth-child(1),
+#bangBenhNhan td:nth-child(1) {
+    position: sticky;
+    left: 0;
+    z-index: 10; /* Nổi lên trên các cột khác khi cuộn */
+    background-color: var(--bg-body); /* Che đi dữ liệu trôi qua phía dưới */
+    box-shadow: 3px 0 8px rgba(0, 0, 0, 0.05); /* Bóng đổ sắc nét tạo chiều sâu */
+}
+
+/* Đảm bảo góc giao giữa cột cố định và dòng cố định (Header) nằm trên cùng */
+#bangBenhNhan th:nth-child(1) {
+    z-index: 15; 
+    background-color: #f8fafc;
+}
+
+/* 3. Cố định dòng TỔNG SỐ (Footer) ở dưới cùng bảng */
+#footBenhNhan td {
+    position: sticky;
+    bottom: 0;
+    z-index: 9;
+    box-shadow: 0 -3px 10px rgba(0, 0, 0, 0.04); /* Bóng đổ hắt lên trên */
+    font-size: 13.5px;
+    padding: 12px 2px !important;
+}
+#footBenhNhan td:nth-child(1) {
+    z-index: 14; /* Góc giao giữa Footer và cột Khoa */
+}
+
+/* 4. Tùy chỉnh thanh cuộn (Scrollbar) cho vùng chứa bảng */
+.table-wrapper::-webkit-scrollbar {
+    height: 8px; /* Thanh cuộn ngang mỏng gọn */
+    width: 8px;
+}
+.table-wrapper::-webkit-scrollbar-track {
+    background: rgba(100, 116, 139, 0.05);
+    border-radius: 8px;
+}
+.table-wrapper::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.25);
+    border-radius: 8px;
+    transition: background 0.3s;
+}
+.table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: var(--primary); /* Chuyển màu xanh khi di chuột */
+}
+
+/* 5. Tương thích Dark Mode */
+body.dark-mode #bangBenhNhan td:nth-child(1) {
+    background-color: var(--bg-card);
+    box-shadow: 3px 0 8px rgba(0, 0, 0, 0.4);
+}
+body.dark-mode #bangBenhNhan th:nth-child(1) {
+    background-color: #0f172a;
+}
+body.dark-mode #footBenhNhan td {
+    box-shadow: 0 -3px 10px rgba(0, 0, 0, 0.4);
+}
+body.dark-mode .table-wrapper::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.2);
+}
+body.dark-mode .table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #38bdf8;
+}
+/* =========================================
+   NÂNG CẤP BẢNG BỆNH NHÂN - PHẦN 2 (TỐI ƯU UX)
+========================================= */
+
+/* 1. Xử lý table để hỗ trợ tính năng Cố định (Sticky) mượt mà */
+#bangBenhNhan {
+    border-collapse: separate !important;
+    border-spacing: 0;
+}
+
+/* 2. Cố định cột đầu tiên (KHOA) khi cuộn ngang */
+#bangBenhNhan th:nth-child(1),
+#bangBenhNhan td:nth-child(1) {
+    position: sticky;
+    left: 0;
+    z-index: 10; /* Nổi lên trên các cột khác khi cuộn */
+    background-color: var(--bg-body); /* Che đi dữ liệu trôi qua phía dưới */
+    box-shadow: 3px 0 8px rgba(0, 0, 0, 0.05); /* Bóng đổ sắc nét tạo chiều sâu */
+}
+
+/* Đảm bảo góc giao giữa cột cố định và dòng cố định (Header) nằm trên cùng */
+#bangBenhNhan th:nth-child(1) {
+    z-index: 15; 
+    background-color: #f8fafc;
+}
+
+/* 3. Cố định dòng TỔNG SỐ (Footer) ở dưới cùng bảng */
+#footBenhNhan td {
+    position: sticky;
+    bottom: 0;
+    z-index: 9;
+    box-shadow: 0 -3px 10px rgba(0, 0, 0, 0.04); /* Bóng đổ hắt lên trên */
+    font-size: 13.5px;
+    padding: 12px 2px !important;
+}
+#footBenhNhan td:nth-child(1) {
+    z-index: 14; /* Góc giao giữa Footer và cột Khoa */
+}
+
+/* 4. Tùy chỉnh thanh cuộn (Scrollbar) cho vùng chứa bảng */
+.table-wrapper::-webkit-scrollbar {
+    height: 8px; /* Thanh cuộn ngang mỏng gọn */
+    width: 8px;
+}
+.table-wrapper::-webkit-scrollbar-track {
+    background: rgba(100, 116, 139, 0.05);
+    border-radius: 8px;
+}
+.table-wrapper::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.25);
+    border-radius: 8px;
+    transition: background 0.3s;
+}
+.table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: var(--primary); /* Chuyển màu xanh khi di chuột */
+}
+
+/* 5. Tương thích Dark Mode */
+body.dark-mode #bangBenhNhan td:nth-child(1) {
+    background-color: var(--bg-card);
+    box-shadow: 3px 0 8px rgba(0, 0, 0, 0.4);
+}
+body.dark-mode #bangBenhNhan th:nth-child(1) {
+    background-color: #0f172a;
+}
+body.dark-mode #footBenhNhan td {
+    box-shadow: 0 -3px 10px rgba(0, 0, 0, 0.4);
+}
+body.dark-mode .table-wrapper::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.2);
+}
+body.dark-mode .table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #38bdf8;
+}
+/* =========================================
+   NÂNG CẤP BẢNG BỆNH NHÂN - PHẦN 3 (TỐI ƯU NHẬP LIỆU)
+========================================= */
+
+/* 1. Highlight toàn bộ dòng khi đang focus (gõ) vào một ô bất kỳ */
+#bangBenhNhan tbody tr:focus-within td {
+    background-color: rgba(2, 132, 199, 0.1) !important;
+    border-top: 1px solid rgba(2, 132, 199, 0.3);
+    border-bottom: 1px solid rgba(2, 132, 199, 0.3);
+}
+/* Giữ nguyên cột đầu (Khoa) luôn nằm trên cùng và đổ bóng khi focus */
+#bangBenhNhan tbody tr:focus-within td:nth-child(1) {
+    box-shadow: inset 4px 0 0 var(--primary), 3px 0 8px rgba(0, 0, 0, 0.05);
+}
+
+/* 2. Đổ màu Gradient 3D nhẹ cho các cụm Tiêu đề (Header) */
+#bangBenhNhan thead th.bg-vao { background: linear-gradient(180deg, #dcfce7, #bbf7d0) !important; }
+#bangBenhNhan thead th.bg-ra  { background: linear-gradient(180deg, #fee2e2, #fecaca) !important; }
+#bangBenhNhan thead th.bg-ck  { background: linear-gradient(180deg, #fef9c3, #fef08a) !important; }
+#bangBenhNhan thead th.bg-tv  { background: linear-gradient(180deg, #f1f5f9, #e2e8f0) !important; }
+#bangBenhNhan thead th.bg-tong{ background: linear-gradient(180deg, #dbeafe, #bfdbfe) !important; }
+
+/* 3. Tinh chỉnh riêng ô nhập Bác sĩ (Text) để khác biệt với ô nhập số */
+#bangBenhNhan .bs-input {
+    text-align: left !important;
+    padding-left: 10px !important;
+    font-weight: 700;
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: 4px;
+}
+#bangBenhNhan .bs-input:focus {
+    background: #ffffff;
+    color: var(--primary);
+}
+
+/* 4. Tương thích hoàn hảo với Dark Mode */
+body.dark-mode #bangBenhNhan tbody tr:focus-within td {
+    background-color: rgba(56, 189, 248, 0.15) !important;
+    border-top: 1px solid rgba(56, 189, 248, 0.3);
+    border-bottom: 1px solid rgba(56, 189, 248, 0.3);
+}
+body.dark-mode #bangBenhNhan tbody tr:focus-within td:nth-child(1) {
+    box-shadow: inset 4px 0 0 #38bdf8, 3px 0 8px rgba(0, 0, 0, 0.4);
+}
+body.dark-mode #bangBenhNhan thead th.bg-vao { background: linear-gradient(180deg, #064e3b, #065f46) !important; }
+body.dark-mode #bangBenhNhan thead th.bg-ra  { background: linear-gradient(180deg, #7f1d1d, #991b1b) !important; }
+body.dark-mode #bangBenhNhan thead th.bg-ck  { background: linear-gradient(180deg, #713f12, #854d0e) !important; }
+body.dark-mode #bangBenhNhan thead th.bg-tv  { background: linear-gradient(180deg, #1e293b, #334155) !important; }
+body.dark-mode #bangBenhNhan thead th.bg-tong{ background: linear-gradient(180deg, #1e3a8a, #1d4ed8) !important; }
+body.dark-mode #bangBenhNhan .bs-input {
+    color: #e2e8f0;
+    background: rgba(15, 23, 42, 0.3);
+}
+body.dark-mode #bangBenhNhan .bs-input:focus {
+    background: #0f172a;
+    color: #38bdf8;
+}
+/* =========================================
+   GIAO DIỆN XEM BẢNG (PRESENTATION MODE) - NÂNG CẤP
+========================================= */
+#presentationModal .modal-box {
+    max-width: 98% !important;
+    width: 98% !important;
+    height: 96vh !important;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-body); /* Nền sáng sạch sẽ */
+}
+
+/* Tiêu đề modal trình chiếu */
+.presentation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 2px dashed var(--border-color);
+}
+
+#bangBenhNhanPresentation {
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+}
+
+/* 1. Làm nổi bật Header trên máy chiếu (Màu đặc, chữ trắng) */
+#bangBenhNhanPresentation thead th {
+    font-size: 14.5px !important;
+    padding: 14px 8px !important;
+    border: 1px solid rgba(0,0,0,0.15) !important;
+    color: #ffffff !important; 
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+/* Ghi đè màu sắc riêng cho từng cụm cột */
+#bangBenhNhanPresentation thead th.bg-chung { background: #475569 !important; } /* Xám đậm */
+#bangBenhNhanPresentation thead th.bg-vao   { background: #16a34a !important; } /* Xanh lá */
+#bangBenhNhanPresentation thead th.bg-ra    { background: #dc2626 !important; } /* Đỏ */
+#bangBenhNhanPresentation thead th.bg-ck    { background: #d97706 !important; } /* Cam */
+#bangBenhNhanPresentation thead th.bg-tv    { background: #1e293b !important; } /* Đen nhạt */
+#bangBenhNhanPresentation thead th.bg-pt    { background: #4f46e5 !important; } /* Tím */
+#bangBenhNhanPresentation thead th.bg-tong  { background: #0284c7 !important; } /* Xanh dương */
+
+/* 2. Tút lại các ô dữ liệu (Chữ to, kẻ ô rõ ràng) */
+#bangBenhNhanPresentation td {
+    padding: 14px 6px !important;
+    font-size: 17px !important; 
+    border: 1px solid var(--border-color) !important;
+}
+
+/* 3. Hiệu ứng dòng ngựa vằn (Zebra) để dễ dò ngang */
+#bangBenhNhanPresentation tbody tr:nth-child(even) td {
+    background-color: rgba(241, 245, 249, 0.7) !important;
+}
+body.dark-mode #bangBenhNhanPresentation tbody tr:nth-child(even) td {
+    background-color: rgba(30, 41, 59, 0.6) !important;
+}
+
+/* 4. Dòng TỔNG SỐ cực kỳ nổi bật ở dưới cùng */
+#bangBenhNhanPresentation tfoot td {
+    font-size: 19px !important;
+    font-weight: 900 !important;
+    padding: 18px 6px !important;
+    background: #0f172a !important;
+    color: #f8fafc !important;
+    border-top: 3px solid var(--primary) !important;
+}
+
+/* Nút Fullscreen */
+.btn-fullscreen {
+    background: rgba(2, 132, 199, 0.1);
+    color: var(--primary);
+    border: 1px dashed var(--primary);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+.btn-fullscreen:hover {
+    background: var(--primary);
+    color: #fff;
+}
+
 </style>
 </head>
 <body>
@@ -2453,7 +2767,6 @@ body.dark-mode .status-dropdown-item.active { background: rgba(56, 189, 248, 0.1
             <textarea rows="5" id="tinhTrangThietBi" placeholder="Nhập ghi chú chi tiết..."></textarea>
             <div class="quick-chips-container" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 10px;">
                 <span class="quick-chip quick-fill-btn" onclick="fillEquipment('Tất cả hoạt động bình thường. Không có vật tư hỏng hóc.')" style="flex: 1; text-align: center; justify-content: center; background: var(--bg-body); border: 1px solid var(--border-color); padding: 4px 12px; border-radius: 16px; font-size: 11.5px; font-weight: 600; cursor: pointer;">Bình thường</span>
-                <span class="quick-chip quick-fill-btn" onclick="fillEquipment('Hệ thống mạng/HIS lỗi.')" style="flex: 1; text-align: center; justify-content: center; background: var(--bg-body); border: 1px solid var(--border-color); padding: 4px 12px; border-radius: 16px; font-size: 11.5px; font-weight: 600; cursor: pointer;">Lỗi HIS</span>
             </div>
         </div>
         
@@ -2468,16 +2781,17 @@ body.dark-mode .status-dropdown-item.active { background: rgba(56, 189, 248, 0.1
     </span>
     II. TÌNH HÌNH BỆNH NHÂN
 </h2>
-        <div style="display: flex; align-items: center; gap: 10px; background: var(--bg-card); padding: 8px 16px; border-radius: 8px; border: 1px dashed var(--border-color);">
-            <span style="font-size: 13px; font-weight: 600; color: var(--text-muted);">
-                <svg class="svg-icon" style="vertical-align: -3px; margin-right: 4px;" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
-                Điền nhanh:
-            </span>
-            <select id="chonMauBacSi" class="quick-select-staff" style="margin: 0; padding: 6px 12px;">
-                <option value="">⚡ Chọn mẫu BS trực...</option>
-            </select>
-        </div>
+    
+    <div style="display: flex; align-items: center; gap: 10px; background: var(--bg-card); padding: 8px 16px; border-radius: 8px; border: 1px dashed var(--border-color);">
+        <span style="font-size: 13px; font-weight: 600; color: var(--text-muted);">
+            <svg class="svg-icon" style="vertical-align: -3px; margin-right: 4px;" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+            Điền nhanh:
+        </span>
+        <select id="chonMauBacSi" class="quick-select-staff" style="margin: 0; padding: 6px 12px;">
+            <option value="">⚡ Chọn mẫu BS trực...</option>
+        </select>
     </div>
+</div>
     
     <div class="cm-card" style="margin-bottom: 0;">
         <div class="cm-body" style="padding: 0;">
@@ -2515,7 +2829,14 @@ body.dark-mode .status-dropdown-item.active { background: rgba(56, 189, 248, 0.1
         </div>
     </div>
     
-		<div class="formula-tooltip-wrapper">
+		<div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; margin-bottom: 8px; flex-wrap: wrap; gap: 12px;">
+    
+    <button class="btn-dashboard" style="background: rgba(79, 70, 229, 0.1); color: #4f46e5; border-color: #4f46e5; padding: 8px 20px; margin: 0;" onclick="openPresentationModal()">
+        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg> 
+        Xem Bảng
+    </button>
+
+    <div class="formula-tooltip-wrapper" style="margin-top: 0; margin-left: 0;">
         <div class="formula-tooltip-trigger">
             <svg class="svg-icon" viewBox="0 0 24 24" stroke-width="2.5">
                 <circle cx="12" cy="12" r="10"></circle>
@@ -2524,11 +2845,12 @@ body.dark-mode .status-dropdown-item.active { background: rgba(56, 189, 248, 0.1
             </svg>
             Công thức tính
         </div>
-        <div class="formula-tooltip-content">
+        <div class="formula-tooltip-content" style="left: auto; right: 0;">
             • <b>Hiện có</b> = (Cũ + Nhập viện HC + Trực + Sáng + Chuyển khoa Đến) - (Xuất viện HC + Sáng + Xin về + Trốn + Chuyển viện + Chuyển khoa Đi)<br>
             • <b>Tỷ lệ</b> = (Hiện có / Giường KH) × 100%
         </div>
     </div>
+    
 </div>
 
         <div class="section" id="sectionChuyenMon" style="background: transparent; border: none; box-shadow: none; padding: 0;">
@@ -2883,6 +3205,35 @@ body.dark-mode .status-dropdown-item.active { background: rgba(56, 189, 248, 0.1
     </div>
 
 
+
+<div id="presentationModal" class="modal-overlay">
+    <div class="modal-box" id="presentationModalBox" style="border-color: var(--primary);">
+        
+        <div class="presentation-header">
+            <h3 style="margin: 0; font-size: 24px; color: var(--primary); text-transform: uppercase; letter-spacing: 1px;">
+                TÌNH HÌNH BỆNH NHÂN - Ngày <span id="presentationDateText" style="color: var(--danger);"></span>
+            </h3>
+            
+            <div style="display: flex; gap: 12px;">
+                <button class="btn-fullscreen" onclick="toggleFullScreenPresentation()">
+                    <svg class="svg-icon" id="fullscreenIcon" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+                    <span id="fullscreenText">Toàn màn hình</span>
+                </button>
+                <button class="close-modal-btn" style="position: static; margin: 0; border: 1px solid var(--border-color);" onclick="closePresentationModal()" title="Đóng cửa sổ">✕</button>
+            </div>
+        </div>
+        
+        <div class="table-wrapper" style="flex-grow: 1; overflow: auto; border: 2px solid var(--border-color); border-radius: 8px; margin: 0; background: var(--bg-card); box-shadow: none;">
+            <table id="bangBenhNhanPresentation" style="width: 100%; border-collapse: separate; border-spacing: 0;">
+                </table>
+        </div>
+        
+    </div>
+</div>
+
+
+
+
     <div id="changePasswordModal" class="modal-overlay">
         <div class="modal-box" style="max-width: 320px; border-color: var(--primary);">
             <div style="text-align: center; color: var(--primary); margin-bottom: 12px;">
@@ -3024,7 +3375,7 @@ const BaoCaoApp = (function() {
     let currentCalYear = new Date().getFullYear();
     let calendarStatusMap = {};
 
-    const khoaArr = ["Ngoại", "Sản", "PT-GM", "Mắt-TMH", "Nhi", "Nội", "YHCT"]; 
+    const khoaArr = ["Khoa Ngoại", "Khoa Sản", "Khoa PT-GM", "Khoa Mắt-TMH", "Khoa Nhi", "Khoa Nội", "Khoa YHCT"]; 
     const giuongKHMau = [37, 13, 0, 15, 15, 55, 15];
     let benhNhanData = []; 
     let ptccRows = []; 
@@ -3038,7 +3389,7 @@ const BaoCaoApp = (function() {
     let bacSiOptions = ["-- Chọn --"];
     let xetNghiemOptions = ["-- Chọn --"];
     let cdhaOptions = ["-- Chọn --"];
-    const khoaOptions = ["-- Chọn --", "Ngoại", "Sản", "PT-GM", "Mắt-TMH", "Nhi", "Nội", "YHCT"];
+    const khoaOptions = ["-- Chọn --", "Khoa Ngoại", "Khoa Sản", "Khoa PT-GM", "Khoa Mắt-TMH", "Khoa Nhi", "Khoa Nội", "Khoa YHCT"];
     let commonDiagnoses = []; 
     let commonAddresses = [];
     let dsNguoiLamBaoCao = []; 
@@ -4142,6 +4493,121 @@ const BaoCaoApp = (function() {
             tooltip.classList.remove('show');
             tooltip.style.display = 'none';
             tooltip.dataset.date = ""; 
+        }
+    }
+	
+	
+	
+	function openPresentationModal() {
+        const modal = document.getElementById('presentationModal');
+        
+        // 1. Cập nhật ngày tháng lên tiêu đề
+        document.getElementById('presentationDateText').innerText = document.getElementById('ngayTrucDisplay').innerText;
+
+        const targetTable = document.getElementById('bangBenhNhanPresentation');
+
+        // 2. Copy nguyên khung Header và Footer từ bảng gốc
+        const sourceColgroup = document.querySelector('#bangBenhNhan colgroup').outerHTML;
+        const sourceThead = document.querySelector('#bangBenhNhan thead').outerHTML;
+        const sourceTfoot = document.querySelector('#bangBenhNhan tfoot').outerHTML;
+
+        // 3. Xây dựng lại Body dưới dạng text thuần (Không có thẻ <input> để hiển thị to, đẹp)
+        let tbodyHtml = "<tbody>";
+        benhNhanData.forEach((row, idx) => {
+            const hienCo = (row.cu + row.vaoHC + row.vaoTruc + row.vaoSang + row.chuyenDen) - (row.ra + row.raSang + row.xinVe + row.tronVien + row.chuyenVien + row.chuyenDi);
+            const tyLe = (row.giuongKH > 0) ? (hienCo / row.giuongKH) * 100 : 0;
+
+            const isOverload = tyLe > 100;
+            const rowClass = isOverload ? "row-overload" : "";
+            const khoaText = isOverload ? `<span style="color:var(--danger);font-weight:900;">⚠️ ${row.khoa}</span>` : `<span style="font-weight:800;">${row.khoa}</span>`;
+            const hienCoStyle = hienCo < 0 ? `color:var(--danger);font-weight:900;font-size:20px;` : `color:var(--primary);font-weight:900;font-size:20px;`;
+
+            // Hàm làm sạch số 0
+            const f = (v) => (v === 0 || v === "0") ? "" : `<span style="font-weight:700;">${v}</span>`;
+
+            tbodyHtml += `<tr class="${rowClass}">
+                <td style="text-align: left; padding-left: 12px;">${khoaText}</td>
+                <td class="group-divider" style="text-align: left; padding-left: 10px; font-weight:700; color:var(--text-main);">${row.bs || ''}</td>
+                <td class="group-divider">${f(row.cu)}</td>
+                <td>${f(row.vaoHC)}</td>
+                <td>${f(row.vaoTruc)}</td>
+                <td class="group-divider">${f(row.vaoSang)}</td>
+                <td>${f(row.ra)}</td>
+                <td>${f(row.raSang)}</td>
+                <td>${f(row.xinVe)}</td>
+                <td>${f(row.tronVien)}</td>
+                <td class="group-divider">${f(row.chuyenVien)}</td>
+                <td>${f(row.chuyenDen)}</td>
+                <td class="group-divider">${f(row.chuyenDi)}</td>
+                <td>${f(row.tuVongNgoaiTru)}</td>
+                <td class="group-divider">${f(row.tuVongNoiTru)}</td>
+                <td class="group-divider">${f(row.ptCapCuu)}</td>
+                <td>${f(row.duKienRa)}</td>
+                <td style="${hienCoStyle}">${hienCo < 0 ? `⚠ ${hienCo}` : hienCo}</td>
+                <td style="color:var(--danger); font-weight:bold;">${f(row.giuongKH)}</td>
+                <td class="${isOverload ? 'text-overload' : ''}" style="font-weight:bold;">${tyLe > 0 ? tyLe.toFixed(1) + "%" : ""}</td>
+            </tr>`;
+        });
+        tbodyHtml += "</tbody>";
+
+        // 4. Ghép toàn bộ vào bảng trình chiếu
+        targetTable.innerHTML = sourceColgroup + sourceThead + tbodyHtml + sourceTfoot;
+
+        // 5. Làm sạch Header (Xóa icon khóa và hiệu ứng click của Giường KH)
+        const thGiuongKH = targetTable.querySelector('#thGiuongKH');
+        if (thGiuongKH) {
+            thGiuongKH.removeAttribute('onclick');
+            thGiuongKH.style.cursor = 'default';
+            thGiuongKH.innerText = "Giường KH";
+            thGiuongKH.style.color = "inherit";
+        }
+
+        modal.style.display = "flex";
+        setTimeout(() => modal.classList.add("show"), 10);
+    }
+
+    function closePresentationModal() {
+        const modal = document.getElementById('presentationModal');
+        modal.classList.remove("show");
+        setTimeout(() => modal.style.display = "none", 200);
+    }
+	
+	
+	
+	// Hàm Bật/Tắt chế độ Toàn màn hình (Fullscreen)
+    function toggleFullScreenPresentation() {
+        const elem = document.getElementById("presentationModalBox");
+        const icon = document.getElementById("fullscreenIcon");
+        const text = document.getElementById("fullscreenText");
+
+        if (!document.fullscreenElement) {
+            // Yêu cầu bật Fullscreen
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen();
+            } else if (elem.webkitRequestFullscreen) { /* Safari */
+                elem.webkitRequestFullscreen();
+            } else if (elem.msRequestFullscreen) { /* IE11 */
+                elem.msRequestFullscreen();
+            }
+            
+            // Đổi giao diện nút thành Thu nhỏ
+            text.innerText = "Thu nhỏ";
+            icon.innerHTML = `<path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>`;
+            elem.style.borderRadius = "0"; // Bỏ bo góc khi full màn hình
+        } else {
+            // Yêu cầu thoát Fullscreen
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) { /* Safari */
+                document.webkitExitFullscreen();
+            } else if (document.msExitFullscreen) { /* IE11 */
+                document.msExitFullscreen();
+            }
+            
+            // Đổi giao diện nút lại thành Phóng to
+            text.innerText = "Toàn màn hình";
+            icon.innerHTML = `<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>`;
+            elem.style.borderRadius = "12px"; // Trả lại bo góc
         }
     }
 	
@@ -5817,6 +6283,9 @@ document.getElementById("footBenhNhan").innerHTML = `<tr>
         closeDashboard,
 		openStatistics,    // <-- THÊM VÀO ĐÂY
         closeStatistics,
+		openPresentationModal,   // Thêm dòng này
+        closePresentationModal,
+		toggleFullScreenPresentation,
         switchTab,
         toggleLocalTab,
         toggleLockGiuongKH,
@@ -5886,6 +6355,9 @@ window.quickEditCurrent = BaoCaoApp.quickEditCurrent;
 window.fillEquipment = BaoCaoApp.fillEquipment;
 window.loadHistoryLogs = BaoCaoApp.loadHistoryLogs; // Kéo thẳng biến này ra toàn cục
 window.BaoCaoApp = BaoCaoApp;
+window.openPresentationModal = BaoCaoApp.openPresentationModal;
+window.closePresentationModal = BaoCaoApp.closePresentationModal;
+window.toggleFullScreenPresentation = BaoCaoApp.toggleFullScreenPresentation;
 // Lắng nghe sự kiện click ra ngoài vùng trống để đóng modal
 document.addEventListener('click', function(e) {
     // Tự động đóng bảng Quản lý báo cáo
@@ -5897,7 +6369,11 @@ document.addEventListener('click', function(e) {
     if (e.target.id === 'statisticsModal') {
         if (typeof BaoCaoApp !== 'undefined') BaoCaoApp.closeStatistics();
     }
+	if (e.target.id === 'presentationModal') {
+        if (typeof BaoCaoApp !== 'undefined') BaoCaoApp.closePresentationModal();
+    }
 });
+
 </script>
 </body>
 </html>
