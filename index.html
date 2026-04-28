@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -2287,7 +2288,7 @@ body.dark-mode .status-dropdown-item.active { background: rgba(56, 189, 248, 0.1
     
     <div class="dropdown-divider"></div>
     
-    <button class="dropdown-item" onclick="openDashboard()" style="color: var(--primary);">
+    <button id="btnQuanLyBaoCaoMenu" class="dropdown-item" onclick="openDashboard()" style="color: var(--primary); display: none;">
         <svg class="svg-icon" style="margin-right: 8px;" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg> 
         Quản lý báo cáo
     </button>
@@ -3483,6 +3484,18 @@ const BaoCaoApp = (function() {
             const roleBadge = document.getElementById("lblCurrentRole");
             roleBadge.innerText = currentUserSession.roleDisplayName || "Người dùng";
             roleBadge.className = (currentUserSession.role === 'admin' || currentUserSession.role === 'quantri') ? "user-role-badge role-admin" : "user-role-badge role-user";
+
+            // --- THÊM PHẦN PHÂN QUYỀN HIỂN THỊ MENU ---
+            const btnQLBC = document.getElementById("btnQuanLyBaoCaoMenu");
+            if (btnQLBC) {
+                if (["admin", "quantri"].includes(currentUserSession.role)) {
+                    btnQLBC.style.display = "flex"; // Hiện nút nếu là admin/quantri
+                } else {
+                    btnQLBC.style.display = "none"; // Ẩn nút đối với bác sĩ/user thường
+                }
+            }
+            // -----------------------------------------
+
         } else {
             if(container) container.style.display = "none"; if(btnLogin) btnLogin.style.display = "inline-block";
         }
@@ -4778,7 +4791,7 @@ initStatusDropdown();
         if (currentReportApproved) finalLock = true; else if (isEditor && currentReportSubmitted) finalLock = true; else if (isEditor && isTimeLocked) finalLock = true; if (lockedBySomeoneElse || lockedByCreator) finalLock = true;
         isFormLocked = finalLock; 
         
-        document.querySelectorAll('.report-card input:not(#searchReport):not(#historyFilterDate), .report-card select:not(#barChartRange):not(#monthFilter):not(#logDeleteRange), .report-card textarea').forEach(el => el.disabled = finalLock);
+        document.querySelectorAll('.report-card input:not(#searchReport):not(#historyFilterDate):not(.modal-input), .report-card select:not(#barChartRange):not(#monthFilter):not(#logDeleteRange), .report-card textarea:not(.modal-input)').forEach(el => el.disabled = finalLock);
         document.querySelectorAll('.add-row-btn:not([onclick^="fetchFrom"]), .remove-row-btn, .quick-fill-btn').forEach(btn => btn.style.display = finalLock ? 'none' : 'inline-flex');
         
         const banner = document.getElementById('statusBanner'); 
@@ -5266,6 +5279,12 @@ initStatusDropdown();
     // 9. EVENT BINDING INIT
     // ==========================================
     async function openDashboard() { 
+        // --- CHỐT CHẶN BẢO MẬT KÉP ---
+        if (!currentUserSession || !["admin", "quantri"].includes(currentUserSession.role)) {
+            showToast("Bạn không có quyền truy cập Quản lý báo cáo!", "error");
+            return;
+        }
+
         const modal = document.getElementById('dashboardModal'); modal.style.display = "flex"; 
         // Đổi 'chart' thành 'cloud'
         setTimeout(() => modal.classList.add("show"), 10); await switchTab('cloud'); await renderDashboard(); 
@@ -5310,7 +5329,26 @@ initStatusDropdown();
 
     let modalCallback = null;
     function openModal(title, callback) { document.getElementById('modalTitle').textContent = title; document.getElementById('modalInput').value = ""; const modal = document.getElementById('customInputModal'); modal.style.display = "flex"; setTimeout(() => { modal.classList.add("show"); document.getElementById('modalInput').focus(); }, 10); modalCallback = callback; }
-    function closeModal(isOk) { const val = document.getElementById('modalInput').value.trim(); const modal = document.getElementById('customInputModal'); modal.classList.remove("show"); setTimeout(() => { modal.style.display = "none"; if (modalCallback) { modalCallback(isOk && val !== "" ? val : null); modalCallback = null; } }, 200); }
+    function closeModal(isOk) {
+    const val = document.getElementById('modalInput').value.trim();
+    
+    // Thêm cảnh báo nếu bấm xác nhận nhưng để trống
+    if (isOk && val === "") {
+        showToast("Vui lòng nhập lý do từ chối!", "error");
+        document.getElementById('modalInput').focus();
+        return; 
+    }
+
+    const modal = document.getElementById('customInputModal');
+    modal.classList.remove("show");
+    setTimeout(() => {
+        modal.style.display = "none";
+        if (modalCallback) {
+            modalCallback(isOk ? val : null);
+            modalCallback = null;
+        }
+    }, 200);
+}
 
     function handleEditClick(dateStr, isCloud, isAppr) { 
         promptPassword(`Xác thực để SỬA báo cáo ngày ${dateStr}`, async function(user) { 
