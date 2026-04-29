@@ -2515,7 +2515,40 @@ body.dark-mode #bangBenhNhanPresentation tbody tr:nth-child(even) td {
     background: var(--primary);
     color: #fff;
 }
+/* =========================================
+   CHẾ ĐỘ ĐÃ PHÊ DUYỆT (READ-ONLY)
+========================================= */
+/* Loại bỏ hiệu ứng mờ, KHÔNG in đậm, giữ nguyên màu sắc tương ứng của dữ liệu */
+body.report-approved-mode input:disabled,
+body.report-approved-mode select:disabled,
+body.report-approved-mode textarea:disabled {
+    opacity: 1 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: inherit !important; /* Lấy màu tương ứng gốc của ô nhập liệu */
+    -webkit-text-fill-color: inherit !important; /* Fix lỗi chữ bị xám khi disabled trên Chrome/Safari */
+}
 
+/* Ẩn triệt để cột "Tác vụ" ở các Bảng Chuyên môn (Mục III) */
+body.report-approved-mode #tablePTCC th:last-child, body.report-approved-mode #tablePTCC td:last-child,
+body.report-approved-mode #tableVaoVien th:last-child, body.report-approved-mode #tableVaoVien td:last-child,
+body.report-approved-mode #tableChuyenVien th:last-child, body.report-approved-mode #tableChuyenVien td:last-child,
+body.report-approved-mode #tableRaVien th:last-child, body.report-approved-mode #tableRaVien td:last-child {
+    display: none !important;
+}
+
+/* Ẩn các công cụ thao tác thừa thãi */
+body.report-approved-mode .quick-select-staff,
+body.report-approved-mode .quick-chips-container,
+body.report-approved-mode .formula-tooltip-wrapper {
+    display: none !important;
+}
+
+/* Ẩn khung "Điền nhanh" của bác sĩ */
+body.report-approved-mode #chonMauBacSi {
+    display: none !important;
+}
 </style>
 </head>
 <body>
@@ -5141,10 +5174,21 @@ initStatusDropdown();
         const tbody = document.getElementById("tbodyBenhNhan");
         const thGiuongKH = document.getElementById("thGiuongKH");
         
+        // --- THAY THẾ ĐOẠN NÀY ---
         if (thGiuongKH) {
-            thGiuongKH.innerHTML = (isGiuongKHUnlocked && !isFormLocked) ? "Giường KH 🔓" : "Giường KH 🔒";
-            thGiuongKH.style.color = (isGiuongKHUnlocked && !isFormLocked) ? "var(--danger)" : "var(--primary)";
+            if (currentReportApproved) {
+                // Nếu đã duyệt: Bỏ icon khóa, làm sạch tiêu đề
+                thGiuongKH.innerHTML = "Giường KH";
+                thGiuongKH.style.color = "inherit";
+                thGiuongKH.style.cursor = "default";
+            } else {
+                // Nếu chưa duyệt: Hiện trạng thái khóa/mở khóa
+                thGiuongKH.innerHTML = (isGiuongKHUnlocked && !isFormLocked) ? "Giường KH 🔓" : "Giường KH 🔒";
+                thGiuongKH.style.color = (isGiuongKHUnlocked && !isFormLocked) ? "var(--danger)" : "var(--primary)";
+                thGiuongKH.style.cursor = "pointer";
+            }
         }
+        // -------------------------
 
         let html = "";
         let tong = { cu:0, vaoHC:0, vaoTruc:0, ra:0, chuyenDi:0, chuyenDen:0, chuyenVien:0, xinVe:0, tronVien:0, tuVongNgoaiTru:0, tuVongNoiTru:0, ptCapCuu:0, vaoSang:0, raSang:0, hienCo:0, duKienRa:0, giuongKH:0 };
@@ -5430,6 +5474,26 @@ initStatusDropdown();
         else {
             banner.style.display = 'none';
         }
+
+// [THÊM MỚI] - Bật/Tắt CSS Class chế độ Đã Phê Duyệt
+        if (currentReportApproved) {
+            document.body.classList.add('report-approved-mode');
+            
+            // Tìm và ẩn nguyên khung "Điền nhanh" của Bác sĩ cho gọn giao diện
+            let chonMauBS = document.getElementById("chonMauBacSi");
+            if(chonMauBS && chonMauBS.parentElement.tagName === 'DIV') {
+                chonMauBS.parentElement.style.visibility = 'hidden'; 
+            }
+        } else {
+            document.body.classList.remove('report-approved-mode');
+            
+            // Hiện lại khung "Điền nhanh"
+            let chonMauBS = document.getElementById("chonMauBacSi");
+            if(chonMauBS && chonMauBS.parentElement.tagName === 'DIV') {
+                chonMauBS.parentElement.style.visibility = 'visible';
+            }
+        }
+
 
         document.getElementById('xoaDuLieuBtn').style.display = (finalLock || currentReportSubmitted) ? 'none' : 'inline-flex'; 
         document.getElementById('luuBtn').style.display = finalLock ? 'none' : 'inline-flex'; 
