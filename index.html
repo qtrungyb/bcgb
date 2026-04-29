@@ -716,7 +716,7 @@ body.dark-mode #bangBenhNhan td:first-child {
         background-image:
             radial-gradient(at 0% 0%, rgba(2, 132, 199, 0.15) 0px, transparent 50%),
             radial-gradient(at 100% 100%, rgba(79, 70, 229, 0.15) 0px, transparent 50%);
-        z-index: 100000; 
+        z-index: 9999; 
         display: flex; align-items: center; justify-content: center; flex-direction: column;
         overflow: hidden;
     }
@@ -1245,7 +1245,7 @@ body.dark-mode .tab-btn.active {
     position: fixed;
     top: 24px;
     right: 24px;
-    z-index: 999999;
+    z-index: 999999 !important;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -2536,6 +2536,9 @@ body.dark-mode #bangBenhNhanPresentation tbody tr:nth-child(even) td {
             <p style="color: #64748b; font-size: 14.5px; font-weight: 500;">Đăng nhập hệ thống nội bộ</p>
         </div>
 
+
+
+        <div id="loginErrorMessage" style="display: none; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px dashed rgba(239, 68, 68, 0.4); padding: 12px; border-radius: 12px; margin-bottom: 16px; font-size: 13.5px; font-weight: 600; text-align: center;"></div>
         <div class="login-input-group">
             <input type="text" id="startupUser" placeholder="Tên đăng nhập" autocomplete="off" />
             <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -3268,6 +3271,8 @@ body.dark-mode #bangBenhNhanPresentation tbody tr:nth-child(even) td {
             </div>
             <p id="passwordMessage" style="font-size: 16px; font-weight: 700; color: var(--text-main); text-align: center; margin-bottom: 20px; line-height: 1.4;"></p>
             
+            <div id="modalLoginErrorMessage" style="display: none; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px dashed rgba(239, 68, 68, 0.4); padding: 10px; border-radius: 8px; margin-bottom: 12px; font-size: 13px; font-weight: 600; text-align: center;"></div>
+            
             <input type="text" id="usernameInput" class="modal-input" placeholder="Tên đăng nhập" autocomplete="off" style="margin-bottom: 12px;" />
             <input type="password" id="passwordInput" class="modal-input" placeholder="Mật khẩu" autocomplete="off" />
             <div class="modal-actions">
@@ -3579,6 +3584,33 @@ const BaoCaoApp = (function() {
         }
     }
 
+async function cleanUpApprovedLocalRecords() {
+        try {
+            const allLocal = await LocalDB.getAll();
+            let count = 0;
+            for (let item of allLocal) {
+                // Chỉ xử lý các key của báo cáo
+                if (item.key.startsWith("BaoCaoGiaoBan_Data_")) {
+                    let data = item.value;
+                    // Nếu dữ liệu đánh dấu là đã duyệt (isApproved = true), xóa trắng khỏi IndexedDB
+                    if (data && data.isApproved === true) {
+                        await LocalDB.removeItem(item.key);
+                        count++;
+                    }
+                }
+            }
+            if (count > 0) {
+                console.log(`[Hệ thống] Đã tự động dọn dẹp ${count} bản ghi (đã duyệt) để giải phóng bộ nhớ Local.`);
+                if (document.getElementById('dashboardModal').classList.contains('show')) {
+                    renderDashboard(); // Làm mới lại bảng nếu đang mở Quản lý báo cáo
+                }
+            }
+        } catch(e) {
+            console.error("Lỗi khi dọn dẹp dữ liệu cục bộ:", e);
+        }
+    }
+
+
     async function fetchCloudDataBackground() {
         if (!currentUserSession) return;
         try {
@@ -3610,7 +3642,13 @@ const BaoCaoApp = (function() {
             let isDraft = localSaved && localSaved.isSaved === false;
             let isEditingCurrent = (dateKey === activeDate && !isFormLocked);
             
-            if (!isDraft && !isEditingCurrent) {
+            if (dataObj.isApproved === true) {
+                // Nếu Cloud báo đã duyệt -> Lập tức xóa trắng bản nháp dưới máy
+                await LocalDB.removeItem(key);
+                if (dateKey === activeDate && isFormLocked) {
+                    await loadData(false);
+                }
+            } else if (!isDraft && !isEditingCurrent) {
                 dataObj.isSaved = true; 
                 if(dataObj.lockedBy) delete dataObj.lockedBy;
                 await LocalDB.setItem(key, dataObj);
@@ -3738,6 +3776,7 @@ const BaoCaoApp = (function() {
             document.getElementById("startupLoginScreen").style.display = "none";
             document.getElementById("mainApp").style.display = "block";
             await migrateFromLocalStorage(); 
+			await cleanUpApprovedLocalRecords();
             updateUserInfoBadge();   
             updateDateDisplay();     
             await loadData();        
@@ -3753,9 +3792,24 @@ const BaoCaoApp = (function() {
         const userVal = document.getElementById('startupUser').value.trim();
         const passVal = document.getElementById('startupPass').value.trim();
         const btn = document.getElementById('btnStartupLogin');
+        const errMsg = document.getElementById('loginErrorMessage');
 
-        if (!userVal) return showToast("Vui lòng nhập tên tài khoản!", "error");
-        if (!passVal) return showToast("Vui lòng nhập mật khẩu!", "error");
+        const showError = (msg) => {
+            if (errMsg) {
+                errMsg.style.display = 'block';
+                errMsg.innerText = msg;
+                errMsg.classList.remove('shake-warning');
+                void errMsg.offsetWidth; // Reset animation
+                errMsg.classList.add('shake-warning');
+            } else {
+                showToast(msg, "error");
+            }
+        };
+
+        if (errMsg) errMsg.style.display = 'none';
+
+        if (!userVal) return showError("Vui lòng nhập tên tài khoản!");
+        if (!passVal) return showError("Vui lòng nhập mật khẩu!");
 
         btn.innerText = "Đang kiểm tra..."; btn.disabled = true;
         const emailVal = userVal + "@baocao.com";
@@ -3789,16 +3843,17 @@ const BaoCaoApp = (function() {
                 db.ref('logs').push({ thoiGian: new Date().toLocaleString('vi-VN'), taiKhoan: userData.fullname, thaoTac: "Đăng nhập hệ thống (Auth)." });
                 await checkInitialLogin(); 
             } else {
-                showToast("Tài khoản chưa được phân quyền trong hệ thống nội bộ!", "error");
+                showError("Tài khoản chưa được phân quyền trong hệ thống nội bộ!");
             }
         } catch (err) {
             btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Đăng Nhập`;
             btn.disabled = false;
             
-            if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential' || err.code === 'auth/invalid-login-credentials' || err.message.includes('INVALID_LOGIN_CREDENTIALS')) {
-                showToast("Sai tên đăng nhập hoặc mật khẩu!", "error");
+            // Bổ sung thêm auth/invalid-email để bắt lỗi người dùng gõ space/kí tự đặc biệt vào ô username
+            if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential' || err.code === 'auth/invalid-login-credentials' || err.code === 'auth/invalid-email' || err.message.includes('INVALID_LOGIN_CREDENTIALS')) {
+                showError("Sai tên đăng nhập hoặc mật khẩu!");
             } else {
-                showToast("Lỗi đăng nhập: " + err.message, "error"); 
+                showError("Lỗi đăng nhập: " + err.message); 
             }
         }
     }
@@ -3896,6 +3951,10 @@ const BaoCaoApp = (function() {
         if (currentUserSession && currentUserSession.token) { callback(currentUserSession); return; }
         document.getElementById('passwordMessage').innerText = message;
         document.getElementById('usernameInput').value = ""; document.getElementById('passwordInput').value = "";
+        
+        const errMsg = document.getElementById('modalLoginErrorMessage');
+        if (errMsg) errMsg.style.display = 'none';
+
         const modal = document.getElementById('passwordModal'); modal.style.display = "flex";
         setTimeout(() => { modal.classList.add("show"); document.getElementById('usernameInput').focus(); }, 10);
         window.currentPasswordCallback = callback;
@@ -3904,6 +3963,21 @@ const BaoCaoApp = (function() {
     async function closePasswordModal(isOk) {
         const userVal = document.getElementById('usernameInput').value.trim(); const passVal = document.getElementById('passwordInput').value.trim();
         const modal = document.getElementById('passwordModal'); const btn = document.getElementById('btnConfirmAuth');
+        const errMsg = document.getElementById('modalLoginErrorMessage');
+
+        const showError = (msg) => {
+            if (errMsg) {
+                errMsg.style.display = 'block';
+                errMsg.innerText = msg;
+                errMsg.classList.remove('shake-warning');
+                void errMsg.offsetWidth; // Reset animation
+                errMsg.classList.add('shake-warning');
+            } else {
+                showToast(msg, "error");
+            }
+        };
+
+        if (errMsg) errMsg.style.display = 'none';
 
         if (!isOk) {
             modal.classList.remove("show");
@@ -3911,7 +3985,7 @@ const BaoCaoApp = (function() {
             return;
         }
 
-        if (!userVal || !passVal) return showToast("Vui lòng nhập đầy đủ tài khoản và mật khẩu!", "error");
+        if (!userVal || !passVal) return showError("Vui lòng nhập đầy đủ tài khoản và mật khẩu!");
 
         btn.innerText = "Đang kiểm tra..."; btn.disabled = true;
         try {
@@ -3928,8 +4002,8 @@ const BaoCaoApp = (function() {
                 sessionStorage.setItem('loggedInUser', JSON.stringify(currentUserSession));
                 updateUserInfoBadge(); modal.classList.remove("show"); showToast(`Xác thực thành công, ${userData.fullname}!`, "success");
                 setTimeout(() => { modal.style.display = "none"; if (window.currentPasswordCallback) { window.currentPasswordCallback(currentUserSession); window.currentPasswordCallback = null; } }, 100);
-            } else { showToast("Lỗi cấu hình tài khoản nội bộ!", "error"); }
-        } catch (err) { btn.innerText = "Xác nhận"; btn.disabled = false; showToast("Sai tài khoản hoặc mật khẩu!", "error"); }
+            } else { showError("Lỗi cấu hình tài khoản nội bộ!"); }
+        } catch (err) { btn.innerText = "Xác nhận"; btn.disabled = false; showError("Sai tài khoản hoặc mật khẩu!"); }
     }
 
     function loginProactively() { promptPassword("Vui lòng đăng nhập để sử dụng tính năng:", async function(user) { if (user) await checkInitialLogin(); }); }
@@ -4177,7 +4251,14 @@ const BaoCaoApp = (function() {
                     let btn = document.getElementById('btnDuyet'); if(btn) { btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg> Đang xử lý...`; btn.disabled = true; }
                     currentReportApproved = true; currentReportSubmitted = true; currentRejectMessage = ""; 
                     let nowTime = new Date().toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'}) + ' ' + new Date().toLocaleDateString('vi-VN'); currentApprovalInfo = { nguoiDuyet: user.fullname, thoiGianDuyet: nowTime };
-                    await saveReportAll(true, true); logAction(`Đã PHÊ DUYỆT báo cáo ngày ${activeDate}`); showToast("✅ Đã phê duyệt báo cáo thành công!", "success");
+                    await saveReportAll(true, true); 
+                    
+                    // Xóa bản local ngay lập tức sau khi lưu thành công lên Cloud
+                    await LocalDB.removeItem(getStorageKey(activeDate)); 
+                    await cleanUpApprovedLocalRecords(); 
+                    
+                    logAction(`Đã PHÊ DUYỆT báo cáo ngày ${activeDate}`); 
+                    showToast("✅ Đã phê duyệt báo cáo thành công!", "success");
                 } catch(e) { showToast("Lỗi khi phê duyệt: " + e.message, "error"); } finally { let btn = document.getElementById('btnDuyet'); if(btn) { btn.innerHTML = `<svg class="svg-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg> Duyệt Báo Cáo`; btn.disabled = false; } }
             } else if (user) { showToast("Chỉ Lãnh đạo (Admin) mới có quyền Phê duyệt!", "error"); } 
         });
@@ -5491,7 +5572,10 @@ initStatusDropdown();
                     let lockedBySomeoneElse = (cloudData.lockedBy && currentUserSession && cloudData.lockedBy !== currentUserSession.fullname) ? cloudData.lockedBy : null;
                     if (cloudData.lockedBy) delete cloudData.lockedBy; 
                     
-                    await LocalDB.setItem(key, cloudData);
+                    // Chỉ lưu vào máy nếu báo cáo CHƯA được duyệt
+                    if (cloudData.isApproved !== true) {
+                        await LocalDB.setItem(key, cloudData);
+                    }
                     
                     if (!data || forceCloud) {
                         await loadData(false); 
@@ -5925,9 +6009,35 @@ initStatusDropdown();
         document.getElementById("prevMonth").addEventListener("click", async (e) => { e.stopPropagation(); currentCalMonth--; if (currentCalMonth < 0) { currentCalMonth = 11; currentCalYear--; } await renderCalendar(); });
         document.getElementById("nextMonth").addEventListener("click", async (e) => { e.stopPropagation(); currentCalMonth++; if (currentCalMonth > 11) { currentCalMonth = 0; currentCalYear++; } await renderCalendar(); });
 
-        const startupPassInput = document.getElementById('startupPass'); if (startupPassInput) startupPassInput.addEventListener("keypress", function(e) { if (e.key === "Enter") { e.preventDefault(); doStartupLogin(); } });
+        // Tối ưu UX phím Enter cho Màn hình đăng nhập chính
+        const startupUserInput = document.getElementById('startupUser');
+        if (startupUserInput) startupUserInput.addEventListener("keypress", function(e) { 
+            if (e.key === "Enter") { 
+                e.preventDefault(); 
+                const passInput = document.getElementById('startupPass');
+                if (passInput && !passInput.value) passInput.focus(); // Chuyển con trỏ xuống ô mật khẩu nếu trống
+                else doStartupLogin(); // Đăng nhập nếu đã điền mật khẩu
+            } 
+        });
+        const startupPassInput = document.getElementById('startupPass'); 
+        if (startupPassInput) startupPassInput.addEventListener("keypress", function(e) { 
+            if (e.key === "Enter") { e.preventDefault(); doStartupLogin(); } 
+        });
+
+        // Tối ưu UX phím Enter cho Popup Xác thực (Modal)
+        const usernameModalInput = document.getElementById('usernameInput');
+        if (usernameModalInput) usernameModalInput.addEventListener("keypress", function(e) {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                const passInput = document.getElementById('passwordInput');
+                if (passInput && !passInput.value) passInput.focus();
+                else closePasswordModal(true);
+            }
+        });
         document.getElementById('passwordInput').addEventListener("keypress", function(e) { if (e.key === "Enter") { e.preventDefault(); closePasswordModal(true); } });
+        
         document.getElementById('modalInput').addEventListener("keypress", function(e) { if (e.key === "Enter") { e.preventDefault(); closeModal(true); } });
+        document.getElementById("searchReport").addEventListener("input", filterReports);
         document.getElementById("searchReport").addEventListener("input", filterReports);
 		const barChartRangeEl = document.getElementById("barChartRange");
         if (barChartRangeEl) {
@@ -6106,6 +6216,8 @@ document.getElementById("footBenhNhan").innerHTML = `<tr>
     <td class="bg-tong">${f0(tyTong > 0 ? tyTong.toFixed(1) + "%" : 0)}</td>
 </tr>`;
 // --- KẾT THÚC CẬP NHẬT CỤC BỘ ---
+updateSyncStatus('pending');
+saveData(false);
                 } else if (target.classList.contains('bs-input')) {
                     let val = target.value.trim().replace(/(?:^|\s)\S/g, a => a.toUpperCase());
                     target.value = val;
